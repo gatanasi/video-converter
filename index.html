@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Converter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Video Converter</h1>
+        
+        <div class="app-tabs">
+            <button id="convertTabBtn" class="tab-btn active">Convert Videos</button>
+            <button id="filesTabBtn" class="tab-btn">Previous Conversions</button>
+        </div>
+        
+        <div id="convertTab" class="tab-content active">
+            <div class="google-drive-section">
+                <h2>Google Drive Video Converter</h2>
+                <div class="config-section">
+                    <div class="api-config">
+                        <label for="apiKeyInput">Google Drive API Key:</label>
+                        <input type="text" id="apiKeyInput" placeholder="Enter your Google Drive API key">
+                        
+                        <label for="folderIdInput">Google Drive Folder ID or URL:</label>
+                        <input type="text" id="folderIdInput" placeholder="Enter folder ID or full Google Drive folder URL">
+                        <button id="saveConfigBtn">Save Configuration</button>
+                    </div>
+                    <div class="folder-info">
+                        <p class="note">* The Google Drive folder must be public (shared with "Anyone with the link")</p>
+                    </div>
+                </div>
+                
+                <div class="buttons">
+                    <button id="fetchVideosBtn">Fetch Videos</button>
+                </div>
+            </div>
+            
+            <div id="videoList" class="hidden">
+                <h3>Available Videos:</h3>
+                <div id="videoListContainer"></div>
+            </div>
+            
+            <div id="selectedFile" class="hidden">
+                <h3>Selected Video:</h3>
+                <p id="fileName">No file selected</p>
+            </div>
+            
+            <div id="conversionOptions" class="hidden">
+                <div class="conversion-controls">
+                    <select id="formatSelect">
+                        <option value="mov">MOV</option>
+                        <option value="mp4">MP4</option>
+                        <option value="avi">AVI</option>
+                    </select>
+                    <button id="convertBtn">Convert Video</button>
+                </div>
+            </div>
+            
+            <div id="conversionProgress" class="hidden">
+                <h2>Converting...</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <p id="progressPercent">0%</p>
+            </div>
+            
+            <div id="downloadSection" class="hidden">
+                <h2>Conversion Complete!</h2>
+                <button id="downloadBtn">Download Converted Video</button>
+            </div>
+        </div>
+        
+        <div id="filesTab" class="tab-content">
+            <div class="previous-files-section">
+                <h2>Previously Converted Videos</h2>
+                <button id="refreshFilesBtn">Refresh List</button>
+                <div id="previousFilesList">
+                    <p>Loading files...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

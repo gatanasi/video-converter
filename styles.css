@@ -1,0 +1,290 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: #f0f2f5;
+  color: #333;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #4285f4;
+}
+
+h2 {
+  margin-bottom: 15px;
+  color: #5f6368;
+}
+
+/* Tab Navigation */
+.app-tabs {
+  display: flex;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  background-color: transparent;
+  color: #5f6368;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #4285f4;
+}
+
+.tab-btn.active {
+  color: #4285f4;
+  border-bottom: 2px solid #4285f4;
+  font-weight: bold;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.google-drive-section, .format-selection, .previous-files-section {
+  margin-bottom: 25px;
+}
+
+.config-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  border-left: 4px solid #4285f4;
+}
+
+.api-config {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.api-config label {
+  flex: 0 0 100%;
+  font-weight: bold;
+}
+
+.api-config input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+button {
+  padding: 12px 24px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #3367d6;
+}
+
+#saveConfigBtn {
+  background-color: #34a853;
+}
+
+#saveConfigBtn:hover {
+  background-color: #2d9249;
+}
+
+#refreshFilesBtn {
+  background-color: #fbbc05;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+#refreshFilesBtn:hover {
+  background-color: #f8ae00;
+}
+
+.format-selection {
+  margin-top: 20px;
+}
+
+select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  margin-left: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  margin: 15px 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4285f4;
+  width: 0%;
+  border-radius: 10px;
+  transition: width 0.3s;
+}
+
+#progressPercent {
+  text-align: center;
+  font-weight: bold;
+}
+
+#selectedFile {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 4px solid #4285f4;
+}
+
+#videoList {
+  margin: 20px 0;
+}
+
+#videoListContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.video-item {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.video-item:hover {
+  background-color: #f0f7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.video-item.selected {
+  background-color: #e8f0fe;
+  border-color: #4285f4;
+}
+
+/* Previous Files List */
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: #f8f9fa;
+}
+
+.file-item:hover {
+  background-color: #f0f7ff;
+}
+
+.file-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.download-btn {
+  background-color: #34a853;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.download-btn:hover {
+  background-color: #2d9249;
+}
+
+.delete-btn {
+  background-color: #ea4335;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.delete-btn:hover {
+  background-color: #d93025;
+}
+
+#conversionOptions, #downloadSection {
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+#downloadBtn {
+  background-color: #0f9d58;
+  margin-top: 10px;
+}
+
+#downloadBtn:hover {
+  background-color: #0b8043;
+}
+
+.conversion-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.conversion-controls select {
+  margin-left: 0;
+  min-width: 100px;
+}
