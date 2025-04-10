@@ -1,12 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements - Tab Navigation
+    // DOM Elements
     const convertTabBtn = document.getElementById('convertTabBtn');
     const filesTabBtn = document.getElementById('filesTabBtn');
     const convertTab = document.getElementById('convertTab');
     const filesTab = document.getElementById('filesTab');
-    
-    // DOM Elements - Convert Tab
-    const apiKeyInput = document.getElementById('apiKeyInput');
     const folderIdInput = document.getElementById('folderIdInput');
     const saveConfigBtn = document.getElementById('saveConfigBtn');
     const fetchVideosBtn = document.getElementById('fetchVideosBtn');
@@ -22,62 +19,146 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressPercent = document.getElementById('progressPercent');
     const downloadSection = document.getElementById('downloadSection');
     const downloadBtn = document.getElementById('downloadBtn');
-    
-    // DOM Elements - Files Tab
+    const convertTabMessages = document.getElementById('convertTabMessages');
     const refreshFilesBtn = document.getElementById('refreshFilesBtn');
     const previousFilesList = document.getElementById('previousFilesList');
+    const filesTabMessages = document.getElementById('filesTabMessages');
 
-    // Server URL
-    const SERVER_URL = window.location.origin;
-    
+    // Server URL & API Prefix
+    const SERVER_URL = window.location.origin; // Assumes backend is on same origin
+    const API_PREFIX = "/api"; // Prefix for backend API calls
+
     // App configuration
-    const CONFIG_KEY = 'videoConverterConfig';
+    const CONFIG_KEY = 'videoConverterConfig_v3';
     let appConfig = {
-        googleDriveApiKey: '',
         googleDriveFolderId: '',
-        isPublicFolder: true
     };
-    
-    // Current selected video
+
+    // State variables
     let selectedVideo = null;
     let convertedFileUrl = null;
+    let currentConversionId = null;
+    let statusPollInterval = null;
 
-    // Load saved configuration
+    // --- Initialization ---
     loadConfiguration();
+    if(filesTab.classList.contains('active')) {
+        loadConvertedFiles();
+    }
 
-    // Event listeners - Tabs
+    // Event listeners
     convertTabBtn.addEventListener('click', () => switchTab('convert'));
     filesTabBtn.addEventListener('click', () => switchTab('files'));
-    
-    // Event listeners - Convert Tab
     saveConfigBtn.addEventListener('click', saveConfiguration);
     fetchVideosBtn.addEventListener('click', handleFetchVideos);
     convertBtn.addEventListener('click', handleConvertVideo);
     downloadBtn.addEventListener('click', handleDownload);
-    
-    // Event listeners - Files Tab
     refreshFilesBtn.addEventListener('click', loadConvertedFiles);
 
-    // Fetch converted files on initial load
-    loadConvertedFiles();
 
-    // Load saved configuration
-    function loadConfiguration() {
-        const savedConfig = localStorage.getItem(CONFIG_KEY);
-        
-        if (savedConfig) {
-            try {
-                appConfig = JSON.parse(savedConfig);
-                apiKeyInput.value = appConfig.googleDriveApiKey || '';
-                folderIdInput.value = appConfig.googleDriveFolderId || '';
-            } catch (error) {
-                console.error('Error loading saved configuration:', error);
-            }
+    // --- Helper Functions (showMessage, clearMessages, formatBytes) ---
+    function showMessage(tab, message, type = 'info') {
+        const messageArea = tab === 'convert' ? convertTabMessages : filesTabMessages;
+        if (!messageArea) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = message;
+        messageArea.innerHTML = '';
+        messageArea.appendChild(messageDiv);
+        messageArea.classList.remove('hidden');
+
+        if (type === 'info' || type === 'success') {
+            setTimeout(() => {
+                if (messageArea.firstChild === messageDiv) {
+                    messageArea.classList.add('hidden');
+                    messageArea.innerHTML = '';
+                }
+            }, 5000);
         }
     }
 
-    // Switch between tabs
+    function clearMessages(tab) {
+        const messageArea = tab === 'convert' ? convertTabMessages : filesTabMessages;
+         if (!messageArea) return;
+        messageArea.innerHTML = '';
+        messageArea.classList.add('hidden');
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+        if (bytes == 0) return '0 Bytes';
+        // Handle potential string input or null/undefined
+        const numericBytes = Number(bytes);
+        if (isNaN(numericBytes) || numericBytes < 0) return 'N/A';
+
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+        const i = Math.floor(Math.log(numericBytes) / Math.log(k));
+        const index = Math.max(0, Math.min(i, sizes.length - 1)); // Ensure index is valid
+
+        return parseFloat((numericBytes / Math.pow(k, index)).toFixed(dm)) + ' ' + sizes[index];
+    }
+
+
+    // --- Configuration ---
+    function loadConfiguration() {
+        clearMessages('convert');
+        const savedConfig = localStorage.getItem(CONFIG_KEY);
+        if (savedConfig) {
+            try {
+                const parsedConfig = JSON.parse(savedConfig);
+                appConfig.googleDriveFolderId = parsedConfig.googleDriveFolderId || '';
+                folderIdInput.value = appConfig.googleDriveFolderId || '';
+                console.log('Configuration loaded.');
+                 if (appConfig.googleDriveFolderId) {
+                    showMessage('convert', 'Folder ID loaded. You may fetch videos.', 'info');
+                 }
+            } catch (error) {
+                console.error('Error loading saved configuration:', error);
+                showMessage('convert', 'Error loading configuration.', 'error');
+                localStorage.removeItem(CONFIG_KEY);
+            }
+        } else {
+             showMessage('convert', 'Enter your Google Drive Folder ID and save configuration.', 'info');
+        }
+    }
+
+    function saveConfiguration() {
+        clearMessages('convert');
+        appConfig.googleDriveFolderId = folderIdInput.value.trim();
+
+        // Extract folder ID from URL
+        if (appConfig.googleDriveFolderId.includes('drive.google.com')) {
+            const match = appConfig.googleDriveFolderId.match(/folders\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                appConfig.googleDriveFolderId = match[1];
+                folderIdInput.value = match[1]; // Update input field with extracted ID
+            } else {
+                 showMessage('convert', 'Could not extract Folder ID from URL. Please paste just the ID.', 'error');
+                 return;
+            }
+        }
+
+        if (!appConfig.googleDriveFolderId) {
+            showMessage('convert', 'Please enter a valid Google Drive folder ID.', 'error');
+            return;
+        }
+
+        try {
+            localStorage.setItem(CONFIG_KEY, JSON.stringify({ googleDriveFolderId: appConfig.googleDriveFolderId }));
+            showMessage('convert', 'Folder ID saved! You can now fetch videos.', 'success');
+        } catch (error) {
+             console.error('Error saving configuration:', error);
+             showMessage('convert', 'Failed to save configuration.', 'error');
+        }
+    }
+
+    // --- Tabs ---
     function switchTab(tabName) {
+        clearMessages('convert');
+        clearMessages('files');
         if (tabName === 'convert') {
             convertTabBtn.classList.add('active');
             filesTabBtn.classList.remove('active');
@@ -88,343 +169,380 @@ document.addEventListener('DOMContentLoaded', () => {
             filesTabBtn.classList.add('active');
             convertTab.classList.remove('active');
             filesTab.classList.add('active');
-            
-            // Reload the file list when switching to the files tab
-            loadConvertedFiles();
+            loadConvertedFiles(); // Reload list when switching to files tab
         }
     }
-    
-    // Load the list of previously converted files
+
+    // --- Files Tab ---
     function loadConvertedFiles() {
+        clearMessages('files');
         previousFilesList.innerHTML = '<p>Loading files...</p>';
-        
-        fetch(`${SERVER_URL}/files`)
-            .then(response => response.json())
-            .then(files => {
-                if (!Array.isArray(files) || files.length === 0) {
-                    previousFilesList.innerHTML = '<p>No converted files found.</p>';
+        filesTabMessages.classList.add('hidden');
+
+        fetch(`${SERVER_URL}${API_PREFIX}/files`)
+            .then(response => {
+                 if (!response.ok) throw new Error(`Server error: ${response.status}`);
+                 return response.json();
+            })
+            .then(files => { // 'files' is the array of FileInfo objects from the backend
+                if (!Array.isArray(files)) throw new Error("Invalid response format.");
+
+                previousFilesList.innerHTML = ''; // Clear loading message
+
+                if (files.length === 0) {
+                    previousFilesList.innerHTML = '<p>No previously converted files found.</p>';
                     return;
                 }
-                
-                previousFilesList.innerHTML = '';
-                
-                // Sort files by timestamp (most recent first)
-                files.sort().reverse();
-                
-                // Display each file with actions
-                files.forEach(filename => {
+
+                // Sort files by modification time, newest first
+                files.sort((a, b) => new Date(b.modTime) - new Date(a.modTime));
+
+                // *** CORE FIX IS IN THIS LOOP ***
+                files.forEach(fileInfo => { // Rename variable to 'fileInfo' for clarity
                     const fileItem = document.createElement('div');
                     fileItem.className = 'file-item';
-                    
-                    // Format file name for display
-                    const displayName = decodeURIComponent(filename);
-                    
-                    fileItem.innerHTML = `
-                        <div class="file-name">${displayName}</div>
-                        <div class="file-actions">
-                            <button class="download-btn" data-filename="${filename}">Download</button>
-                            <button class="delete-btn" data-filename="${filename}">Delete</button>
-                        </div>
-                    `;
-                    
-                    // Add event listeners for the buttons
-                    fileItem.querySelector('.download-btn').addEventListener('click', (e) => {
-                        const filename = e.target.getAttribute('data-filename');
-                        downloadFile(filename);
-                    });
-                    
-                    fileItem.querySelector('.delete-btn').addEventListener('click', (e) => {
-                        const filename = e.target.getAttribute('data-filename');
-                        deleteFile(filename, fileItem);
-                    });
-                    
+
+                    // Container for file name and metadata
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'file-info'; // Use this class for styling
+
+                    // Display file name
+                    const fileNameDiv = document.createElement('div');
+                    fileNameDiv.className = 'file-name';
+                    try {
+                        // Use fileInfo.name to get the filename
+                        fileNameDiv.textContent = decodeURIComponent(fileInfo.name);
+                    } catch (e) {
+                        fileNameDiv.textContent = fileInfo.name; // Fallback
+                    }
+
+                    // Display file metadata (size, date)
+                    const fileMetaDiv = document.createElement('div');
+                    fileMetaDiv.className = 'file-meta'; // Use this class for styling
+                    // Use fileInfo.size and fileInfo.modTime
+                    const fileSize = formatBytes(fileInfo.size);
+                    const modDate = new Date(fileInfo.modTime).toLocaleString(); // Format date/time
+                    fileMetaDiv.textContent = `${fileSize} - ${modDate}`;
+
+                    infoDiv.appendChild(fileNameDiv);
+                    infoDiv.appendChild(fileMetaDiv);
+
+                    // Container for action buttons
+                    const fileActionsDiv = document.createElement('div');
+                    fileActionsDiv.className = 'file-actions';
+
+                    // Download button
+                    const downloadButton = document.createElement('button');
+                    downloadButton.className = 'download-btn';
+                    downloadButton.textContent = 'Download';
+                    // Use fileInfo.name for the filename data attribute
+                    downloadButton.dataset.filename = fileInfo.name;
+                    // The download URL itself comes from fileInfo.url, but we construct it in downloadFile
+                    downloadButton.addEventListener('click', (e) => downloadFile(e.target.dataset.filename));
+
+                    // Delete button
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-btn';
+                    deleteButton.textContent = 'Delete';
+                    // Use fileInfo.name for the filename data attribute
+                    deleteButton.dataset.filename = fileInfo.name;
+                    deleteButton.addEventListener('click', (e) => deleteFile(e.target.dataset.filename, fileItem));
+
+                    fileActionsDiv.appendChild(downloadButton);
+                    fileActionsDiv.appendChild(deleteButton);
+
+                    // Append info and actions to the main item div
+                    fileItem.appendChild(infoDiv);
+                    fileItem.appendChild(fileActionsDiv);
+
                     previousFilesList.appendChild(fileItem);
-                });
+                 });
+                 // *** END OF CORE FIX ***
             })
             .catch(error => {
                 console.error('Error fetching converted files:', error);
-                previousFilesList.innerHTML = `<p>Error loading converted files: ${error.message}</p>`;
+                previousFilesList.innerHTML = ''; // Clear loading message on error
+                showMessage('files', `Error loading files: ${error.message}`, 'error');
             });
     }
-    
-    // Download a previously converted file
+
     function downloadFile(filename) {
-        window.open(`${SERVER_URL}/download/${filename}`, '_blank');
+        // Construct the download URL (no API prefix for /download/)
+        // Ensure filename is encoded for the URL
+        window.open(`${SERVER_URL}/download/${encodeURIComponent(filename)}`, '_blank');
     }
-    
-    // Delete a previously converted file
+
     function deleteFile(filename, fileItemElement) {
-        if (!confirm(`Are you sure you want to delete ${filename}?`)) {
-            return;
-        }
-        
-        fetch(`${SERVER_URL}/delete-file/${filename}`, { method: 'GET' })
+        let displayName = filename;
+        try { displayName = decodeURIComponent(filename); } catch (e) {/* ignore */}
+
+        if (!confirm(`Are you sure you want to delete "${displayName}"?`)) return;
+
+        clearMessages('files');
+        // Use API prefix and DELETE method, encode filename for URL
+        fetch(`${SERVER_URL}${API_PREFIX}/delete-file/${encodeURIComponent(filename)}`, { method: 'DELETE' })
             .then(response => {
                 if (response.ok) {
-                    // Remove the file item from the UI
-                    fileItemElement.remove();
-                    
-                    // Check if there are any files left
+                    fileItemElement.remove(); // Remove the item from the list
+                    // Check if the list is now empty
                     if (previousFilesList.childElementCount === 0) {
                         previousFilesList.innerHTML = '<p>No converted files found.</p>';
                     }
-                    
-                    alert('File deleted successfully');
+                    showMessage('files', `File "${displayName}" deleted.`, 'success');
+                    return response.json(); // Or handle potential JSON response
                 } else {
-                    throw new Error('Failed to delete file');
+                    // Try to parse error from backend JSON response
+                    return response.json().then(errData => {
+                        throw new Error(errData.error || `Failed to delete (Status: ${response.status})`);
+                    }).catch(() => { // Fallback if response wasn't JSON
+                        throw new Error(`Failed to delete (Status: ${response.status})`);
+                    });
                 }
             })
+            // Removed redundant .then() after successful delete that caused issues
             .catch(error => {
                 console.error('Error deleting file:', error);
-                alert(`Error deleting file: ${error.message}`);
+                showMessage('files', `Error deleting file: ${error.message}`, 'error');
             });
     }
 
-    // Save configuration
-    function saveConfiguration() {
-        appConfig.googleDriveApiKey = apiKeyInput.value.trim();
-        appConfig.googleDriveFolderId = folderIdInput.value.trim();
-        
-        // Extract folder ID from URL if needed
-        if (appConfig.googleDriveFolderId.includes('drive.google.com')) {
-            const match = appConfig.googleDriveFolderId.match(/folders\/([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                appConfig.googleDriveFolderId = match[1];
-                folderIdInput.value = match[1];
-            }
-        }
-        
-        if (!appConfig.googleDriveFolderId) {
-            alert('Please enter a valid Google Drive folder ID');
-            return;
-        }
-        
-        if (!appConfig.googleDriveApiKey) {
-            alert('Please enter a valid Google Drive API Key');
-            return;
-        }
-        
-        localStorage.setItem(CONFIG_KEY, JSON.stringify(appConfig));
-        alert('Configuration saved! You can now fetch videos from your Google Drive folder.');
-    }
 
-    // Handle fetch videos button click
+    // --- Convert Tab ---
+
     function handleFetchVideos() {
+        clearMessages('convert');
         if (!appConfig.googleDriveFolderId) {
-            alert('Please enter a Google Drive folder ID first.');
+            showMessage('convert', 'Please enter and save a Google Drive Folder ID first.', 'error');
             return;
         }
-        
-        if (!appConfig.googleDriveApiKey) {
-            alert('Please enter a Google Drive API Key first.');
-            return;
-        }
-        
-        fetchVideosFromPublicFolder();
-    }
 
-    // Fetch videos from a public Google Drive folder
-    function fetchVideosFromPublicFolder() {
-        // Clear previously loaded videos
-        videoListContainer.innerHTML = '';
-        
-        // Show loading indicator
-        videoListContainer.innerHTML = '<p>Loading videos...</p>';
-        
-        // For public folders, we'll use a different approach
-        // We'll list the folder using Google Drive API's public endpoints
-        
-        // First, try to get the folder metadata
-        fetch(`https://www.googleapis.com/drive/v3/files?q='${appConfig.googleDriveFolderId}'+in+parents+and+mimeType+contains+'video'&fields=files(id,name,mimeType,modifiedTime)&key=${appConfig.googleDriveApiKey}`)
+        videoListContainer.innerHTML = '<p>Loading videos from server...</p>';
+        videoListDiv.classList.remove('hidden');
+        selectedFileDiv.classList.add('hidden');
+        conversionOptionsDiv.classList.add('hidden');
+        conversionProgressDiv.classList.add('hidden');
+        downloadSection.classList.add('hidden');
+
+        // Fetch list from backend API endpoint
+        fetch(`${SERVER_URL}${API_PREFIX}/list-videos?folderId=${encodeURIComponent(appConfig.googleDriveFolderId)}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to access the folder. Make sure it is public and the ID is correct.');
+                     // Try to parse error from backend's JSON response
+                     return response.json().then(errData => {
+                         throw new Error(errData.error || `Server error: ${response.status}`);
+                     }).catch(() => {
+                          throw new Error(`Server error fetching video list: ${response.status}`);
+                     });
                 }
                 return response.json();
             })
-            .then(data => {
-                // Clear loading indicator
-                videoListContainer.innerHTML = '';
-                
-                const files = data.files || [];
-                
+            .then(files => { // This 'files' is the array from Google Drive list response
+                 videoListContainer.innerHTML = ''; // Clear loading
+                 if (!Array.isArray(files)) {
+                     console.error("Received invalid file list format from server:", files);
+                     throw new Error("Invalid file list format received from server.");
+                 }
+
                 if (files.length > 0) {
-                    // Display videos
-                    videoListDiv.classList.remove('hidden');
-                    
-                    files.forEach(file => {
+                    files.forEach(file => { // This 'file' is a GoogleDriveFile object
                         const videoItem = document.createElement('div');
                         videoItem.className = 'video-item';
                         videoItem.dataset.id = file.id;
                         videoItem.dataset.name = file.name;
-                        videoItem.dataset.mimeType = file.mimeType;
-                        
-                        // Format the HTML content
-                        videoItem.innerHTML = `
-                            <div class="video-title">${file.name}</div>
-                            <div class="video-date">${new Date(file.modifiedTime).toLocaleString()}</div>
-                        `;
-                        
-                        // Add click event to select video
+                        videoItem.dataset.mimeType = file.mimeType || 'video/unknown';
+
+                        let fileSize = file.size ? formatBytes(file.size) : 'Unknown size'; // Handle size string
+
+                        const titleDiv = document.createElement('div');
+                        titleDiv.className = 'video-title';
+                        titleDiv.textContent = file.name;
+
+                        const metaDiv = document.createElement('div');
+                        metaDiv.className = 'video-meta';
+                        const dateStr = file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : 'Unknown date';
+                        metaDiv.textContent = `${dateStr} - ${fileSize}`;
+
+                        videoItem.appendChild(titleDiv);
+                        videoItem.appendChild(metaDiv);
+
                         videoItem.addEventListener('click', () => {
-                            selectPublicVideo(file);
-                            
-                            // Highlight the selected item
-                            document.querySelectorAll('.video-item').forEach(item => {
-                                item.classList.remove('selected');
-                            });
+                            selectPublicVideo(file); // Pass the GoogleDriveFile object
+                            // Highlight selected item
+                            document.querySelectorAll('.video-item.selected').forEach(item => item.classList.remove('selected'));
                             videoItem.classList.add('selected');
                         });
-                        
                         videoListContainer.appendChild(videoItem);
                     });
-                    
                 } else {
-                    videoListContainer.innerHTML = '<p>No videos found in the specified folder. Make sure the folder is public and contains video files.</p>';
+                    videoListContainer.innerHTML = '<p>No video files found in the specified folder.</p>';
+                     showMessage('convert', 'No videos found. Check Folder ID and sharing settings ("Anyone with link can view").', 'info');
                 }
             })
             .catch(error => {
-                console.error('Error fetching videos:', error);
-                videoListContainer.innerHTML = `
-                    <p>Error: ${error.message}</p>
-                    <p>Make sure:</p>
-                    <ul>
-                        <li>The folder ID is correct</li>
-                        <li>The folder is publicly shared with "Anyone with the link"</li>
-                        <li>The folder contains video files</li>
-                        <li>Your API Key is valid</li>
-                    </ul>
-                `;
+                console.error('Error fetching video list from server:', error);
+                videoListContainer.innerHTML = ''; // Clear loading
+                showMessage('convert', `Error fetching videos: ${error.message}`, 'error');
+                videoListDiv.classList.add('hidden');
             });
     }
 
-    // Select a public video for conversion
     function selectPublicVideo(file) {
-        selectedVideo = file;
-        
-        // Update the UI
+        selectedVideo = file; // Store the selected GoogleDriveFile object
         fileNameElement.textContent = file.name;
         selectedFileDiv.classList.remove('hidden');
         conversionOptionsDiv.classList.remove('hidden');
-        
-        console.log(`Selected video: ${file.name} (${file.id})`);
+        conversionProgressDiv.classList.add('hidden'); // Hide progress from previous runs
+        downloadSection.classList.add('hidden'); // Hide download from previous runs
+        clearMessages('convert');
+        stopPollingStatus(); // Stop polling if a new video is selected
+        console.log(`Selected video: ${file.name} (ID: ${file.id}, Type: ${file.mimeType})`);
     }
 
-    // Handle convert button click
     function handleConvertVideo() {
         if (!selectedVideo) {
-            alert('Please select a video first');
+            showMessage('convert', 'Please select a video first.', 'error');
             return;
         }
-        
+
+        stopPollingStatus(); // Stop any previous polling
+        clearMessages('convert');
+
         const targetFormat = formatSelect.value;
-        
-        // Show conversion progress and hide other sections
-        conversionOptionsDiv.classList.add('hidden');
+
+        // Reset UI for conversion start
+        conversionOptionsDiv.classList.add('hidden'); // Hide options during conversion
+        downloadSection.classList.add('hidden');
         conversionProgressDiv.classList.remove('hidden');
-        
-        // Reset progress display
         progressBar.style.width = '0%';
         progressPercent.textContent = '0%';
-        
-        // Send conversion request directly to server
-        // The server will handle downloading from Google Drive
+
         requestServerConversion(selectedVideo, targetFormat);
     }
 
-    // Request server to download and convert the video
+
     function requestServerConversion(file, targetFormat) {
-        // Prepare request data
-        const requestData = {
-            fileId: file.id,
-            fileName: file.name,
-            mimeType: file.mimeType,
-            targetFormat: targetFormat,
-            apiKey: appConfig.googleDriveApiKey
-        };
-        
-        // Send to server for downloading and FFmpeg conversion
-        fetch(`${SERVER_URL}/convert-from-drive`, {
+        // Use API prefix for conversion request
+        fetch(`${SERVER_URL}${API_PREFIX}/convert-from-drive`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
+            headers: { 'Content-Type': 'application/json', },
+            // Send data needed by backend
+            body: JSON.stringify({
+                fileId: file.id,
+                fileName: file.name, // Send original filename for output naming
+                mimeType: file.mimeType || 'video/unknown',
+                targetFormat: targetFormat,
+            })
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Server error: ' + response.status);
-            }
-            return response.json();
+             if (!response.ok) {
+                  // Try to parse error from backend JSON response
+                  return response.json().then(errData => {
+                      throw new Error(errData.error || `Server error: ${response.status}`);
+                  }).catch(() => { // Fallback if not JSON
+                      throw new Error(`Server error: ${response.status}`);
+                  });
+             }
+             return response.json();
         })
         .then(data => {
-            if (data.success) {
-                // Store the download URL
-                convertedFileUrl = `${SERVER_URL}${data.downloadUrl}`;
-                
-                // Start polling for status
-                const conversionId = data.conversionId;
-                pollConversionStatus(conversionId);
+            if (data.success && data.conversionId) {
+                // Backend provides relative download URL and conversion ID
+                convertedFileUrl = data.downloadUrl; // Store relative URL (e.g., /download/...)
+                currentConversionId = data.conversionId;
+                showMessage('convert', `Conversion started (ID: ${currentConversionId}). Polling status...`, 'info');
+                pollConversionStatus(currentConversionId); // Start polling
             } else {
-                throw new Error(data.error || 'Unknown error occurred');
+                // Handle cases where backend indicates failure but returns 2xx status
+                throw new Error(data.error || 'Conversion request failed. Backend did not provide ID.');
             }
         })
         .catch(error => {
-            console.error('Conversion error:', error);
-            alert('An error occurred during conversion: ' + error.message);
+            console.error('Conversion request error:', error);
+            showMessage('convert', `Conversion failed: ${error.message}`, 'error');
+            // Reset UI on failure
             conversionProgressDiv.classList.add('hidden');
-            conversionOptionsDiv.classList.remove('hidden');
+            // Show options again only if a video is still selected
+            if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); }
         });
     }
 
-    // Poll for conversion status
     function pollConversionStatus(conversionId) {
-        const statusUrl = `${SERVER_URL}/status/${conversionId}`;
-        
-        // Check status every second
-        const statusInterval = setInterval(() => {
-            fetch(statusUrl)
-                .then(response => response.json())
+        stopPollingStatus(); // Clear existing interval just in case
+
+        statusPollInterval = setInterval(() => {
+            // Use API prefix for status check
+            fetch(`${SERVER_URL}${API_PREFIX}/status/${conversionId}`)
+                .then(response => {
+                    if (response.status === 404) { // Handle case where status is gone (e.g., cleaned up)
+                         stopPollingStatus();
+                         throw new Error(`Status not found for ID ${conversionId}. It might be expired or invalid.`);
+                    }
+                    if (!response.ok) {
+                        stopPollingStatus();
+                        // Try parsing error JSON
+                        return response.json().then(errData => {
+                            throw new Error(errData.error || `Status check failed: ${response.status}`);
+                        }).catch(() => { // Fallback
+                             throw new Error(`Status check failed: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                 })
                 .then(data => {
-                    // Update progress
-                    const progress = Math.round(data.progress);
+                    // Update progress bar
+                    const progress = Math.max(0, Math.min(100, Math.round(data.progress || 0)));
                     progressBar.style.width = `${progress}%`;
                     progressPercent.textContent = `${progress}%`;
-                    
+
                     if (data.error) {
-                        clearInterval(statusInterval);
-                        alert(`Conversion error: ${data.error}`);
+                        // Conversion ended with an error
+                        stopPollingStatus();
+                        showMessage('convert', `Conversion error: ${data.error}`, 'error');
                         conversionProgressDiv.classList.add('hidden');
-                        conversionOptionsDiv.classList.remove('hidden');
-                    }
-                    
-                    if (data.complete) {
-                        clearInterval(statusInterval);
-                        
-                        // Show download section
+                        if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); } // Show options again
+                    } else if (data.complete) {
+                        // Conversion completed successfully
+                        stopPollingStatus();
+                        progressBar.style.width = '100%'; // Ensure it shows 100%
+                        progressPercent.textContent = '100%';
+                        showMessage('convert', 'Conversion complete!', 'success');
                         conversionProgressDiv.classList.add('hidden');
-                        downloadSection.classList.remove('hidden');
+                        downloadSection.classList.remove('hidden'); // Show download button
+                        // If files tab is active, refresh the list after a short delay
+                        if (filesTab.classList.contains('active')) {
+                            setTimeout(loadConvertedFiles, 500); // Delay allows filesystem changes to propagate
+                        }
                     }
-                })
+                    // If neither error nor complete, polling continues
+                 })
                 .catch(error => {
+                    // Error during the fetch/status check itself
                     console.error('Error checking status:', error);
+                    stopPollingStatus(); // Stop polling on error
+                    showMessage('convert', `Status check error: ${error.message}`, 'error');
+                    // Reset UI
+                    conversionProgressDiv.classList.add('hidden');
+                    if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); }
                 });
-        }, 1000);
+        }, 2000); // Poll every 2 seconds
     }
 
-    // Handle download button click
-    function handleDownload() {
-        if (!convertedFileUrl) {
-            alert('No converted file available for download.');
-            return;
-        }
-        
-        // Open the download URL in a new tab
-        window.open(convertedFileUrl, '_blank');
-        
-        // After download, refresh the files list if on files tab
-        if (filesTab.classList.contains('active')) {
-            setTimeout(loadConvertedFiles, 1000);
+    function stopPollingStatus() {
+        if (statusPollInterval) {
+            clearInterval(statusPollInterval);
+            statusPollInterval = null;
+            console.log("Stopped status polling.");
         }
     }
-});
+
+    function handleDownload() {
+        if (!convertedFileUrl) {
+            showMessage('convert','No converted file URL available.', 'error');
+            return;
+        }
+        // Use the relative URL stored from the conversion response
+        // Download URL does NOT use API prefix
+        window.open(`${SERVER_URL}${convertedFileUrl}`, '_blank');
+    }
+
+}); // End DOMContentLoaded

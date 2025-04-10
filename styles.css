@@ -226,20 +226,35 @@ select {
   border-radius: 5px;
   margin-bottom: 10px;
   background-color: #f8f9fa;
+  gap: 15px; /* Add gap between info and actions */
 }
 
 .file-item:hover {
   background-color: #f0f7ff;
 }
 
+.file-info {
+    flex-grow: 1; /* Allow info section to take available space */
+    min-width: 0; /* Prevent text overflow issues */
+}
+
 .file-name {
-  flex: 1;
   font-weight: 500;
+  overflow: hidden; /* Prevent long names from breaking layout */
+  text-overflow: ellipsis; /* Show '...' for long names */
+  white-space: nowrap; /* Keep name on one line */
+}
+
+.file-meta {
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 4px;
 }
 
 .file-actions {
   display: flex;
   gap: 10px;
+  flex-shrink: 0; /* Prevent action buttons from shrinking */
 }
 
 .download-btn {
@@ -287,4 +302,88 @@ select {
 .conversion-controls select {
   margin-left: 0;
   min-width: 100px;
+}
+
+/* Message Area Styles */
+.messages {
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-size: 14px;
+}
+
+.messages.hidden {
+  display: none;
+}
+
+.message.info {
+  color: #0c5460;
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+}
+
+.message.success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.message.warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border-color: #ffeeba;
+}
+
+.message.error {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+
+/* Adjustments for Config Section */
+.drive-config {
+display: flex;
+flex-wrap: wrap; /* Allow wrapping on smaller screens */
+gap: 10px 15px; /* Row and column gap */
+align-items: center; /* Align items vertically */
+margin-bottom: 10px;
+}
+
+.drive-config label {
+/* flex-basis: 100%; */ /* Make label take full width if needed */
+font-weight: bold;
+margin-right: 5px; /* Space between label and input */
+}
+
+.drive-config input {
+flex-grow: 1; /* Allow input to take available space */
+min-width: 200px; /* Minimum width */
+padding: 10px;
+border: 1px solid #ddd;
+border-radius: 4px;
+font-size: 14px;
+}
+
+.drive-config button {
+ flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+
+/* Video List Item Meta Data */
+.video-item .video-meta {
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Ensure config section elements layout nicely */
+.config-section .folder-info {
+  margin-top: 15px;
+  font-size: 0.9em;
+  color: #555;
+}
+.config-section .folder-info p {
+  margin-bottom: 5px;
 }

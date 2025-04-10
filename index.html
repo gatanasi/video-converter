@@ -9,55 +9,58 @@
 <body>
     <div class="container">
         <h1>Video Converter</h1>
-        
+
         <div class="app-tabs">
             <button id="convertTabBtn" class="tab-btn active">Convert Videos</button>
             <button id="filesTabBtn" class="tab-btn">Previous Conversions</button>
         </div>
-        
+
+        <!-- Convert Tab Content -->
         <div id="convertTab" class="tab-content active">
+            <div id="convertTabMessages" class="messages hidden"></div>
+
             <div class="google-drive-section">
-                <h2>Google Drive Video Converter</h2>
+                <h2>Google Drive Video Source</h2>
                 <div class="config-section">
-                    <div class="api-config">
-                        <label for="apiKeyInput">Google Drive API Key:</label>
-                        <input type="text" id="apiKeyInput" placeholder="Enter your Google Drive API key">
-                        
+                    <div class="drive-config">
                         <label for="folderIdInput">Google Drive Folder ID or URL:</label>
                         <input type="text" id="folderIdInput" placeholder="Enter folder ID or full Google Drive folder URL">
-                        <button id="saveConfigBtn">Save Configuration</button>
+                        <button id="saveConfigBtn">Save Folder ID</button>
                     </div>
                     <div class="folder-info">
-                        <p class="note">* The Google Drive folder must be public (shared with "Anyone with the link")</p>
+                        <p class="note">* Enter the ID of a Google Drive folder shared publicly ("Anyone with the link can view").</p>
+                        <!-- Removed note about API key prompt -->
                     </div>
                 </div>
-                
+
                 <div class="buttons">
-                    <button id="fetchVideosBtn">Fetch Videos</button>
+                    <button id="fetchVideosBtn">Fetch Videos from Folder</button>
                 </div>
             </div>
-            
+
             <div id="videoList" class="hidden">
-                <h3>Available Videos:</h3>
+                <h3>Available Videos (from Folder):</h3>
                 <div id="videoListContainer"></div>
             </div>
-            
+
             <div id="selectedFile" class="hidden">
                 <h3>Selected Video:</h3>
                 <p id="fileName">No file selected</p>
             </div>
-            
+
             <div id="conversionOptions" class="hidden">
+                 <h3>Convert Options:</h3>
                 <div class="conversion-controls">
+                    <label for="formatSelect">Target Format:</label>
                     <select id="formatSelect">
-                        <option value="mov">MOV</option>
-                        <option value="mp4">MP4</option>
-                        <option value="avi">AVI</option>
+                        <option value="mp4">MP4 (H.264/AAC)</option>
+                        <option value="mov">MOV (H.264/AAC)</option>
+                        <option value="avi">AVI (MPEG4/MP3)</option>
                     </select>
-                    <button id="convertBtn">Convert Video</button>
+                    <button id="convertBtn">Start Conversion</button>
                 </div>
             </div>
-            
+
             <div id="conversionProgress" class="hidden">
                 <h2>Converting...</h2>
                 <div class="progress-bar-container">
@@ -65,14 +68,17 @@
                 </div>
                 <p id="progressPercent">0%</p>
             </div>
-            
+
             <div id="downloadSection" class="hidden">
                 <h2>Conversion Complete!</h2>
                 <button id="downloadBtn">Download Converted Video</button>
             </div>
         </div>
-        
+
+        <!-- Files Tab Content -->
         <div id="filesTab" class="tab-content">
+             <div id="filesTabMessages" class="messages hidden"></div>
+
             <div class="previous-files-section">
                 <h2>Previously Converted Videos</h2>
                 <button id="refreshFilesBtn">Refresh List</button>
@@ -82,7 +88,7 @@
             </div>
         </div>
     </div>
-    
+
     <script src="app.js"></script>
 </body>
 </html>
