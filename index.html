@@ -53,10 +53,20 @@
                 <div class="conversion-controls">
                     <label for="formatSelect">Target Format:</label>
                     <select id="formatSelect">
-                        <option value="mp4">MP4 (H.264/AAC)</option>
                         <option value="mov">MOV (H.264/AAC)</option>
+                        <option value="mp4">MP4 (H.264/AAC)</option>
                         <option value="avi">AVI (MPEG4/MP3)</option>
                     </select>
+                    <div class="conversion-options">
+                        <div class="option">
+                            <input type="checkbox" id="reverseVideoCheck">
+                            <label for="reverseVideoCheck">Reverse video</label>
+                        </div>
+                        <div class="option">
+                            <input type="checkbox" id="removeSoundCheck" checked>
+                            <label for="removeSoundCheck">Remove sound</label>
+                        </div>
+                    </div>
                     <button id="convertBtn">Start Conversion</button>
                 </div>
             </div>

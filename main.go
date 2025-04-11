@@ -51,6 +51,8 @@ type DriveConversionRequest struct {
 	FileName     string `json:"fileName"` // Still useful for output naming
 	MimeType     string `json:"mimeType"` // Potentially useful, kept for now
 	TargetFormat string `json:"targetFormat"`
+	ReverseVideo bool   `json:"reverseVideo"`
+	RemoveSound  bool   `json:"removeSound"`
 }
 
 // Progress tracking
@@ -65,13 +67,15 @@ type ConversionStatus struct {
 
 // Conversion Job for worker pool
 type ConversionJob struct {
-	ConversionID   string
-	FileID         string
-	FileName       string // Original filename for naming output
-	TargetFormat   string
+	ConversionID     string
+	FileID           string
+	FileName         string // Original filename for naming output
+	TargetFormat     string
 	UploadedFilePath string // Path where the Drive file will be downloaded
-	OutputFilePath string // Path for the final converted file
-	Status         *ConversionStatus
+	OutputFilePath   string // Path for the final converted file
+	Status           *ConversionStatus
+	ReverseVideo     bool // Add the reverse video option
+	RemoveSound      bool // Add the remove sound option
 }
 
 // Global configuration & state
@@ -309,7 +313,7 @@ func processConversionJob(job ConversionJob) {
 
 	// 2. Convert the video
 	// Pass the job details, including the status object
-	convertVideo(job.Status) // convertVideo now takes *ConversionStatus
+	convertVideo(job) // Pass the whole job to access all options
 
 	// 3. Cleanup (already handled inside convertVideo/reportError)
 	// Original downloaded file is removed after successful conversion or on error by convertVideo/reportError.
@@ -424,7 +428,7 @@ func convertFromDriveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// API Key is no longer expected from the client
 
-	validFormats := map[string]bool{"mp4": true, "mov": true, "avi": true}
+	validFormats := map[string]bool{"mov": true, "mp4": true, "avi": true}
 	if !validFormats[request.TargetFormat] {
 		sendErrorResponse(w, "Invalid target format specified", "", http.StatusBadRequest)
 		return
@@ -466,13 +470,15 @@ func convertFromDriveHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create the job for the worker pool
 	job := ConversionJob{
-		ConversionID:   conversionID,
-		FileID:         request.FileID,
-		FileName:       request.FileName, // Keep original for potential metadata use?
-		TargetFormat:   request.TargetFormat,
+		ConversionID:     conversionID,
+		FileID:           request.FileID,
+		FileName:         request.FileName, // Keep original for potential metadata use?
+		TargetFormat:     request.TargetFormat,
 		UploadedFilePath: uploadedFilePath,
-		OutputFilePath: outputFilePath,
-		Status:         status,
+		OutputFilePath:   outputFilePath,
+		Status:           status,
+		ReverseVideo:     request.ReverseVideo, // Add the reverse video option
+		RemoveSound:      request.RemoveSound,  // Add the remove sound option
 	}
 
 	// Send job to the queue (non-blocking if buffer has space)
@@ -617,10 +623,10 @@ func downloadHandler(w http.ResponseWriter, r *http.Request) {
 	contentType := "application/octet-stream" // Generic fallback
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
-	case ".mp4":
-		contentType = "video/mp4"
 	case ".mov":
 		contentType = "video/quicktime"
+	case ".mp4":
+		contentType = "video/mp4"
 	case ".avi":
 		contentType = "video/x-msvideo"
 	// Add other types if needed
@@ -776,49 +782,72 @@ func deleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // --- Conversion Logic ---
 
-// convertVideo now accepts ConversionStatus to update progress/errors directly
+// convertVideo now accepts ConversionJob to get access to all options
 // It runs within a worker goroutine.
-func convertVideo(status *ConversionStatus) {
+func convertVideo(job ConversionJob) {
+	status := job.Status
 	inputPath := status.InputPath
 	outputPath := status.OutputPath
 	format := status.Format
+	reverseVideo := job.ReverseVideo
+	removeSound := job.RemoveSound
 
 	// Ensure output directory exists (it should, but double-check)
 	ensureDirectoryExists(filepath.Dir(outputPath))
 
+	// Set optimal thread count for the hardware (14 cores available)
+	// Using n-2 threads for FFmpeg is often a good practice to leave some CPU for the system
+	threadCount := 12
+
+	// Standard (non-reverse) conversion process with high quality
 	// Base FFmpeg arguments
 	ffmpegArgs := []string{
 		"-i", inputPath,
+		"-threads", strconv.Itoa(threadCount), // Use most of the available cores
 		"-progress", "pipe:1", // Send progress info to stdout
 		"-nostats",            // Do not print verbose encoding stats per frame to stderr
 		"-v", "warning",       // Reduce log verbosity on stderr (errors still show)
 	}
+	
+	// Add video filters
+	if reverseVideo {
+		ffmpegArgs = append(ffmpegArgs, "-vf", "reverse")
+	}
 
-	// Add format-specific args (consider making these configurable)
+	// Handle audio options
+	if removeSound {
+		ffmpegArgs = append(ffmpegArgs, "-an") // Remove audio
+	} else {
+		if reverseVideo {
+			ffmpegArgs = append(ffmpegArgs, "-af", "areverse") // Reverse audio if video is reversed
+		} else {
+			ffmpegArgs = append(ffmpegArgs, "-c:a", "copy") // Keep original audio
+		}
+	}
+
+	// Add format-specific args with higher quality settings
 	switch format {
 	case "mp4":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx264", "-preset", "medium", "-crf", "23", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart")
+		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx264", "-preset", "slow", "-crf", "18")
+		ffmpegArgs = append(ffmpegArgs, "-movflags", "+faststart")
 	case "mov":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx264", "-preset", "medium", "-crf", "23", "-c:a", "aac", "-b:a", "192k")
+		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx264", "-preset", "slow", "-crf", "18")
 	case "avi":
-		// Note: AVI with modern codecs might have compatibility issues.
-		// Consider alternatives if possible. Using common settings.
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "4", "-c:a", "libmp3lame", "-q:a", "4")
-		// ffmpegArgs = append(ffmpegArgs, "-c:v", "mpeg4", "-q:v", "6", "-c:a", "libmp3lame", "-q:a", "4") // Alternative MPEG4
-	// Add other formats as needed
+		// Note: AVI with modern codecs might have compatibility issues
+		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "3")
 	default:
 		// Should not happen due to validation, but handle defensively
 		reportError(status, fmt.Sprintf("Unsupported target format '%s' passed to converter", format))
 		return
 	}
-
+	
 	ffmpegArgs = append(ffmpegArgs, outputPath)
-
+	
 	ffmpegCmd := fmt.Sprintf("ffmpeg %s", strings.Join(ffmpegArgs, " "))
 	log.Printf("Executing FFmpeg for job %s -> %s: %s\n", filepath.Base(inputPath), filepath.Base(outputPath), ffmpegCmd) // Use base names for cleaner logs
-
+	
 	cmd := exec.Command("ffmpeg", ffmpegArgs...)
-
+	
 	// Get pipes for progress and error reporting
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
@@ -830,13 +859,13 @@ func convertVideo(status *ConversionStatus) {
 		reportError(status, fmt.Sprintf("Failed to create stdout pipe: %v", err))
 		return
 	}
-
+	
 	// Start FFmpeg
 	if err := cmd.Start(); err != nil {
 		reportError(status, fmt.Sprintf("Failed to start FFmpeg: %v", err))
 		return
 	}
-
+	
 	// Read stderr in a separate goroutine to prevent blocking and capture errors
 	var ffmpegErrOutput strings.Builder
 	stderrDone := make(chan struct{})
@@ -850,14 +879,13 @@ func convertVideo(status *ConversionStatus) {
 			ffmpegErrOutput.WriteString(line + "\n") // Capture all stderr
 		}
 	}()
-
-
+	
 	// Process stdout progress in this goroutine
 	processFFmpegProgress(stdoutPipe, status) // This blocks until stdout is closed
-
+	
 	// Wait for stderr processing to finish
 	<-stderrDone
-
+	
 	// Wait for FFmpeg command to complete
 	err = cmd.Wait()
 	if err != nil {
@@ -887,7 +915,6 @@ func convertVideo(status *ConversionStatus) {
 		return
 	}
 
-
 	// Mark as complete ONLY if no error occurred during execution or final checks
 	mutex.Lock()
 	if status.Error == "" { // Double check no error was reported during progress parsing or checks
@@ -896,7 +923,6 @@ func convertVideo(status *ConversionStatus) {
 		log.Printf("Conversion successful: %s -> %s (%d bytes)\n", filepath.Base(inputPath), filepath.Base(outputPath), outputInfo.Size())
 	}
 	mutex.Unlock()
-
 
 	// Clean up the original *downloaded* file (from uploads dir) after successful conversion
 	if status.Complete && status.Error == "" {

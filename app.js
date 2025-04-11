@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileNameElement = document.getElementById('fileName');
     const conversionOptionsDiv = document.getElementById('conversionOptions');
     const formatSelect = document.getElementById('formatSelect');
+    const reverseVideoCheck = document.getElementById('reverseVideoCheck');
+    const removeSoundCheck = document.getElementById('removeSoundCheck');
     const convertBtn = document.getElementById('convertBtn');
     const conversionProgressDiv = document.getElementById('conversionProgress');
     const progressBar = document.getElementById('progressBar');
@@ -408,6 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearMessages('convert');
 
         const targetFormat = formatSelect.value;
+        const reverseVideo = reverseVideoCheck.checked;
+        const removeSound = removeSoundCheck.checked;
 
         // Reset UI for conversion start
         conversionOptionsDiv.classList.add('hidden'); // Hide options during conversion
@@ -416,11 +420,11 @@ document.addEventListener('DOMContentLoaded', () => {
         progressBar.style.width = '0%';
         progressPercent.textContent = '0%';
 
-        requestServerConversion(selectedVideo, targetFormat);
+        requestServerConversion(selectedVideo, targetFormat, reverseVideo, removeSound);
     }
 
 
-    function requestServerConversion(file, targetFormat) {
+    function requestServerConversion(file, targetFormat, reverseVideo, removeSound) {
         // Use API prefix for conversion request
         fetch(`${SERVER_URL}${API_PREFIX}/convert-from-drive`, {
             method: 'POST',
@@ -431,6 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 fileName: file.name, // Send original filename for output naming
                 mimeType: file.mimeType || 'video/unknown',
                 targetFormat: targetFormat,
+                reverseVideo: reverseVideo,
+                removeSound: removeSound
             })
         })
         .then(response => {

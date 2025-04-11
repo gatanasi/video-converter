@@ -1,2 +1,6 @@
 .env.mine
 .vscode
+video-converter-app
+uploads
+converted
+nohup.out
