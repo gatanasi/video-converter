@@ -833,9 +833,9 @@ func convertVideo(job ConversionJob) {
 	// Add format-specific args with higher quality settings
 	switch format {
 	case "mp4":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "24", "-movflags", "+faststart")
+		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "22", "-movflags", "+faststart")
 	case "mov":
-		ffmpegArgs = append(ffmpegArgs, "-tag:v", "hvc1", "-c:v", "libx265", "-preset", "slow", "-crf", "24")
+		ffmpegArgs = append(ffmpegArgs, "-tag:v", "hvc1", "-c:v", "libx265", "-preset", "slow", "-crf", "22")
 	case "avi":
 		// Note: AVI with modern codecs might have compatibility issues
 		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "3")
@@ -921,6 +921,17 @@ func convertVideo(job ConversionJob) {
 		// Keep the empty file? Or remove it? Let's remove it.
 		os.Remove(outputPath)
 		return
+	}
+
+	// Run exiftool to copy metadata from input to output file
+	log.Printf("Copying metadata from %s to %s using exiftool", filepath.Base(inputPath), filepath.Base(outputPath))
+	exifCmd := exec.Command("exiftool", "-tagsFromFile", inputPath, outputPath, "-overwrite_original", "-preserve")
+	exifOut, exifErr := exifCmd.CombinedOutput()
+	if exifErr != nil {
+		log.Printf("Warning: exiftool failed to copy metadata: %v. Output: %s", exifErr, string(exifOut))
+		// Continue processing even if exiftool fails - it's not critical
+	} else {
+		log.Printf("Successfully copied metadata with exiftool: %s", string(exifOut))
 	}
 
 	// Mark as complete ONLY if no error occurred during execution or final checks
