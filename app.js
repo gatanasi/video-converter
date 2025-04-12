@@ -47,12 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let convertedFileUrl = null;
     let currentConversionId = null;
     let statusPollInterval = null;
+    let activeConversionsPollInterval = null; // For polling active conversions
 
     // --- Initialization ---
     loadConfiguration();
     if(filesTab.classList.contains('active')) {
         loadConvertedFiles();
     }
+    // Start checking for active conversions automatically
+    startActiveConversionPolling();
 
     // Event listeners
     convertTabBtn.addEventListener('click', () => switchTab('convert'));
@@ -175,6 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             filesTabBtn.classList.remove('active');
             convertTab.classList.add('active');
             filesTab.classList.remove('active');
+            // Check for active conversions when switching to convert tab
+            loadActiveConversions();
         } else if (tabName === 'files') {
             convertTabBtn.classList.remove('active');
             filesTabBtn.classList.add('active');
@@ -466,6 +471,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentConversionId = data.conversionId;
                 showMessage('convert', `Conversion started (ID: ${currentConversionId}). Polling status...`, 'info');
                 pollConversionStatus(currentConversionId); // Start polling
+                
+                // After starting a new conversion, immediately check for active conversions
+                loadActiveConversions();
             } else {
                 // Handle cases where backend indicates failure but returns 2xx status
                 throw new Error(data.error || 'Conversion request failed. Backend did not provide ID.');
@@ -515,6 +523,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         showMessage('convert', `Conversion error: ${data.error}`, 'error');
                         conversionProgressDiv.classList.add('hidden');
                         if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); } // Show options again
+                        
+                        // Refresh active conversions on error to update the UI
+                        loadActiveConversions();
                     } else if (data.complete) {
                         // Conversion completed successfully
                         stopPollingStatus();
@@ -527,6 +538,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (filesTab.classList.contains('active')) {
                             setTimeout(loadConvertedFiles, 500); // Delay allows filesystem changes to propagate
                         }
+                        
+                        // Refresh active conversions when complete to update the UI
+                        loadActiveConversions();
                     }
                     // If neither error nor complete, polling continues
                  })
@@ -688,6 +702,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error aborting conversion:', error);
                 showMessage('convert', `Error aborting conversion: ${error.message}`, 'error');
             });
+    }
+
+    // --- Active Conversions Management ---
+    
+    function startActiveConversionPolling() {
+        // Initial load
+        loadActiveConversions();
+        
+        // Set up polling for active conversions (every 10 seconds)
+        activeConversionsPollInterval = setInterval(loadActiveConversions, 10000);
+        
+        // Clean up interval when page is unloaded
+        window.addEventListener('beforeunload', stopActiveConversionPolling);
+    }
+    
+    function stopActiveConversionPolling() {
+        if (activeConversionsPollInterval) {
+            clearInterval(activeConversionsPollInterval);
+            activeConversionsPollInterval = null;
+        }
     }
 
 }); // End DOMContentLoaded
