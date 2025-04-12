@@ -25,6 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshFilesBtn = document.getElementById('refreshFilesBtn');
     const previousFilesList = document.getElementById('previousFilesList');
     const filesTabMessages = document.getElementById('filesTabMessages');
+    const abortBtn = document.getElementById('abortBtn');
+    const activeConversionsSection = document.getElementById('activeConversions');
+    const activeConversionsList = document.getElementById('activeConversionsList');
+    const refreshActiveBtn = document.getElementById('refreshActiveBtn');
+    const showActiveConversionsBtn = document.getElementById('showActiveConversionsBtn');
+    const hideActiveConversionsBtn = document.getElementById('hideActiveConversionsBtn');
 
     // Server URL & API Prefix
     const SERVER_URL = window.location.origin; // Assumes backend is on same origin
@@ -56,7 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
     convertBtn.addEventListener('click', handleConvertVideo);
     downloadBtn.addEventListener('click', handleDownload);
     refreshFilesBtn.addEventListener('click', loadConvertedFiles);
-
+    abortBtn.addEventListener('click', handleAbort);
+    refreshActiveBtn.addEventListener('click', loadActiveConversions);
+    showActiveConversionsBtn.addEventListener('click', showActiveConversions);
+    hideActiveConversionsBtn.addEventListener('click', hideActiveConversions);
 
     // --- Helper Functions (showMessage, clearMessages, formatBytes) ---
     function showMessage(tab, message, type = 'info') {
@@ -549,6 +558,136 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use the relative URL stored from the conversion response
         // Download URL does NOT use API prefix
         window.open(`${SERVER_URL}${convertedFileUrl}`, '_blank');
+    }
+
+    function handleAbort() {
+        if (!currentConversionId) {
+            showMessage('convert', 'No conversion in progress to abort.', 'error');
+            return;
+        }
+
+        fetch(`${SERVER_URL}${API_PREFIX}/abort/${currentConversionId}`, { method: 'POST' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to abort conversion (Status: ${response.status})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    stopPollingStatus();
+                    showMessage('convert', 'Conversion aborted successfully.', 'success');
+                    conversionProgressDiv.classList.add('hidden');
+                    conversionOptionsDiv.classList.remove('hidden');
+                } else {
+                    throw new Error(data.error || 'Failed to abort conversion.');
+                }
+            })
+            .catch(error => {
+                console.error('Error aborting conversion:', error);
+                showMessage('convert', `Error aborting conversion: ${error.message}`, 'error');
+            });
+    }
+
+    function loadActiveConversions() {
+        clearMessages('convert');
+        activeConversionsList.innerHTML = '<p>Loading active conversions...</p>';
+        activeConversionsSection.classList.remove('hidden');
+
+        fetch(`${SERVER_URL}${API_PREFIX}/active-conversions`)
+            .then(response => {
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
+                return response.json();
+            })
+            .then(conversions => {
+                if (!Array.isArray(conversions)) throw new Error("Invalid response format.");
+
+                activeConversionsList.innerHTML = ''; // Clear loading message
+
+                if (conversions.length === 0) {
+                    activeConversionsList.innerHTML = '<p>No active conversions found.</p>';
+                    return;
+                }
+
+                conversions.forEach(conversion => {
+                    const conversionItem = document.createElement('div');
+                    conversionItem.className = 'conversion-item';
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'conversion-info';
+
+                    const fileNameDiv = document.createElement('div');
+                    fileNameDiv.className = 'conversion-file-name';
+                    fileNameDiv.textContent = conversion.fileName;
+
+                    const progressDiv = document.createElement('div');
+                    progressDiv.className = 'conversion-progress';
+                    const progress = Math.max(0, Math.min(100, Math.round(conversion.progress || 0)));
+                    progressDiv.textContent = `Progress: ${progress}%`;
+
+                    infoDiv.appendChild(fileNameDiv);
+                    infoDiv.appendChild(progressDiv);
+
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'conversion-actions';
+
+                    const abortButton = document.createElement('button');
+                    abortButton.className = 'abort-btn';
+                    abortButton.textContent = 'Abort';
+                    abortButton.dataset.conversionId = conversion.id;
+                    abortButton.addEventListener('click', (e) => handleAbortConversion(e.target.dataset.conversionId, conversionItem));
+
+                    actionsDiv.appendChild(abortButton);
+
+                    conversionItem.appendChild(infoDiv);
+                    conversionItem.appendChild(actionsDiv);
+
+                    activeConversionsList.appendChild(conversionItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching active conversions:', error);
+                activeConversionsList.innerHTML = ''; // Clear loading message on error
+                showMessage('convert', `Error loading active conversions: ${error.message}`, 'error');
+            });
+    }
+
+    function showActiveConversions() {
+        clearMessages('convert');
+        activeConversionsSection.classList.remove('hidden');
+        loadActiveConversions(); // Load the current active conversions
+    }
+
+    function hideActiveConversions() {
+        activeConversionsSection.classList.add('hidden');
+    }
+
+    function handleAbortConversion(conversionId, conversionItemElement) {
+        if (!confirm(`Are you sure you want to abort conversion ID ${conversionId}?`)) return;
+
+        clearMessages('convert');
+        fetch(`${SERVER_URL}${API_PREFIX}/abort/${conversionId}`, { method: 'POST' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to abort conversion (Status: ${response.status})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    conversionItemElement.remove(); // Remove the item from the list
+                    if (activeConversionsList.childElementCount === 0) {
+                        activeConversionsList.innerHTML = '<p>No active conversions found.</p>';
+                    }
+                    showMessage('convert', `Conversion ID ${conversionId} aborted.`, 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to abort conversion.');
+                }
+            })
+            .catch(error => {
+                console.error('Error aborting conversion:', error);
+                showMessage('convert', `Error aborting conversion: ${error.message}`, 'error');
+            });
     }
 
 }); // End DOMContentLoaded

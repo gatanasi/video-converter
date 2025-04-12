@@ -19,6 +19,15 @@
         <div id="convertTab" class="tab-content active">
             <div id="convertTabMessages" class="messages hidden"></div>
 
+            <button id="showActiveConversionsBtn" class="action-btn">Show Active Conversions</button>
+
+            <div id="activeConversions" class="active-conversions-section hidden">
+                <h2>Active Conversions</h2>
+                <div id="activeConversionsList"></div>
+                <button id="refreshActiveBtn">Refresh</button>
+                <button id="hideActiveConversionsBtn" class="action-btn">Hide Active Conversions</button>
+            </div>
+
             <div class="google-drive-section">
                 <h2>Google Drive Video Source</h2>
                 <div class="config-section">
@@ -77,6 +86,7 @@
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
                 <p id="progressPercent">0%</p>
+                <button id="abortBtn" class="abort-btn">Abort Conversion</button>
             </div>
 
             <div id="downloadSection" class="hidden">

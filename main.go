@@ -87,6 +87,8 @@ var (
 	mutex           sync.Mutex
 	filenameSanitizeRegex = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
 	allowedOriginsMap map[string]bool // For fast CORS lookup
+	activeConversions = make(map[string]*exec.Cmd) // Track running FFmpeg processes
+	activeMutex      sync.Mutex // Separate mutex for activeConversions map
 )
 
 
@@ -188,6 +190,8 @@ func main() {
 	mux.HandleFunc("/api/status/", statusHandler)                 // Prefixed with /api
 	mux.HandleFunc("/api/files", listFilesHandler)                // Prefixed with /api
 	mux.HandleFunc("/api/delete-file/", deleteFileHandler)        // Prefixed with /api
+	mux.HandleFunc("/api/abort/", abortConversionHandler)         // New endpoint for aborting
+	mux.HandleFunc("/api/active-conversions", activeConversionsHandler) // New endpoint for listing active conversions
 
 	// --- Public Download Endpoint (no /api prefix needed) ---
 	mux.HandleFunc("/download/", downloadHandler)
@@ -791,6 +795,7 @@ func convertVideo(job ConversionJob) {
 	format := status.Format
 	reverseVideo := job.ReverseVideo
 	removeSound := job.RemoveSound
+	conversionID := job.ConversionID  // Get the conversion ID
 
 	// Ensure output directory exists (it should, but double-check)
 	ensureDirectoryExists(filepath.Dir(outputPath))
@@ -847,6 +852,10 @@ func convertVideo(job ConversionJob) {
 	log.Printf("Executing FFmpeg for job %s -> %s: %s\n", filepath.Base(inputPath), filepath.Base(outputPath), ffmpegCmd) // Use base names for cleaner logs
 	
 	cmd := exec.Command("ffmpeg", ffmpegArgs...)
+	
+	// Register the command with the conversion ID to allow for aborting
+	registerActiveConversion(conversionID, cmd)
+	defer unregisterActiveConversion(conversionID)
 	
 	// Get pipes for progress and error reporting
 	stderrPipe, err := cmd.StderrPipe()
@@ -927,7 +936,7 @@ func convertVideo(job ConversionJob) {
 	// Clean up the original *downloaded* file (from uploads dir) after successful conversion
 	if status.Complete && status.Error == "" {
 		err := os.Remove(inputPath)
-		if err != nil {
+		if (err != nil) {
 			log.Printf("Warning: Failed to remove original downloaded file %s: %v", inputPath, err)
 		} else {
 			log.Printf("Removed original downloaded file: %s", inputPath)
@@ -936,6 +945,20 @@ func convertVideo(job ConversionJob) {
 	// If there was an error, reportError already attempted cleanup of the input file.
 }
 
+// Helper functions for tracking active conversions
+func registerActiveConversion(conversionID string, cmd *exec.Cmd) {
+	activeMutex.Lock()
+	defer activeMutex.Unlock()
+	activeConversions[conversionID] = cmd
+	log.Printf("Registered active conversion: %s", conversionID)
+}
+
+func unregisterActiveConversion(conversionID string) {
+	activeMutex.Lock()
+	defer activeMutex.Unlock()
+	delete(activeConversions, conversionID)
+	log.Printf("Unregistered conversion: %s", conversionID)
+}
 
 // Refined FFmpeg progress parsing from stdout (pipe:1)
 func processFFmpegProgress(stdout io.ReadCloser, status *ConversionStatus) {
@@ -1278,4 +1301,144 @@ func cleanupOldStatuses() {
 	if cleanedCount > 0 {
 		log.Printf("Cleaned up %d old conversion status entries (out of %d).", cleanedCount, initialCount)
 	}
+}
+
+// abortConversionHandler handles requests to cancel a running conversion
+func abortConversionHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if it's a POST request (we're taking an action to abort)
+	if r.Method != "POST" {
+		sendErrorResponse(w, "Method not allowed", "Please use POST method to abort conversions", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract the conversion ID from the URL path
+	id := strings.TrimPrefix(r.URL.Path, "/api/abort/")
+	if id == "" {
+		sendErrorResponse(w, "Missing conversion ID", "Conversion ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the conversion exists in our tracking map
+	mutex.Lock()
+	status, exists := conversions[id]
+	mutex.Unlock()
+
+	if !exists {
+		sendErrorResponse(w, "Conversion not found", "The specified conversion ID was not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if the conversion is already complete
+	if status.Complete {
+		sendErrorResponse(w, "Conversion already complete", "The conversion is already finished and cannot be aborted", http.StatusConflict)
+		return
+	}
+
+	// Check if the process is still active
+	activeMutex.Lock()
+	cmd, active := activeConversions[id]
+	activeMutex.Unlock()
+
+	if !active {
+		// Process not found in activeConversions but status exists and is not complete
+		// This could be a race condition where the process just completed or an error in our tracking
+		sendErrorResponse(w, "Process not found", "The conversion process was not found. It may have just completed.", http.StatusNotFound)
+		return
+	}
+
+	// Try to kill the process
+	var abortErr error
+	if runtime.GOOS == "windows" {
+		// On Windows, we need to kill the process group to ensure ffmpeg is terminated
+		abortErr = cmd.Process.Kill()
+	} else {
+		// On Unix-like systems, we can send SIGTERM for graceful shutdown
+		abortErr = cmd.Process.Signal(syscall.SIGTERM)
+	}
+
+	if abortErr != nil {
+		log.Printf("Error aborting conversion %s: %v", id, abortErr)
+		sendErrorResponse(w, "Failed to abort", fmt.Sprintf("Error while trying to abort: %v", abortErr), http.StatusInternalServerError)
+		return
+	}
+
+	// Mark the conversion as complete with an error
+	mutex.Lock()
+	if status.Error == "" { // Only set error if not already set
+		status.Error = "Conversion aborted by user"
+	}
+	status.Complete = true
+	mutex.Unlock()
+
+	log.Printf("Conversion %s aborted by user request", id)
+
+	// Return success response
+	response := ConversionResponse{
+		Success:      true,
+		Message:      "Conversion aborted successfully",
+		ConversionID: id,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// activeConversionsHandler handles requests to list active conversions
+func activeConversionsHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if it's a GET request
+	if r.Method != "GET" {
+		sendErrorResponse(w, "Method not allowed", "Please use GET method to list active conversions", http.StatusMethodNotAllowed)
+		return
+	}
+
+	type ActiveConversion struct {
+		ID       string  `json:"id"`
+		FileName string  `json:"fileName"`
+		Format   string  `json:"format"`
+		Progress float64 `json:"progress"`
+	}
+
+	// Create a list of active conversion details
+	activeMutex.Lock()
+	mutex.Lock()
+	
+	activeConversionsList := make([]ActiveConversion, 0)
+	
+	// First, get all active conversion IDs from activeConversions
+	activeIDs := make(map[string]bool)
+	for id := range activeConversions {
+		activeIDs[id] = true
+	}
+	
+	// Then loop through all conversion statuses
+	for id, status := range conversions {
+		// Skip completed conversions
+		if status.Complete {
+			continue
+		}
+		
+		// Check if this conversion has an active FFmpeg process
+		if activeIDs[id] {
+			// Extract filename from the output path
+			fileName := filepath.Base(status.OutputPath)
+			
+			// Create an ActiveConversion object
+			conv := ActiveConversion{
+				ID:       id,
+				FileName: fileName,
+				Format:   status.Format,
+				Progress: status.Progress,
+			}
+			
+			activeConversionsList = append(activeConversionsList, conv)
+		}
+	}
+	
+	mutex.Unlock()
+	activeMutex.Unlock()
+
+	// Return the list of active conversion details
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(activeConversionsList)
 }
