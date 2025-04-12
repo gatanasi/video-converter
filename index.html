@@ -47,12 +47,12 @@
 
             <div id="videoList" class="hidden">
                 <h3>Available Videos (from Folder):</h3>
+                <div class="selection-controls">
+                    <button id="selectAllBtn">Select All</button>
+                    <button id="deselectAllBtn">Deselect All</button>
+                    <span class="selection-counter" id="selectionCounter">0 videos selected</span>
+                </div>
                 <div id="videoListContainer"></div>
-            </div>
-
-            <div id="selectedFile" class="hidden">
-                <h3>Selected Video:</h3>
-                <p id="fileName">No file selected</p>
             </div>
 
             <div id="conversionOptions" class="hidden">
@@ -79,16 +79,15 @@
             </div>
 
             <div id="conversionProgress" class="hidden">
-                <h2>Converting...</h2>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progressBar"></div>
-                </div>
-                <p id="progressPercent">0%</p>
+                <h2>Converting Multiple Videos...</h2>
+                <div id="multiConversionProgress"></div>
+                <button id="hideProgressBtn" class="secondary-btn">Hide Progress</button>
             </div>
 
             <div id="downloadSection" class="hidden">
-                <h2>Conversion Complete!</h2>
-                <button id="downloadBtn">Download Converted Video</button>
+                <h2>Conversions Complete!</h2>
+                <p>Check the "Previous Conversions" tab to download your converted videos.</p>
+                <button id="viewFilesBtn">View Converted Files</button>
             </div>
         </div>
 

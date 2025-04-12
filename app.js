@@ -9,28 +9,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchVideosBtn = document.getElementById('fetchVideosBtn');
     const videoListContainer = document.getElementById('videoListContainer');
     const videoListDiv = document.getElementById('videoList');
-    const selectedFileDiv = document.getElementById('selectedFile');
-    const fileNameElement = document.getElementById('fileName');
     const conversionOptionsDiv = document.getElementById('conversionOptions');
     const formatSelect = document.getElementById('formatSelect');
     const reverseVideoCheck = document.getElementById('reverseVideoCheck');
     const removeSoundCheck = document.getElementById('removeSoundCheck');
     const convertBtn = document.getElementById('convertBtn');
     const conversionProgressDiv = document.getElementById('conversionProgress');
-    const progressBar = document.getElementById('progressBar');
-    const progressPercent = document.getElementById('progressPercent');
+    const multiConversionProgress = document.getElementById('multiConversionProgress');
+    const hideProgressBtn = document.getElementById('hideProgressBtn');
     const downloadSection = document.getElementById('downloadSection');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const viewFilesBtn = document.getElementById('viewFilesBtn');
     const convertTabMessages = document.getElementById('convertTabMessages');
     const refreshFilesBtn = document.getElementById('refreshFilesBtn');
     const previousFilesList = document.getElementById('previousFilesList');
     const filesTabMessages = document.getElementById('filesTabMessages');
-    const abortBtn = document.getElementById('abortBtn');
     const activeConversionsSection = document.getElementById('activeConversions');
     const activeConversionsList = document.getElementById('activeConversionsList');
     const refreshActiveBtn = document.getElementById('refreshActiveBtn');
-    const showActiveConversionsBtn = document.getElementById('showActiveConversionsBtn');
-    const hideActiveConversionsBtn = document.getElementById('hideActiveConversionsBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const selectionCounter = document.getElementById('selectionCounter');
 
     // Server URL & API Prefix
     const SERVER_URL = window.location.origin; // Assumes backend is on same origin
@@ -43,10 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // State variables
-    let selectedVideo = null;
-    let convertedFileUrl = null;
-    let currentConversionId = null;
-    let statusPollInterval = null;
+    let selectedVideos = []; // Array of selected video objects
+    let convertedFileUrls = {}; // Map of conversion IDs to file URLs
+    let activeConversions = {}; // Track active conversion statuses by ID
     let activeConversionsPollInterval = null; // For polling active conversions
 
     // --- Initialization ---
@@ -62,13 +59,15 @@ document.addEventListener('DOMContentLoaded', () => {
     filesTabBtn.addEventListener('click', () => switchTab('files'));
     saveConfigBtn.addEventListener('click', saveConfiguration);
     fetchVideosBtn.addEventListener('click', handleFetchVideos);
-    convertBtn.addEventListener('click', handleConvertVideo);
-    downloadBtn.addEventListener('click', handleDownload);
+    convertBtn.addEventListener('click', handleConvertVideos);
+    viewFilesBtn.addEventListener('click', () => switchTab('files'));
     refreshFilesBtn.addEventListener('click', loadConvertedFiles);
-    abortBtn.addEventListener('click', handleAbort);
     refreshActiveBtn.addEventListener('click', loadActiveConversions);
-    showActiveConversionsBtn.addEventListener('click', showActiveConversions);
-    hideActiveConversionsBtn.addEventListener('click', hideActiveConversions);
+    selectAllBtn.addEventListener('click', selectAllVideos);
+    deselectAllBtn.addEventListener('click', deselectAllVideos);
+    hideProgressBtn.addEventListener('click', () => {
+        conversionProgressDiv.classList.add('hidden');
+    });
 
     // --- Helper Functions (showMessage, clearMessages, formatBytes) ---
     function showMessage(tab, message, type = 'info') {
@@ -213,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Sort files by modification time, newest first
                 files.sort((a, b) => new Date(b.modTime) - new Date(a.modTime));
 
-                // *** CORE FIX IS IN THIS LOOP ***
                 files.forEach(fileInfo => { // Rename variable to 'fileInfo' for clarity
                     const fileItem = document.createElement('div');
                     fileItem.className = 'file-item';
@@ -273,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     previousFilesList.appendChild(fileItem);
                  });
-                 // *** END OF CORE FIX ***
             })
             .catch(error => {
                 console.error('Error fetching converted files:', error);
@@ -334,10 +331,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         videoListContainer.innerHTML = '<p>Loading videos from server...</p>';
         videoListDiv.classList.remove('hidden');
-        selectedFileDiv.classList.add('hidden');
         conversionOptionsDiv.classList.add('hidden');
         conversionProgressDiv.classList.add('hidden');
         downloadSection.classList.add('hidden');
+        
+        // Reset selected videos
+        selectedVideos = [];
+        updateSelectionCounter();
 
         // Fetch list from backend API endpoint
         fetch(`${SERVER_URL}${API_PREFIX}/list-videos?folderId=${encodeURIComponent(appConfig.googleDriveFolderId)}`)
@@ -382,10 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         videoItem.appendChild(metaDiv);
 
                         videoItem.addEventListener('click', () => {
-                            selectPublicVideo(file); // Pass the GoogleDriveFile object
-                            // Highlight selected item
-                            document.querySelectorAll('.video-item.selected').forEach(item => item.classList.remove('selected'));
-                            videoItem.classList.add('selected');
+                            toggleVideoSelection(file, videoItem);
                         });
                         videoListContainer.appendChild(videoItem);
                     });
@@ -402,25 +399,89 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    function selectPublicVideo(file) {
-        selectedVideo = file; // Store the selected GoogleDriveFile object
-        fileNameElement.textContent = file.name;
-        selectedFileDiv.classList.remove('hidden');
-        conversionOptionsDiv.classList.remove('hidden');
-        conversionProgressDiv.classList.add('hidden'); // Hide progress from previous runs
-        downloadSection.classList.add('hidden'); // Hide download from previous runs
-        clearMessages('convert');
-        stopPollingStatus(); // Stop polling if a new video is selected
-        console.log(`Selected video: ${file.name} (ID: ${file.id}, Type: ${file.mimeType})`);
+    // Function to toggle video selection
+    function toggleVideoSelection(file, videoItem) {
+        // Check if the video is already selected
+        const index = selectedVideos.findIndex(v => v.id === file.id);
+        
+        if (index !== -1) {
+            // If already selected, deselect it
+            selectedVideos.splice(index, 1);
+            videoItem.classList.remove('selected');
+        } else {
+            // Otherwise, select it
+            selectedVideos.push(file);
+            videoItem.classList.add('selected');
+        }
+        
+        updateSelectionCounter();
+        
+        // Show/hide conversion options based on selection
+        if (selectedVideos.length > 0) {
+            conversionOptionsDiv.classList.remove('hidden');
+        } else {
+            conversionOptionsDiv.classList.add('hidden');
+        }
     }
 
-    function handleConvertVideo() {
-        if (!selectedVideo) {
-            showMessage('convert', 'Please select a video first.', 'error');
+    // Function to update selection counter
+    function updateSelectionCounter() {
+        const count = selectedVideos.length;
+        selectionCounter.textContent = `${count} ${count === 1 ? 'video' : 'videos'} selected`;
+    }
+
+    // Select all videos
+    function selectAllVideos() {
+        selectedVideos = []; // Clear existing selections
+        
+        // Get all video items and add them to selected videos
+        const videoItems = document.querySelectorAll('.video-item');
+        videoItems.forEach(item => {
+            const fileId = item.dataset.id;
+            const fileName = item.dataset.name;
+            const fileMimeType = item.dataset.mimeType;
+            
+            // Only add if we have all required data
+            if (fileId && fileName) {
+                selectedVideos.push({
+                    id: fileId,
+                    name: fileName,
+                    mimeType: fileMimeType || 'video/unknown'
+                });
+                
+                item.classList.add('selected');
+            }
+        });
+        
+        updateSelectionCounter();
+        
+        if (selectedVideos.length > 0) {
+            conversionOptionsDiv.classList.remove('hidden');
+        }
+    }
+
+    // Deselect all videos
+    function deselectAllVideos() {
+        selectedVideos = []; // Clear selections
+        
+        // Remove selected class from all video items
+        document.querySelectorAll('.video-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        updateSelectionCounter();
+        conversionOptionsDiv.classList.add('hidden');
+    }
+
+    // Function to handle converting multiple videos
+    function handleConvertVideos() {
+        if (selectedVideos.length === 0) {
+            showMessage('convert', 'Please select at least one video first.', 'error');
             return;
         }
 
-        stopPollingStatus(); // Stop any previous polling
+        // Clear active conversions tracking
+        activeConversions = {};
         clearMessages('convert');
 
         const targetFormat = formatSelect.value;
@@ -431,14 +492,65 @@ document.addEventListener('DOMContentLoaded', () => {
         conversionOptionsDiv.classList.add('hidden'); // Hide options during conversion
         downloadSection.classList.add('hidden');
         conversionProgressDiv.classList.remove('hidden');
-        progressBar.style.width = '0%';
-        progressPercent.textContent = '0%';
-
-        requestServerConversion(selectedVideo, targetFormat, reverseVideo, removeSound);
+        multiConversionProgress.innerHTML = ''; // Clear any previous progress items
+        
+        // Start all conversions in parallel
+        selectedVideos.forEach(file => {
+            // Create a progress element for this video
+            const progressItem = createProgressItem(file.name);
+            multiConversionProgress.appendChild(progressItem);
+            
+            // Start the conversion
+            requestServerConversion(
+                file, 
+                targetFormat, 
+                reverseVideo, 
+                removeSound,
+                progressItem
+            );
+        });
     }
 
+    // Helper to create a progress item for a single video
+    function createProgressItem(fileName) {
+        const item = document.createElement('div');
+        item.className = 'multi-progress-item';
+        
+        const info = document.createElement('div');
+        info.className = 'multi-progress-info';
+        
+        const name = document.createElement('div');
+        name.className = 'multi-progress-name';
+        name.textContent = fileName;
+        
+        const percent = document.createElement('div');
+        percent.className = 'multi-progress-percent';
+        percent.textContent = '0%';
+        
+        info.appendChild(name);
+        info.appendChild(percent);
+        
+        const barContainer = document.createElement('div');
+        barContainer.className = 'multi-progress-bar-container';
+        
+        const bar = document.createElement('div');
+        bar.className = 'multi-progress-bar';
+        bar.style.width = '0%';
+        
+        barContainer.appendChild(bar);
+        
+        item.appendChild(info);
+        item.appendChild(barContainer);
+        
+        return item;
+    }
 
-    function requestServerConversion(file, targetFormat, reverseVideo, removeSound) {
+    // Updated function to request server conversion
+    function requestServerConversion(file, targetFormat, reverseVideo, removeSound, progressItem) {
+        // Get elements within the progress item
+        const percentElement = progressItem.querySelector('.multi-progress-percent');
+        const barElement = progressItem.querySelector('.multi-progress-bar');
+        
         // Use API prefix for conversion request
         fetch(`${SERVER_URL}${API_PREFIX}/convert-from-drive`, {
             method: 'POST',
@@ -446,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Send data needed by backend
             body: JSON.stringify({
                 fileId: file.id,
-                fileName: file.name, // Send original filename for output naming
+                fileName: file.name,
                 mimeType: file.mimeType || 'video/unknown',
                 targetFormat: targetFormat,
                 reverseVideo: reverseVideo,
@@ -467,12 +579,21 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.success && data.conversionId) {
                 // Backend provides relative download URL and conversion ID
-                convertedFileUrl = data.downloadUrl; // Store relative URL (e.g., /download/...)
-                currentConversionId = data.conversionId;
-                showMessage('convert', `Conversion started (ID: ${currentConversionId}). Polling status...`, 'info');
-                pollConversionStatus(currentConversionId); // Start polling
+                convertedFileUrls[data.conversionId] = data.downloadUrl;
                 
-                // After starting a new conversion, immediately check for active conversions
+                // Track this conversion
+                activeConversions[data.conversionId] = {
+                    fileName: file.name,
+                    progressItem: progressItem,
+                    complete: false,
+                    error: null,
+                    progress: 0
+                };
+                
+                // Start polling for this conversion's status
+                pollConversionStatus(data.conversionId);
+                
+                // Also update active conversions list
                 loadActiveConversions();
             } else {
                 // Handle cases where backend indicates failure but returns 2xx status
@@ -481,126 +602,124 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error('Conversion request error:', error);
-            showMessage('convert', `Conversion failed: ${error.message}`, 'error');
-            // Reset UI on failure
-            conversionProgressDiv.classList.add('hidden');
-            // Show options again only if a video is still selected
-            if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); }
+            
+            // Show error in the progress item
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'multi-progress-error';
+            errorMsg.textContent = `Error: ${error.message}`;
+            progressItem.appendChild(errorMsg);
+            
+            // Mark as complete with error in tracking
+            checkAllConversionsComplete();
         });
     }
 
+    // New function to poll status for a single conversion
     function pollConversionStatus(conversionId) {
-        stopPollingStatus(); // Clear existing interval just in case
-
-        statusPollInterval = setInterval(() => {
-            // Use API prefix for status check
-            fetch(`${SERVER_URL}${API_PREFIX}/status/${conversionId}`)
-                .then(response => {
-                    if (response.status === 404) { // Handle case where status is gone (e.g., cleaned up)
-                         stopPollingStatus();
-                         throw new Error(`Status not found for ID ${conversionId}. It might be expired or invalid.`);
-                    }
-                    if (!response.ok) {
-                        stopPollingStatus();
-                        // Try parsing error JSON
-                        return response.json().then(errData => {
-                            throw new Error(errData.error || `Status check failed: ${response.status}`);
-                        }).catch(() => { // Fallback
-                             throw new Error(`Status check failed: ${response.status}`);
-                        });
-                    }
-                    return response.json();
-                 })
-                .then(data => {
-                    // Update progress bar
-                    const progress = Math.max(0, Math.min(100, Math.round(data.progress || 0)));
-                    progressBar.style.width = `${progress}%`;
-                    progressPercent.textContent = `${progress}%`;
-
-                    if (data.error) {
-                        // Conversion ended with an error
-                        stopPollingStatus();
-                        showMessage('convert', `Conversion error: ${data.error}`, 'error');
-                        conversionProgressDiv.classList.add('hidden');
-                        if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); } // Show options again
-                        
-                        // Refresh active conversions on error to update the UI
-                        loadActiveConversions();
-                    } else if (data.complete) {
-                        // Conversion completed successfully
-                        stopPollingStatus();
-                        progressBar.style.width = '100%'; // Ensure it shows 100%
-                        progressPercent.textContent = '100%';
-                        showMessage('convert', 'Conversion complete!', 'success');
-                        conversionProgressDiv.classList.add('hidden');
-                        downloadSection.classList.remove('hidden'); // Show download button
-                        // If files tab is active, refresh the list after a short delay
-                        if (filesTab.classList.contains('active')) {
-                            setTimeout(loadConvertedFiles, 500); // Delay allows filesystem changes to propagate
-                        }
-                        
-                        // Refresh active conversions when complete to update the UI
-                        loadActiveConversions();
-                    }
-                    // If neither error nor complete, polling continues
-                 })
-                .catch(error => {
-                    // Error during the fetch/status check itself
-                    console.error('Error checking status:', error);
-                    stopPollingStatus(); // Stop polling on error
-                    showMessage('convert', `Status check error: ${error.message}`, 'error');
-                    // Reset UI
-                    conversionProgressDiv.classList.add('hidden');
-                    if(selectedVideo) { conversionOptionsDiv.classList.remove('hidden'); }
-                });
-        }, 2000); // Poll every 2 seconds
-    }
-
-    function stopPollingStatus() {
-        if (statusPollInterval) {
-            clearInterval(statusPollInterval);
-            statusPollInterval = null;
-            console.log("Stopped status polling.");
-        }
-    }
-
-    function handleDownload() {
-        if (!convertedFileUrl) {
-            showMessage('convert','No converted file URL available.', 'error');
-            return;
-        }
-        // Use the relative URL stored from the conversion response
-        // Download URL does NOT use API prefix
-        window.open(`${SERVER_URL}${convertedFileUrl}`, '_blank');
-    }
-
-    function handleAbort() {
-        if (!currentConversionId) {
-            showMessage('convert', 'No conversion in progress to abort.', 'error');
-            return;
-        }
-
-        fetch(`${SERVER_URL}${API_PREFIX}/abort/${currentConversionId}`, { method: 'POST' })
+        if (!activeConversions[conversionId]) return;
+        
+        const conversionInfo = activeConversions[conversionId];
+        const progressItem = conversionInfo.progressItem;
+        const percentElement = progressItem.querySelector('.multi-progress-percent');
+        const barElement = progressItem.querySelector('.multi-progress-bar');
+        
+        // Check status
+        fetch(`${SERVER_URL}${API_PREFIX}/status/${conversionId}`)
             .then(response => {
+                if (response.status === 404) {
+                    throw new Error(`Status not found for ID ${conversionId}. It might be expired or invalid.`);
+                }
                 if (!response.ok) {
-                    throw new Error(`Failed to abort conversion (Status: ${response.status})`);
+                    return response.json().then(errData => {
+                        throw new Error(errData.error || `Status check failed: ${response.status}`);
+                    }).catch(() => {
+                        throw new Error(`Status check failed: ${response.status}`);
+                    });
                 }
                 return response.json();
             })
             .then(data => {
-                if (data.success) {
-                    stopPollingStatus();
-                    showMessage('convert', 'Conversion aborted successfully.', 'success');
-                    conversionProgressDiv.classList.add('hidden');
-                    conversionOptionsDiv.classList.remove('hidden');
+                // Update progress
+                const progress = Math.max(0, Math.min(100, Math.round(data.progress || 0)));
+                barElement.style.width = `${progress}%`;
+                percentElement.textContent = `${progress}%`;
+                
+                // Update tracking object
+                conversionInfo.progress = progress;
+                
+                if (data.error) {
+                    // Conversion ended with an error
+                    conversionInfo.complete = true;
+                    conversionInfo.error = data.error;
+                    
+                    // Show error in the progress item
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'multi-progress-error';
+                    errorMsg.textContent = `Error: ${data.error}`;
+                    progressItem.appendChild(errorMsg);
+                    
+                    // Check if all conversions are complete
+                    checkAllConversionsComplete();
+                } else if (data.complete) {
+                    // Conversion completed successfully
+                    conversionInfo.complete = true;
+                    barElement.style.width = '100%';
+                    percentElement.textContent = '100%';
+                    
+                    // Check if all conversions are complete
+                    checkAllConversionsComplete();
                 } else {
-                    throw new Error(data.error || 'Failed to abort conversion.');
+                    // Continue polling
+                    setTimeout(() => pollConversionStatus(conversionId), 2000);
                 }
             })
             .catch(error => {
-                console.error('Error aborting conversion:', error);
-                showMessage('convert', `Error aborting conversion: ${error.message}`, 'error');
+                console.error(`Error checking status for conversion ${conversionId}:`, error);
+                
+                // Mark as complete with error
+                conversionInfo.complete = true;
+                conversionInfo.error = error.message;
+                
+                // Show error in the progress item
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'multi-progress-error';
+                errorMsg.textContent = `Error: ${error.message}`;
+                progressItem.appendChild(errorMsg);
+                
+                // Check if all conversions are complete
+                checkAllConversionsComplete();
             });
+    }
+
+    // Helper to check if all conversions are complete
+    function checkAllConversionsComplete() {
+        const conversionIds = Object.keys(activeConversions);
+        if (conversionIds.length === 0) return;
+        
+        const allComplete = conversionIds.every(id => activeConversions[id].complete);
+        if (!allComplete) return;
+        
+        // Count errors
+        const errors = conversionIds.filter(id => activeConversions[id].error).length;
+        const total = conversionIds.length;
+        
+        // All conversions are complete, show appropriate message
+        if (errors === 0) {
+            showMessage('convert', 'All conversions completed successfully!', 'success');
+        } else if (errors === total) {
+            showMessage('convert', 'All conversions failed. Check errors above.', 'error');
+        } else {
+            showMessage('convert', `${total - errors} of ${total} conversions completed successfully. ${errors} failed.`, 'warning');
+        }
+        
+        // Show download section
+        downloadSection.classList.remove('hidden');
+        
+        // Refresh files list after a delay to ensure server has processed everything
+        setTimeout(() => {
+            loadConvertedFiles();
+            loadActiveConversions();
+        }, 1000);
     }
 
     function loadActiveConversions() {
@@ -666,16 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    function showActiveConversions() {
-        clearMessages('convert');
-        activeConversionsSection.classList.remove('hidden');
-        loadActiveConversions(); // Load the current active conversions
-    }
-
-    function hideActiveConversions() {
-        activeConversionsSection.classList.add('hidden');
-    }
-
     function handleAbortConversion(conversionId, conversionItemElement) {
         if (!confirm(`Are you sure you want to abort conversion ID ${conversionId}?`)) return;
 
@@ -694,6 +803,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         activeConversionsList.innerHTML = '<p>No active conversions found.</p>';
                     }
                     showMessage('convert', `Conversion ID ${conversionId} aborted.`, 'success');
+                    
+                    // If this is one of our tracked conversions, update ONLY this specific conversion's status
+                    if (activeConversions[conversionId]) {
+                        const conversionInfo = activeConversions[conversionId];
+                        conversionInfo.complete = true;
+                        conversionInfo.error = 'Aborted by user';
+                        
+                        const progressItem = conversionInfo.progressItem;
+                        if (progressItem) {
+                            const errorMsg = document.createElement('div');
+                            errorMsg.className = 'multi-progress-error';
+                            errorMsg.textContent = 'Aborted by user';
+                            progressItem.appendChild(errorMsg);
+                        }
+                        
+                        // Check if all conversions are now complete, but don't affect other conversions
+                        const allOthersComplete = Object.keys(activeConversions)
+                            .filter(id => id !== conversionId) // Exclude the aborted conversion
+                            .every(id => activeConversions[id].complete);
+                            
+                        // Only call checkAllConversionsComplete if there are no other active conversions
+                        // or if all other conversions are already complete
+                        if (Object.keys(activeConversions).length === 1 || allOthersComplete) {
+                            checkAllConversionsComplete();
+                        }
+                    }
                 } else {
                     throw new Error(data.error || 'Failed to abort conversion.');
                 }
@@ -705,7 +840,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Active Conversions Management ---
-    
     function startActiveConversionPolling() {
         // Initial load
         loadActiveConversions();
