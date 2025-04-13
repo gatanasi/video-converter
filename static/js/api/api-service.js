@@ -10,25 +10,39 @@ class ApiService {
     }
 
     /**
-     * Fetch videos from Google Drive folder
-     * @param {String} folderId - Google Drive folder ID
-     * @returns {Promise<Array>} - Array of video objects
+     * Helper method to handle API requests
+     * @param {String} endpoint - API endpoint
+     * @param {Object} options - Fetch options
+     * @param {String} errorContext - Context for error logging
+     * @returns {Promise<Object>} - Response data
      */
-    async listVideos(folderId) {
+    async apiRequest(endpoint, options = {}, errorContext = 'API call') {
         try {
-            const response = await fetch(`${this.baseUrl}/api/list-videos?folderId=${encodeURIComponent(folderId)}`);
+            const response = await fetch(`${this.baseUrl}${endpoint}`, options);
             
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || `HTTP error ${response.status}`);
             }
             
-            const data = await response.json();
-            return data;
+            return await response.json();
         } catch (error) {
-            console.error('API error in listVideos:', error);
+            console.error(`API error in ${errorContext}:`, error);
             throw error;
         }
+    }
+
+    /**
+     * Fetch videos from Google Drive folder
+     * @param {String} folderId - Google Drive folder ID
+     * @returns {Promise<Array>} - Array of video objects
+     */
+    async listVideos(folderId) {
+        return this.apiRequest(
+            `/api/list-videos?folderId=${encodeURIComponent(folderId)}`,
+            {},
+            'listVideos'
+        );
     }
 
     /**
@@ -37,25 +51,15 @@ class ApiService {
      * @returns {Promise<Object>} - Conversion response
      */
     async convertFromDrive(conversionData) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/convert-from-drive`, {
+        return this.apiRequest(
+            `/api/convert-from-drive`,
+            {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(conversionData),
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API error in convertFromDrive:', error);
-            throw error;
-        }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(conversionData)
+            },
+            'convertFromDrive'
+        );
     }
 
     /**
@@ -64,19 +68,11 @@ class ApiService {
      * @returns {Promise<Object>} - Status object
      */
     async getConversionStatus(conversionId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/status/${encodeURIComponent(conversionId)}`);
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API error in getConversionStatus:', error);
-            throw error;
-        }
+        return this.apiRequest(
+            `/api/status/${encodeURIComponent(conversionId)}`,
+            {},
+            'getConversionStatus'
+        );
     }
 
     /**
@@ -85,16 +81,9 @@ class ApiService {
      */
     async getServerConfig() {
         try {
-            const response = await fetch(`${this.baseUrl}/api/config`);
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
+            return await this.apiRequest('/api/config', {}, 'getServerConfig');
         } catch (error) {
-            console.error('API error in getServerConfig:', error);
+            // Special handling for server config to provide a more user-friendly error
             throw new Error('Failed to load server configuration');
         }
     }
@@ -104,19 +93,7 @@ class ApiService {
      * @returns {Promise<Array>} - Array of file objects
      */
     async listFiles() {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/files`);
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API error in listFiles:', error);
-            throw error;
-        }
+        return this.apiRequest('/api/files', {}, 'listFiles');
     }
 
     /**
@@ -125,21 +102,11 @@ class ApiService {
      * @returns {Promise<Object>} - Delete response
      */
     async deleteFile(fileName) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/delete-file/${encodeURIComponent(fileName)}`, {
-                method: 'DELETE',
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API error in deleteFile:', error);
-            throw error;
-        }
+        return this.apiRequest(
+            `/api/delete-file/${encodeURIComponent(fileName)}`,
+            { method: 'DELETE' },
+            'deleteFile'
+        );
     }
 
     /**
@@ -148,21 +115,11 @@ class ApiService {
      * @returns {Promise<Object>} - Abort response
      */
     async abortConversion(conversionId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/abort/${encodeURIComponent(conversionId)}`, {
-                method: 'POST',
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API error in abortConversion:', error);
-            throw error;
-        }
+        return this.apiRequest(
+            `/api/abort/${encodeURIComponent(conversionId)}`,
+            { method: 'POST' },
+            'abortConversion'
+        );
     }
 
     /**
@@ -170,19 +127,7 @@ class ApiService {
      * @returns {Promise<Array>} - Array of active conversion objects
      */
     async listActiveConversions() {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/active-conversions`);
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('API error in listActiveConversions:', error);
-            throw error;
-        }
+        return this.apiRequest('/api/active-conversions', {}, 'listActiveConversions');
     }
 }
 

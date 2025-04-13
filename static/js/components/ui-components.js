@@ -52,6 +52,21 @@ export class ActiveConversionsComponent {
     }
     
     /**
+     * Show empty state message if no conversions are active
+     */
+    showEmptyStateMessage() {
+        // Only add empty message if it doesn't already exist
+        if (!this.progressContainer.querySelector('#no-conversions-message')) {
+            this.progressContainer.innerHTML = '';
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-message';
+            emptyMessage.id = 'no-conversions-message';
+            emptyMessage.textContent = 'No active conversions.';
+            this.progressContainer.appendChild(emptyMessage);
+        }
+    }
+    
+    /**
      * Load active conversions from the server
      */
     async loadActiveConversions() {
@@ -79,11 +94,7 @@ export class ActiveConversionsComponent {
                 }
             } else {
                 // Add empty state message
-                const emptyMessage = document.createElement('div');
-                emptyMessage.className = 'empty-message';
-                emptyMessage.id = 'no-conversions-message'; // Add ID to easily find it later
-                emptyMessage.textContent = 'No active conversions.';
-                this.progressContainer.appendChild(emptyMessage);
+                this.showEmptyStateMessage();
             }
         } catch (error) {
             console.error('Error loading active conversions:', error);
@@ -139,16 +150,7 @@ export class ActiveConversionsComponent {
         if (this.activeConversions.size === 0) {
             clearInterval(this.progressInterval);
             this.progressInterval = null;
-            
-            // Only add empty message if it doesn't already exist
-            if (!this.progressContainer.querySelector('#no-conversions-message')) {
-                this.progressContainer.innerHTML = '';
-                const emptyMessage = document.createElement('div');
-                emptyMessage.className = 'empty-message';
-                emptyMessage.id = 'no-conversions-message';
-                emptyMessage.textContent = 'No active conversions.';
-                this.progressContainer.appendChild(emptyMessage);
-            }
+            this.showEmptyStateMessage();
             return;
         }
         
@@ -181,14 +183,7 @@ export class ActiveConversionsComponent {
                                 
                                 // Check if we need to show empty state
                                 if (this.activeConversions.size === 0) {
-                                    // Only add empty message if it doesn't already exist
-                                    if (!this.progressContainer.querySelector('#no-conversions-message')) {
-                                        const emptyMessage = document.createElement('div');
-                                        emptyMessage.className = 'empty-message';
-                                        emptyMessage.id = 'no-conversions-message';
-                                        emptyMessage.textContent = 'No active conversions.';
-                                        this.progressContainer.appendChild(emptyMessage);
-                                    }
+                                    this.showEmptyStateMessage();
                                 }
                             }, 10000);
                         } else {
@@ -213,14 +208,7 @@ export class ActiveConversionsComponent {
                                 
                                 // Check if we need to show empty state
                                 if (this.activeConversions.size === 0) {
-                                    // Only add empty message if it doesn't already exist
-                                    if (!this.progressContainer.querySelector('#no-conversions-message')) {
-                                        const emptyMessage = document.createElement('div');
-                                        emptyMessage.className = 'empty-message';
-                                        emptyMessage.id = 'no-conversions-message';
-                                        emptyMessage.textContent = 'No active conversions.';
-                                        this.progressContainer.appendChild(emptyMessage);
-                                    }
+                                    this.showEmptyStateMessage();
                                 }
                             }, 10000);
                         }
@@ -255,10 +243,7 @@ export class ActiveConversionsComponent {
                     conversion.element.remove();
                     
                     if (this.activeConversions.size === 0) {
-                        const emptyMessage = document.createElement('div');
-                        emptyMessage.className = 'empty-message';
-                        emptyMessage.textContent = 'No active conversions.';
-                        this.progressContainer.appendChild(emptyMessage);
+                        this.showEmptyStateMessage();
                     }
                 }, 5000);
             }
@@ -805,16 +790,17 @@ export class ConversionFormComponent {
             );
         }
         
-        // Refresh active conversions view to show the new conversions
-        // Only need to do this once after all conversions are started
-        if (conversionCount > 0) {
-            this.activeConversionsComponent.loadActiveConversions();
-        }
-        
-        // Reset the convert button state to be enabled with original text
-        // convertButton.classList.remove('button-pulse');
-        // convertButton.textContent = originalButtonText;
-        // convertButton.disabled = false;
+        setTimeout(() => {
+            convertButton.classList.remove('button-pulse');
+            convertButton.textContent = originalButtonText;
+            convertButton.disabled = false;
+
+            // Refresh active conversions view to show the new conversions
+            // Only need to do this once after all conversions are started
+            if (conversionCount > 0) {
+                this.activeConversionsComponent.loadActiveConversions();
+            }
+        }, 5000);
         
         // If callback provided, call it
         if (this.onConversionComplete) {
