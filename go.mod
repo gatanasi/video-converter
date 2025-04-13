@@ -1,3 +1,3 @@
-module video-converter
+module github.com/gatanasi/video-converter
 
 go 1.24

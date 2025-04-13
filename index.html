@@ -9,107 +9,61 @@
 </head>
 <body>
     <div class="container">
-        <h1>Video Converter</h1>
+        <header>
+            <h1>Video Converter</h1>
+        </header>
 
-        <div class="app-tabs">
-            <button id="convertTabBtn" class="tab-btn active">Convert Videos</button>
-            <button id="filesTabBtn" class="tab-btn">Previous Conversions</button>
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button data-tab="convert" class="tab-button active">Convert Videos</button>
+            <button data-tab="files" class="tab-button">Previous Conversions</button>
         </div>
 
+        <!-- Active Conversions Section - Visible across all tabs -->
+        <div id="active-conversions" class="active-conversions-section hidden"></div>
+
+        <!-- Messages Area - Shared between tabs -->
+        <div id="message-area" class="messages hidden"></div>
+
         <!-- Convert Tab Content -->
-        <div id="convertTab" class="tab-content active">
-            <div id="convertTabMessages" class="messages hidden"></div>
-
-            <!-- Active Conversions Section - now without show/hide buttons -->
-            <div id="activeConversions" class="active-conversions-section hidden">
-                <h2>Active Conversions</h2>
-                <div id="activeConversionsList"></div>
-                <button id="refreshActiveBtn">Refresh</button>
-            </div>
-
-            <div class="google-drive-section">
+        <div id="convert-panel" class="tab-panel">
+            <div class="folder-input-section">
                 <h2>Google Drive Video Source</h2>
-                <div class="config-section">
-                    <div class="drive-config">
-                        <label for="folderIdInput">Google Drive Folder ID or URL:</label>
-                        <input type="text" id="folderIdInput" placeholder="Enter folder ID or full Google Drive folder URL">
-                        <button id="saveConfigBtn">Save Folder ID</button>
+                <div class="folder-input">
+                    <label for="folder-id">Google Drive Folder ID or URL:</label>
+                    <div class="input-group">
+                        <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
+                        <button id="load-videos-btn" class="btn">Load Videos</button>
                     </div>
-                    <div class="folder-info">
-                        <p class="note">* Enter the ID of a Google Drive folder shared publicly ("Anyone with the link can view").</p>
-                        <!-- Removed note about API key prompt -->
-                    </div>
-                    <div class="reset-config">
-                        <button id="resetConfigBtn">Reset Configuration</button>
-                        <p class="reset-note">Click to clear saved configuration if you're experiencing issues.</p>
-                    </div>
-                </div>
-
-                <div class="buttons">
-                    <button id="fetchVideosBtn">Fetch Videos from Folder</button>
+                    <p class="note">Enter the ID of a Google Drive folder with "Anyone with the link can view" access.</p>
                 </div>
             </div>
 
-            <div id="videoList" class="hidden">
-                <h3>Available Videos (from Folder):</h3>
-                <div class="selection-controls">
-                    <button id="selectAllBtn">Select All</button>
-                    <button id="deselectAllBtn">Deselect All</button>
-                    <span class="selection-counter" id="selectionCounter">0 videos selected</span>
-                </div>
-                <div id="videoListContainer"></div>
+            <div id="video-list" class="video-list-section">
+                <!-- Videos will be displayed here by VideoListComponent -->
             </div>
 
-            <div id="conversionOptions" class="hidden">
-                 <h3>Convert Options:</h3>
-                <div class="conversion-controls">
-                    <label for="formatSelect">Target Format:</label>
-                    <select id="formatSelect">
-                        <option value="mov">MOV (H.264/AAC)</option>
-                        <option value="mp4">MP4 (H.264/AAC)</option>
-                        <option value="avi">AVI (MPEG4/MP3)</option>
-                    </select>
-                    <div class="conversion-options">
-                        <div class="option">
-                            <input type="checkbox" id="reverseVideoCheck">
-                            <label for="reverseVideoCheck">Reverse video</label>
-                        </div>
-                        <div class="option">
-                            <input type="checkbox" id="removeSoundCheck" checked>
-                            <label for="removeSoundCheck">Remove sound</label>
-                        </div>
-                    </div>
-                    <button id="convertBtn">Start Conversion</button>
-                </div>
-            </div>
-
-            <div id="conversionProgress" class="hidden">
-                <h2>Converting Multiple Videos...</h2>
-                <div id="multiConversionProgress"></div>
-                <button id="hideProgressBtn" class="secondary-btn">Hide Progress</button>
-            </div>
-
-            <div id="downloadSection" class="hidden">
-                <h2>Conversions Complete!</h2>
-                <p>Check the "Previous Conversions" tab to download your converted videos.</p>
-                <button id="viewFilesBtn">View Converted Files</button>
+            <div id="conversion-form" class="conversion-form-section">
+                <!-- Conversion form will be displayed here by ConversionFormComponent -->
             </div>
         </div>
 
         <!-- Files Tab Content -->
-        <div id="filesTab" class="tab-content">
-             <div id="filesTabMessages" class="messages hidden"></div>
-
-            <div class="previous-files-section">
-                <h2>Previously Converted Videos</h2>
-                <button id="refreshFilesBtn">Refresh List</button>
-                <div id="previousFilesList">
-                    <p>Loading files...</p>
+        <div id="files-panel" class="tab-panel hidden">
+            <div class="files-section">
+                <h2>Previously Converted Files</h2>
+                <div id="file-list" class="file-list-container">
+                    <!-- Files will be displayed here by FileListComponent -->
                 </div>
             </div>
         </div>
+
+        <footer>
+            <p>&copy; 2025 Video Converter - Open Source Project</p>
+        </footer>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <!-- Import main app using type="module" to enable ES modules -->
+    <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
