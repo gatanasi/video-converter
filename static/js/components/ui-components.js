@@ -139,16 +139,6 @@ export class VideoListComponent {
         
         table.appendChild(tbody);
         this.container.appendChild(table);
-        
-        // Add selected files display area
-        this.selectedFilesArea = document.createElement('div');
-        this.selectedFilesArea.id = 'selectedFiles';
-        this.selectedFilesArea.className = 'hidden';
-        this.selectedFilesArea.innerHTML = `
-            <h3>Selected Videos <span id="selected-count">(0)</span></h3>
-            <div id="selectedFilesList"></div>
-        `;
-        this.container.appendChild(this.selectedFilesArea);
     }
 
     /**
@@ -369,10 +359,6 @@ export class ConversionFormComponent {
         form.className = 'conversion-form';
         form.innerHTML = `
             <div class="form-group">
-                <label for="selected-video">Selected Video:</label>
-                <input type="text" id="selected-video" readonly class="form-control" placeholder="No video selected">
-            </div>
-            <div class="form-group">
                 <label for="target-format">Target Format:</label>
                 <select id="target-format" class="form-control">
                     <option value="mp4">MP4</option>
@@ -417,16 +403,10 @@ export class ConversionFormComponent {
      */
     setVideo(video) {
         this.currentVideo = video;
-        const selectedVideoInput = this.container.querySelector('#selected-video');
         const convertButton = this.container.querySelector('#convert-button');
         
-        if (video) {
-            selectedVideoInput.value = video.name;
-            convertButton.disabled = false;
-        } else {
-            selectedVideoInput.value = 'No video selected';
-            convertButton.disabled = true;
-        }
+        // Simply enable or disable the convert button based on whether a video is selected
+        convertButton.disabled = !video;
     }
 
     /**
