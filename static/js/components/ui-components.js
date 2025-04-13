@@ -134,6 +134,12 @@ export class ActiveConversionsComponent {
             
             // Start or maintain progress tracking
             if (this.activeConversions.size > 0) {
+                // Remove the empty state message if it exists
+                const emptyMessage = this.progressContainer.querySelector('#no-conversions-message');
+                if (emptyMessage) {
+                    emptyMessage.remove();
+                }
+                
                 if (!this.progressInterval) {
                     this.progressInterval = setInterval(() => this.updateAllProgressBars(), 2000);
                 }

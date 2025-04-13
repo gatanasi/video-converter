@@ -556,11 +556,12 @@ select {
 }
 
 .multi-progress-item {
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: #f8f9fa;
+  position: relative;
+  padding: 15px;
+  margin-bottom: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
   border-radius: 5px;
-  border: 1px solid #e0e0e0;
 }
 
 .multi-progress-info {
@@ -568,6 +569,7 @@ select {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  padding-right: 40px; /* Increased padding to prevent text from going under the abort button */
 }
 
 .multi-progress-bar-container {
@@ -590,6 +592,16 @@ select {
   color: #ea4335;
   margin-top: 5px;
   font-size: 13px;
+}
+
+.multi-progress-percent {
+  margin-left: 10px;
+  /* Give some space between label and percentage */
+  min-width: 45px;
+  /* Ensure the percentage has enough width */
+  text-align: right;
+  /* Right align the text */
+  font-weight: bold; /* Make percentage more visible */
 }
 
 .secondary-btn {
@@ -975,19 +987,21 @@ footer {
 .abort-button {
   position: absolute;
   right: 10px;
-  top: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   background-color: #ea4335;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2; /* Ensure button stays above other elements */
 }
 
 .multi-progress-item {
@@ -1004,17 +1018,17 @@ footer {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  padding-right: 30px;
-  /* Add padding to prevent text from going under the abort button */
+  padding-right: 40px; /* Increased padding to prevent text from going under the abort button */
 }
 
 .multi-progress-percent {
   margin-left: 10px;
   /* Give some space between label and percentage */
-  min-width: 40px;
+  min-width: 45px;
   /* Ensure the percentage has enough width */
   text-align: right;
   /* Right align the text */
+  font-weight: bold; /* Make percentage more visible */
 }
 
 .multi-progress-download {
