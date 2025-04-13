@@ -627,8 +627,8 @@ export class ConversionFormComponent {
             <div class="form-group">
                 <label for="target-format">Target Format:</label>
                 <select id="target-format" class="form-control">
-                    <option value="mp4">MP4</option>
                     <option value="mov">MOV</option>
+                    <option value="mp4">MP4</option>
                     <option value="avi">AVI</option>
                 </select>
             </div>
@@ -639,7 +639,7 @@ export class ConversionFormComponent {
                     Reverse Video
                 </label>
                 <label class="checkbox-container">
-                    <input type="checkbox" id="remove-sound">
+                    <input type="checkbox" id="remove-sound" checked>
                     <span class="checkmark"></span>
                     Remove Sound
                 </label>
@@ -812,9 +812,9 @@ export class ConversionFormComponent {
         }
         
         // Reset the convert button state to be enabled with original text
-        convertButton.classList.remove('button-pulse');
-        convertButton.textContent = originalButtonText;
-        convertButton.disabled = false;
+        // convertButton.classList.remove('button-pulse');
+        // convertButton.textContent = originalButtonText;
+        // convertButton.disabled = false;
         
         // If callback provided, call it
         if (this.onConversionComplete) {

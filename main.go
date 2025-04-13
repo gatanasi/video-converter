@@ -841,10 +841,10 @@ func convertVideo(job ConversionJob) {
 
 	// Add format-specific args with higher quality settings
 	switch format {
-	case "mp4":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "22", "-movflags", "+faststart")
 	case "mov":
 		ffmpegArgs = append(ffmpegArgs, "-tag:v", "hvc1", "-c:v", "libx265", "-preset", "slow", "-crf", "22")
+	case "mp4":
+		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "22", "-movflags", "+faststart")
 	case "avi":
 		// Note: AVI with modern codecs might have compatibility issues
 		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "3")

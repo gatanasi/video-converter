@@ -125,10 +125,10 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 
 	// Add format-specific args
 	switch format {
-	case "mp4":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "22", "-movflags", "+faststart")
 	case "mov":
 		ffmpegArgs = append(ffmpegArgs, "-tag:v", "hvc1", "-c:v", "libx265", "-preset", "slow", "-crf", "22")
+	case "mp4":
+		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "22", "-movflags", "+faststart")
 	case "avi":
 		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "3")
 	default:
