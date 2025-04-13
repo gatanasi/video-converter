@@ -843,15 +843,14 @@ export class ConversionFormComponent {
             );
         }
         
-        setTimeout(() => {
-            convertButton.classList.remove('button-pulse');
-            convertButton.textContent = originalButtonText;
-            convertButton.disabled = false;
-        }, 3000);
-        
         // If callback provided, call it
         if (this.onConversionComplete) {
             this.onConversionComplete();
+
+            // Scroll to the top of the page to show the message
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            convertButton.classList.remove('button-pulse');
         }
     }
 }
