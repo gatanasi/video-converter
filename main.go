@@ -188,9 +188,11 @@ func main() {
 	startWorkerPool(config.WorkerCount, conversionQueue)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir("."))) // Serve static files
 
 	// --- API Endpoints ---
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static")))) // Serve static files
+	mux.Handle("/", http.FileServer(http.Dir("."))) // Serve index.html from root
+
 	mux.HandleFunc("/api/list-videos", listDriveVideosHandler) // New endpoint for listing
 	mux.HandleFunc("/api/convert-from-drive", convertFromDriveHandler) // Prefixed with /api
 	mux.HandleFunc("/api/status/", statusHandler)                 // Prefixed with /api
