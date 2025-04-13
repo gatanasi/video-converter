@@ -5,7 +5,7 @@
  */
 import configManager from './config/config-manager.js';
 import apiService from './api/api-service.js';
-import { VideoListComponent, ConversionFormComponent, FileListComponent } from './components/ui-components.js';
+import { VideoListComponent, ConversionFormComponent, FileListComponent, ActiveConversionsComponent } from './components/ui-components.js';
 import { showMessage, clearMessages } from './utils/utils.js';
 
 class App {
@@ -20,6 +20,7 @@ class App {
         this.videoListContainer = document.getElementById('video-list');
         this.conversionFormContainer = document.getElementById('conversion-form');
         this.fileListContainer = document.getElementById('file-list');
+        this.activeConversionsContainer = document.getElementById('active-conversions');
         this.tabButtons = document.querySelectorAll('.tab-button');
         this.tabPanels = document.querySelectorAll('.tab-panel');
         
@@ -40,6 +41,13 @@ class App {
      * Initialize application components
      */
     initComponents() {
+        // Active conversions component - Visible across all tabs
+        this.activeConversionsComponent = new ActiveConversionsComponent({
+            container: this.activeConversionsContainer,
+            messageContainer: this.messageArea,
+            onConversionComplete: () => this.fileListComponent.loadFiles()
+        });
+        
         // Video list component
         this.videoListComponent = new VideoListComponent({
             container: this.videoListContainer,
@@ -54,7 +62,11 @@ class App {
         this.conversionFormComponent = new ConversionFormComponent({
             container: this.conversionFormContainer,
             messageContainer: this.messageArea,
-            onConversionComplete: () => this.fileListComponent.loadFiles()
+            onConversionComplete: () => {
+                this.fileListComponent.loadFiles();
+                this.activeConversionsComponent.loadActiveConversions();
+            },
+            activeConversionsComponent: this.activeConversionsComponent
         });
         
         // File list component

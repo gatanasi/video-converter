@@ -1004,3 +1004,21 @@ footer {
   text-decoration: none;
   font-size: 14px;
 }
+
+/* Button pulse animation for immediate feedback */
+@keyframes button-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+    }
+}
+
+.button-pulse {
+    animation: button-pulse 1.5s infinite;
+    background-color: #3367d6; /* Slightly darker blue while processing */
+}

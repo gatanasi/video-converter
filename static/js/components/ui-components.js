@@ -5,6 +5,271 @@ import { formatBytes, showMessage, clearMessages, createProgressItem } from '../
 import apiService from '../api/api-service.js';
 
 /**
+ * Active Conversions Component - Shows running conversions even after page reload
+ */
+export class ActiveConversionsComponent {
+    /**
+     * Initialize the active conversions component
+     * @param {Object} options - Configuration options
+     * @param {HTMLElement} options.container - Container element for active conversions
+     * @param {HTMLElement} options.messageContainer - Container for status messages
+     * @param {Function} options.onConversionComplete - Callback when a conversion completes
+     */
+    constructor(options) {
+        this.container = options.container;
+        this.messageContainer = options.messageContainer;
+        this.onConversionComplete = options.onConversionComplete;
+        this.activeConversions = new Map(); // Track active conversions by ID
+        this.progressInterval = null;
+        
+        // Create UI elements
+        this.createElements();
+        
+        // Load active conversions on initialization
+        this.loadActiveConversions();
+    }
+    
+    /**
+     * Create the UI elements
+     */
+    createElements() {
+        // Clear container
+        this.container.innerHTML = '';
+        
+        // Create header
+        const header = document.createElement('h2');
+        header.className = 'section-title';
+        header.textContent = 'Running Conversions';
+        this.container.appendChild(header);
+        
+        // Create progress container
+        this.progressContainer = document.createElement('div');
+        this.progressContainer.className = 'multi-progress';
+        this.container.appendChild(this.progressContainer);
+        
+        // Always show the container, even when empty
+        this.container.classList.remove('hidden');
+    }
+    
+    /**
+     * Load active conversions from the server
+     */
+    async loadActiveConversions() {
+        try {
+            // Clear existing tracking and elements before loading new ones
+            this.activeConversions.clear();
+            this.progressContainer.innerHTML = '';
+            
+            const activeConversions = await apiService.listActiveConversions();
+            
+            if (activeConversions && activeConversions.length > 0) {
+                // Add each active conversion to the UI
+                activeConversions.forEach(conversion => {
+                    this.trackConversionProgress(
+                        conversion.id,
+                        conversion.fileName,
+                        conversion.format,
+                        conversion.progress
+                    );
+                });
+                
+                // Start tracking progress
+                if (!this.progressInterval) {
+                    this.progressInterval = setInterval(() => this.updateAllProgressBars(), 2000);
+                }
+            } else {
+                // Add empty state message
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'empty-message';
+                emptyMessage.id = 'no-conversions-message'; // Add ID to easily find it later
+                emptyMessage.textContent = 'No active conversions.';
+                this.progressContainer.appendChild(emptyMessage);
+            }
+        } catch (error) {
+            console.error('Error loading active conversions:', error);
+            showMessage(this.messageContainer, `Error loading active conversions: ${error.message}`, 'error');
+        }
+    }
+    
+    /**
+     * Track conversion progress
+     * @param {String} conversionId - ID of the conversion to track
+     * @param {String} fileName - Name of the file being converted
+     * @param {String} format - Target format
+     * @param {Number} initialProgress - Initial progress percentage
+     */
+    trackConversionProgress(conversionId, fileName, format, initialProgress = 0) {
+        // Create progress item
+        const progressItem = createProgressItem(`${fileName} → ${format.toUpperCase()}`);
+        progressItem.dataset.id = conversionId;
+        
+        // Add abort button
+        const abortButton = document.createElement('button');
+        abortButton.className = 'abort-button';
+        abortButton.innerHTML = '×';
+        abortButton.title = 'Abort conversion';
+        abortButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.abortConversion(conversionId);
+        });
+        progressItem.appendChild(abortButton);
+        
+        // Set initial progress
+        const progressBar = progressItem.querySelector('.multi-progress-bar');
+        const percentText = progressItem.querySelector('.multi-progress-percent');
+        if (progressBar && percentText) {
+            progressBar.style.width = `${initialProgress}%`;
+            percentText.textContent = `${Math.round(initialProgress)}%`;
+        }
+        
+        this.progressContainer.appendChild(progressItem);
+        
+        // Add to active conversions map
+        this.activeConversions.set(conversionId, {
+            fileName,
+            format,
+            element: progressItem
+        });
+    }
+    
+    /**
+     * Update all progress bars for active conversions
+     */
+    async updateAllProgressBars() {
+        if (this.activeConversions.size === 0) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+            
+            // Only add empty message if it doesn't already exist
+            if (!this.progressContainer.querySelector('#no-conversions-message')) {
+                this.progressContainer.innerHTML = '';
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'empty-message';
+                emptyMessage.id = 'no-conversions-message';
+                emptyMessage.textContent = 'No active conversions.';
+                this.progressContainer.appendChild(emptyMessage);
+            }
+            return;
+        }
+        
+        // Check each active conversion
+        for (const [conversionId, conversion] of this.activeConversions.entries()) {
+            try {
+                const status = await apiService.getConversionStatus(conversionId);
+                const progressBar = conversion.element.querySelector('.multi-progress-bar');
+                const percentText = conversion.element.querySelector('.multi-progress-percent');
+                
+                if (progressBar && percentText) {
+                    const percent = Math.round(status.progress);
+                    progressBar.style.width = `${percent}%`;
+                    percentText.textContent = `${percent}%`;
+                    
+                    // If complete, update the UI
+                    if (status.complete) {
+                        if (status.error) {
+                            // Show error
+                            conversion.element.classList.add('error');
+                            const errorMsg = document.createElement('div');
+                            errorMsg.className = 'multi-progress-error';
+                            errorMsg.textContent = status.error;
+                            conversion.element.appendChild(errorMsg);
+                            
+                            // Clean up after delay
+                            setTimeout(() => {
+                                this.activeConversions.delete(conversionId);
+                                conversion.element.remove();
+                                
+                                // Check if we need to show empty state
+                                if (this.activeConversions.size === 0) {
+                                    // Only add empty message if it doesn't already exist
+                                    if (!this.progressContainer.querySelector('#no-conversions-message')) {
+                                        const emptyMessage = document.createElement('div');
+                                        emptyMessage.className = 'empty-message';
+                                        emptyMessage.id = 'no-conversions-message';
+                                        emptyMessage.textContent = 'No active conversions.';
+                                        this.progressContainer.appendChild(emptyMessage);
+                                    }
+                                }
+                            }, 10000);
+                        } else {
+                            // Success - add download link
+                            conversion.element.classList.add('complete');
+                            const downloadLink = document.createElement('a');
+                            downloadLink.className = 'multi-progress-download';
+                            downloadLink.href = status.outputPath;
+                            downloadLink.textContent = 'Download';
+                            downloadLink.target = '_blank';
+                            conversion.element.appendChild(downloadLink);
+                            
+                            // Trigger completion callback
+                            if (this.onConversionComplete) {
+                                this.onConversionComplete();
+                            }
+                            
+                            // Clean up after delay
+                            setTimeout(() => {
+                                this.activeConversions.delete(conversionId);
+                                conversion.element.remove();
+                                
+                                // Check if we need to show empty state
+                                if (this.activeConversions.size === 0) {
+                                    // Only add empty message if it doesn't already exist
+                                    if (!this.progressContainer.querySelector('#no-conversions-message')) {
+                                        const emptyMessage = document.createElement('div');
+                                        emptyMessage.className = 'empty-message';
+                                        emptyMessage.id = 'no-conversions-message';
+                                        emptyMessage.textContent = 'No active conversions.';
+                                        this.progressContainer.appendChild(emptyMessage);
+                                    }
+                                }
+                            }, 10000);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`Error updating progress for ${conversionId}:`, error);
+            }
+        }
+    }
+    
+    /**
+     * Abort an active conversion
+     * @param {String} conversionId - ID of the conversion to abort
+     */
+    async abortConversion(conversionId) {
+        const conversion = this.activeConversions.get(conversionId);
+        if (!conversion) return;
+        
+        try {
+            const response = await apiService.abortConversion(conversionId);
+            if (response.success) {
+                conversion.element.classList.add('aborted');
+                const abortMsg = document.createElement('div');
+                abortMsg.className = 'multi-progress-error';
+                abortMsg.textContent = 'Conversion aborted';
+                conversion.element.appendChild(abortMsg);
+                
+                // Clean up after delay
+                setTimeout(() => {
+                    this.activeConversions.delete(conversionId);
+                    conversion.element.remove();
+                    
+                    if (this.activeConversions.size === 0) {
+                        const emptyMessage = document.createElement('div');
+                        emptyMessage.className = 'empty-message';
+                        emptyMessage.textContent = 'No active conversions.';
+                        this.progressContainer.appendChild(emptyMessage);
+                    }
+                }, 5000);
+            }
+        } catch (error) {
+            console.error('Error aborting conversion:', error);
+            showMessage(this.messageContainer, `Failed to abort conversion: ${error.message}`, 'error');
+        }
+    }
+}
+
+/**
  * Video List Component - Manages the video list display and interaction
  */
 export class VideoListComponent {
@@ -337,16 +602,16 @@ export class ConversionFormComponent {
      * @param {HTMLElement} options.container - Container element for the form
      * @param {HTMLElement} options.messageContainer - Container for status messages
      * @param {Function} options.onConversionComplete - Callback when conversion completes
+     * @param {ActiveConversionsComponent} options.activeConversionsComponent - Reference to active conversions component
      */
     constructor(options) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.onConversionComplete = options.onConversionComplete;
+        this.activeConversionsComponent = options.activeConversionsComponent;
         this.currentVideo = null;
         this.selectedVideos = new Map(); // Track all selected videos
-        this.activeConversions = new Map(); // Track active conversions by ID
-        this.progressInterval = null;
-
+        
         // Create the form element
         this.createForm();
     }
@@ -391,11 +656,6 @@ export class ConversionFormComponent {
         });
 
         this.container.appendChild(form);
-
-        // Set up progress tracking
-        this.progressContainer = document.createElement('div');
-        this.progressContainer.className = 'multi-progress hidden';
-        this.container.appendChild(this.progressContainer);
     }
 
     /**
@@ -471,13 +731,26 @@ export class ConversionFormComponent {
         const reverseVideo = this.container.querySelector('#reverse-video').checked;
         const removeSound = this.container.querySelector('#remove-sound').checked;
         
-        // Show loading message
+        // Get and disable the convert button to prevent multiple submissions
+        const convertButton = this.container.querySelector('#convert-button');
+        const originalButtonText = convertButton.textContent;
+        
+        // Add immediate visual feedback - pulsing effect when button is clicked
+        convertButton.classList.add('button-pulse');
+        convertButton.textContent = 'Processing...';
+        convertButton.disabled = true;
+        
+        // Show loading message immediately
         const videoCount = this.selectedVideos.size;
         showMessage(
             this.messageContainer, 
             `Starting conversion of ${videoCount} video${videoCount !== 1 ? 's' : ''}...`, 
             'info'
         );
+        
+        // Prepare for batch conversion
+        let allStarted = true;
+        let conversionCount = 0;
         
         // Convert each selected video
         for (const video of this.selectedVideos.values()) {
@@ -495,18 +768,16 @@ export class ConversionFormComponent {
                 const response = await apiService.convertFromDrive(conversionData);
                 
                 if (response.success) {
-                    // Track conversion progress
-                    this.trackConversionProgress(
-                        response.conversionId, 
-                        video.name, 
-                        targetFormat
-                    );
+                    // No need to track conversion progress here
+                    // The ActiveConversionsComponent will handle this when loadActiveConversions is called
+                    conversionCount++;
                 } else {
                     showMessage(
                         this.messageContainer, 
                         `Conversion failed for ${video.name}: ${response.error || 'Unknown error'}`, 
                         'error'
                     );
+                    allStarted = false;
                 }
             } catch (error) {
                 showMessage(
@@ -515,158 +786,39 @@ export class ConversionFormComponent {
                     'error'
                 );
                 console.error('Conversion error:', error);
+                allStarted = false;
             }
         }
         
         // Show success message after starting all conversions
-        if (videoCount > 0) {
+        if (allStarted && conversionCount > 0) {
             showMessage(
-                this.messageContainer, 
-                `Started ${videoCount} conversion${videoCount !== 1 ? 's' : ''}. Progress is being tracked below.`, 
+                this.messageContainer,
+                `Successfully started conversion${conversionCount > 1 ? 's' : ''}. See active conversions section for progress.`,
                 'success'
             );
-        }
-    }
-
-    /**
-     * Track conversion progress
-     * @param {String} conversionId - ID of the conversion to track
-     * @param {String} fileName - Name of the file being converted
-     * @param {String} format - Target format
-     */
-    trackConversionProgress(conversionId, fileName, format) {
-        if (!this.progressInterval) {
-            this.progressInterval = setInterval(() => this.updateAllProgressBars(), 2000);
+        } else if (conversionCount > 0) {
+            showMessage(
+                this.messageContainer,
+                `Started ${conversionCount} conversion${conversionCount > 1 ? 's' : ''}, but some failed. See active conversions for progress.`,
+                'warning'
+            );
         }
         
-        // Show progress area if hidden
-        this.progressContainer.classList.remove('hidden');
-        
-        // Create progress item and add to tracking
-        const progressItem = createProgressItem(`${fileName} → ${format.toUpperCase()}`);
-        progressItem.dataset.id = conversionId;
-        
-        // Add abort button
-        const abortButton = document.createElement('button');
-        abortButton.className = 'abort-button';
-        abortButton.innerHTML = '×';
-        abortButton.title = 'Abort conversion';
-        abortButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.abortConversion(conversionId);
-        });
-        progressItem.appendChild(abortButton);
-        
-        this.progressContainer.appendChild(progressItem);
-        
-        // Add to active conversions
-        this.activeConversions.set(conversionId, {
-            fileName,
-            format,
-            element: progressItem
-        });
-    }
-
-    /**
-     * Update all progress bars for active conversions
-     */
-    async updateAllProgressBars() {
-        if (this.activeConversions.size === 0) {
-            clearInterval(this.progressInterval);
-            this.progressInterval = null;
-            this.progressContainer.classList.add('hidden');
-            return;
+        // Refresh active conversions view to show the new conversions
+        // Only need to do this once after all conversions are started
+        if (conversionCount > 0) {
+            this.activeConversionsComponent.loadActiveConversions();
         }
         
-        // Check each active conversion
-        for (const [conversionId, conversion] of this.activeConversions.entries()) {
-            try {
-                const status = await apiService.getConversionStatus(conversionId);
-                const progressBar = conversion.element.querySelector('.multi-progress-bar');
-                const percentText = conversion.element.querySelector('.multi-progress-percent');
-                
-                if (progressBar && percentText) {
-                    const percent = Math.round(status.progress);
-                    progressBar.style.width = `${percent}%`;
-                    percentText.textContent = `${percent}%`;
-                    
-                    // If complete, update the UI
-                    if (status.complete) {
-                        if (status.error) {
-                            // Show error
-                            conversion.element.classList.add('error');
-                            const errorMsg = document.createElement('div');
-                            errorMsg.className = 'multi-progress-error';
-                            errorMsg.textContent = status.error;
-                            conversion.element.appendChild(errorMsg);
-                            
-                            // Clean up after delay
-                            setTimeout(() => {
-                                this.activeConversions.delete(conversionId);
-                                conversion.element.remove();
-                            }, 10000);
-                        } else {
-                            // Success - add download link
-                            conversion.element.classList.add('complete');
-                            const downloadLink = document.createElement('a');
-                            downloadLink.className = 'multi-progress-download';
-                            downloadLink.href = status.outputPath;
-                            downloadLink.textContent = 'Download';
-                            downloadLink.target = '_blank';
-                            conversion.element.appendChild(downloadLink);
-                            
-                            // Add completion message
-                            showMessage(
-                                this.messageContainer, 
-                                `${conversion.fileName} has been converted successfully!`,
-                                'success'
-                            );
-                            
-                            // Trigger completion callback
-                            if (this.onConversionComplete) {
-                                this.onConversionComplete();
-                            }
-                            
-                            // Clean up after delay
-                            setTimeout(() => {
-                                this.activeConversions.delete(conversionId);
-                                conversion.element.remove();
-                            }, 10000);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error(`Error updating progress for ${conversionId}:`, error);
-            }
-        }
-    }
-
-    /**
-     * Abort an active conversion
-     * @param {String} conversionId - ID of the conversion to abort
-     */
-    async abortConversion(conversionId) {
-        const conversion = this.activeConversions.get(conversionId);
-        if (!conversion) return;
+        // Reset the convert button state to be enabled with original text
+        convertButton.classList.remove('button-pulse');
+        convertButton.textContent = originalButtonText;
+        convertButton.disabled = false;
         
-        try {
-            const response = await apiService.abortConversion(conversionId);
-            if (response.success) {
-                conversion.element.classList.add('aborted');
-                const abortMsg = document.createElement('div');
-                abortMsg.className = 'multi-progress-error';
-                abortMsg.textContent = 'Conversion aborted';
-                conversion.element.appendChild(abortMsg);
-                
-                // Clean up after delay
-                setTimeout(() => {
-                    this.activeConversions.delete(conversionId);
-                    conversion.element.remove();
-                }, 5000);
-            }
-        } catch (error) {
-            console.error('Error aborting conversion:', error);
-            showMessage(this.messageContainer, `Failed to abort conversion: ${error.message}`, 'error');
+        // If callback provided, call it
+        if (this.onConversionComplete) {
+            this.onConversionComplete();
         }
     }
 }
