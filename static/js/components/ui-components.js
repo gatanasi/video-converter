@@ -21,12 +21,41 @@ export class ActiveConversionsComponent {
         this.onConversionComplete = options.onConversionComplete;
         this.activeConversions = new Map(); // Track active conversions by ID
         this.progressInterval = null;
+        this.pollingInterval = null; // New interval for polling active conversions
         
         // Create UI elements
         this.createElements();
         
         // Load active conversions on initialization
         this.loadActiveConversions();
+        
+        // Start polling for active conversions every 5 seconds
+        this.startPolling();
+    }
+    
+    /**
+     * Start polling for active conversions
+     */
+    startPolling() {
+        // Clear existing polling interval if any
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+        
+        // Set up a new polling interval that runs every 3 seconds
+        this.pollingInterval = setInterval(() => this.loadActiveConversions(), 5000);
+        console.log('Started polling for active conversions every 5 seconds');
+    }
+    
+    /**
+     * Stop polling for active conversions
+     */
+    stopPolling() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('Stopped polling for active conversions');
+        }
     }
     
     /**
@@ -71,34 +100,53 @@ export class ActiveConversionsComponent {
      */
     async loadActiveConversions() {
         try {
-            // Clear existing tracking and elements before loading new ones
-            this.activeConversions.clear();
-            this.progressContainer.innerHTML = '';
-            
             const activeConversions = await apiService.listActiveConversions();
             
-            if (activeConversions && activeConversions.length > 0) {
-                // Add each active conversion to the UI
-                activeConversions.forEach(conversion => {
+            // New way to track conversions that need to be added or removed
+            const currentIds = new Set([...this.activeConversions.keys()]);
+            const newIds = new Set(activeConversions.map(conv => conv.id));
+            
+            // Handle newly added conversions
+            activeConversions.forEach(conversion => {
+                const conversionId = conversion.id;
+                
+                // Only add new conversions that aren't already tracked
+                if (!this.activeConversions.has(conversionId)) {
                     this.trackConversionProgress(
-                        conversion.id,
+                        conversionId,
                         conversion.fileName,
                         conversion.format,
                         conversion.progress
                     );
-                });
-                
-                // Start tracking progress
+                }
+            });
+            
+            // Find and remove conversions that no longer exist
+            currentIds.forEach(id => {
+                if (!newIds.has(id)) {
+                    const conversion = this.activeConversions.get(id);
+                    if (conversion && conversion.element) {
+                        conversion.element.remove();
+                    }
+                    this.activeConversions.delete(id);
+                }
+            });
+            
+            // Start or maintain progress tracking
+            if (this.activeConversions.size > 0) {
                 if (!this.progressInterval) {
                     this.progressInterval = setInterval(() => this.updateAllProgressBars(), 2000);
                 }
             } else {
-                // Add empty state message
+                // Show empty state message if there are no active conversions
                 this.showEmptyStateMessage();
             }
         } catch (error) {
             console.error('Error loading active conversions:', error);
-            showMessage(this.messageContainer, `Error loading active conversions: ${error.message}`, 'error');
+            // Don't show error message during regular polling to avoid flooding the UI
+            if (!this.pollingInterval) {
+                showMessage(this.messageContainer, `Error loading active conversions: ${error.message}`, 'error');
+            }
         }
     }
     
@@ -148,8 +196,11 @@ export class ActiveConversionsComponent {
      */
     async updateAllProgressBars() {
         if (this.activeConversions.size === 0) {
-            clearInterval(this.progressInterval);
-            this.progressInterval = null;
+            // Only clear the progress update interval, not the polling interval
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+                this.progressInterval = null;
+            }
             this.showEmptyStateMessage();
             return;
         }
@@ -168,8 +219,8 @@ export class ActiveConversionsComponent {
                     
                     // If complete, update the UI
                     if (status.complete) {
-                        if (status.error) {
-                            // Show error
+                        if (status.error && !conversion.aborted) {
+                            // Only show error if this wasn't already handled by the abort function
                             conversion.element.classList.add('error');
                             const errorMsg = document.createElement('div');
                             errorMsg.className = 'multi-progress-error';
@@ -186,7 +237,7 @@ export class ActiveConversionsComponent {
                                     this.showEmptyStateMessage();
                                 }
                             }, 10000);
-                        } else {
+                        } else if (!status.error) {
                             // Success - add download link
                             conversion.element.classList.add('complete');
                             const downloadLink = document.createElement('a');
@@ -231,6 +282,8 @@ export class ActiveConversionsComponent {
         try {
             const response = await apiService.abortConversion(conversionId);
             if (response.success) {
+                // Mark this conversion as already aborted to prevent duplicate messages
+                conversion.aborted = true;
                 conversion.element.classList.add('aborted');
                 const abortMsg = document.createElement('div');
                 abortMsg.className = 'multi-progress-error';
@@ -794,13 +847,7 @@ export class ConversionFormComponent {
             convertButton.classList.remove('button-pulse');
             convertButton.textContent = originalButtonText;
             convertButton.disabled = false;
-
-            // Refresh active conversions view to show the new conversions
-            // Only need to do this once after all conversions are started
-            if (conversionCount > 0) {
-                this.activeConversionsComponent.loadActiveConversions();
-            }
-        }, 5000);
+        }, 3000);
         
         // If callback provided, call it
         if (this.onConversionComplete) {
