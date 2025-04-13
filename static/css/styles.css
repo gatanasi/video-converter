@@ -792,16 +792,20 @@ font-size: 14px;
 /* File List Styles */
 .files-section {
   margin-top: 20px;
+  overflow-x: auto; /* Add horizontal scrolling for small screens */
 }
 
 .file-list-container {
   margin-top: 15px;
+  max-width: 100%; /* Ensure container respects parent width */
+  overflow-x: hidden; /* Hide horizontal overflow */
 }
 
 .file-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
+  table-layout: fixed; /* Fixed table layout for better column control */
 }
 
 .file-table th,
@@ -809,6 +813,9 @@ font-size: 14px;
   text-align: left;
   padding: 12px 15px;
   border-bottom: 1px solid #e0e0e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-table th {
@@ -817,18 +824,47 @@ font-size: 14px;
   font-weight: bold;
 }
 
-.file-actions {
-  text-align: right;
+.file-table .file-name {
+  width: 40%; /* Allocate 40% of table width for filename */
+}
+
+.file-table .file-size {
+  width: 15%; /* Allocate 15% of table width for size */
+}
+
+.file-table .file-date {
+  width: 25%; /* Allocate 25% of table width for date */
+}
+
+.file-table .file-actions {
+  width: 20%; /* Allocate 20% of table width for actions */
+  text-align: center;
   white-space: nowrap;
 }
 
-.empty-message {
-  padding: 20px;
-  text-align: center;
-  color: #5f6368;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  margin-top: 20px;
+/* Make download button more clear */
+.file-table a.btn {
+  padding: 6px 12px;
+  background-color: #34a853;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 5px;
+  min-width: 32px;
+}
+
+.file-table a.btn::after {
+  content: "Download";
+  margin-left: 4px;
+}
+
+.file-table button.delete {
+  background-color: #ea4335;
+  min-width: 32px;
 }
 
 /* Footer */
@@ -942,6 +978,20 @@ footer {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 5px;
+}
+
+.multi-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-right: 30px; /* Add padding to prevent text from going under the abort button */
+}
+
+.multi-progress-percent {
+  margin-left: 10px; /* Give some space between label and percentage */
+  min-width: 40px; /* Ensure the percentage has enough width */
+  text-align: right; /* Right align the text */
 }
 
 .multi-progress-download {
