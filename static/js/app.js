@@ -43,7 +43,11 @@ class App {
         // Video list component
         this.videoListComponent = new VideoListComponent({
             container: this.videoListContainer,
-            onSelectVideo: (video) => this.conversionFormComponent.setVideo(video)
+            onSelectVideo: (video) => {
+                // Get all selected videos and pass to conversion component
+                const allSelectedVideos = this.videoListComponent.getSelectedVideos();
+                this.conversionFormComponent.updateSelectedVideos(allSelectedVideos);
+            }
         });
         
         // Conversion form component

@@ -152,9 +152,9 @@ export class VideoListComponent {
         this.updateSelectionCounters();
         this.updateSelectedFilesList();
         
-        // Call the onSelectVideo callback with the first selected video
-        if (this.onSelectVideo && this.selectedVideos.size === 1) {
-            this.onSelectVideo(video);
+        // Call the onSelectVideo callback with all selected videos
+        if (this.onSelectVideo) {
+            this.onSelectVideo(video); // This will trigger the callback in App.js that calls updateSelectedVideos
         }
     }
 
@@ -173,7 +173,7 @@ export class VideoListComponent {
         if (this.onSelectVideo) {
             const nextVideo = this.selectedVideos.size > 0 ? 
                 [...this.selectedVideos.values()][0] : null;
-            this.onSelectVideo(nextVideo);
+            this.onSelectVideo(nextVideo); // This will trigger the callback in App.js that calls updateSelectedVideos
         }
     }
 
@@ -203,9 +203,9 @@ export class VideoListComponent {
         this.updateSelectionCounters();
         this.updateSelectedFilesList();
         
-        // Call the onSelectVideo callback with the first selected video
+        // Call the onSelectVideo callback with all selected videos
         if (this.onSelectVideo && this.selectedVideos.size > 0) {
-            this.onSelectVideo([...this.selectedVideos.values()][0]);
+            this.onSelectVideo([...this.selectedVideos.values()][0]); // This will trigger the callback in App.js
         }
     }
 
@@ -343,6 +343,7 @@ export class ConversionFormComponent {
         this.messageContainer = options.messageContainer;
         this.onConversionComplete = options.onConversionComplete;
         this.currentVideo = null;
+        this.selectedVideos = new Map(); // Track all selected videos
         this.activeConversions = new Map(); // Track active conversions by ID
         this.progressInterval = null;
 
@@ -403,18 +404,66 @@ export class ConversionFormComponent {
      */
     setVideo(video) {
         this.currentVideo = video;
+        
+        // Clear previous selected videos when selecting a new primary video
+        if (video === null) {
+            this.selectedVideos.clear();
+        } else {
+            // Add to selected videos map
+            this.selectedVideos.set(video.id, video);
+        }
+        
         const convertButton = this.container.querySelector('#convert-button');
         
-        // Simply enable or disable the convert button based on whether a video is selected
+        // Update button text based on number of selected videos
+        if (this.selectedVideos.size > 1) {
+            convertButton.textContent = `Convert ${this.selectedVideos.size} Videos`;
+        } else {
+            convertButton.textContent = 'Convert Video';
+        }
+        
+        // Enable or disable the convert button based on whether a video is selected
         convertButton.disabled = !video;
+    }
+    
+    /**
+     * Update the selected videos from VideoListComponent
+     * @param {Array} videos - Array of selected video objects
+     */
+    updateSelectedVideos(videos) {
+        this.selectedVideos.clear();
+        
+        if (videos && videos.length > 0) {
+            // Add all videos to the map
+            videos.forEach(video => {
+                this.selectedVideos.set(video.id, video);
+            });
+            
+            // Update the primary video (used for form validation)
+            this.currentVideo = videos[0];
+        } else {
+            this.currentVideo = null;
+        }
+        
+        const convertButton = this.container.querySelector('#convert-button');
+        
+        // Update button text based on number of selected videos
+        if (this.selectedVideos.size > 1) {
+            convertButton.textContent = `Convert ${this.selectedVideos.size} Videos`;
+        } else {
+            convertButton.textContent = 'Convert Video';
+        }
+        
+        // Enable or disable the convert button
+        convertButton.disabled = this.selectedVideos.size === 0;
     }
 
     /**
      * Submit the conversion request
      */
     async submitConversion() {
-        if (!this.currentVideo) {
-            showMessage(this.messageContainer, 'Please select a video first.', 'error');
+        if (this.selectedVideos.size === 0) {
+            showMessage(this.messageContainer, 'Please select at least one video first.', 'error');
             return;
         }
         
@@ -422,45 +471,60 @@ export class ConversionFormComponent {
         const reverseVideo = this.container.querySelector('#reverse-video').checked;
         const removeSound = this.container.querySelector('#remove-sound').checked;
         
-        const conversionData = {
-            fileId: this.currentVideo.id,
-            fileName: this.currentVideo.name,
-            mimeType: this.currentVideo.mimeType,
-            targetFormat: targetFormat,
-            reverseVideo: reverseVideo,
-            removeSound: removeSound
-        };
-        
         // Show loading message
-        showMessage(this.messageContainer, 'Starting conversion...', 'info');
+        const videoCount = this.selectedVideos.size;
+        showMessage(
+            this.messageContainer, 
+            `Starting conversion of ${videoCount} video${videoCount !== 1 ? 's' : ''}...`, 
+            'info'
+        );
         
-        try {
-            // Send conversion request
-            const response = await apiService.convertFromDrive(conversionData);
+        // Convert each selected video
+        for (const video of this.selectedVideos.values()) {
+            const conversionData = {
+                fileId: video.id,
+                fileName: video.name,
+                mimeType: video.mimeType,
+                targetFormat: targetFormat,
+                reverseVideo: reverseVideo,
+                removeSound: removeSound
+            };
             
-            if (response.success) {
-                showMessage(
-                    this.messageContainer, 
-                    'Conversion started successfully! Tracking progress...', 
-                    'success'
-                );
+            try {
+                // Send conversion request
+                const response = await apiService.convertFromDrive(conversionData);
                 
-                // Track conversion progress
-                this.trackConversionProgress(
-                    response.conversionId, 
-                    this.currentVideo.name, 
-                    targetFormat
-                );
-            } else {
+                if (response.success) {
+                    // Track conversion progress
+                    this.trackConversionProgress(
+                        response.conversionId, 
+                        video.name, 
+                        targetFormat
+                    );
+                } else {
+                    showMessage(
+                        this.messageContainer, 
+                        `Conversion failed for ${video.name}: ${response.error || 'Unknown error'}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
                 showMessage(
                     this.messageContainer, 
-                    `Conversion failed: ${response.error || 'Unknown error'}`, 
+                    `Error converting ${video.name}: ${error.message}`, 
                     'error'
                 );
+                console.error('Conversion error:', error);
             }
-        } catch (error) {
-            showMessage(this.messageContainer, `Error: ${error.message}`, 'error');
-            console.error('Conversion error:', error);
+        }
+        
+        // Show success message after starting all conversions
+        if (videoCount > 0) {
+            showMessage(
+                this.messageContainer, 
+                `Started ${videoCount} conversion${videoCount !== 1 ? 's' : ''}. Progress is being tracked below.`, 
+                'success'
+            );
         }
     }
 
