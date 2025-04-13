@@ -33,6 +33,7 @@ type Config struct {
 	GoogleDriveAPIKey string // Loaded from env
 	WorkerCount       int
 	AllowedOrigins    []string // Changed to slice for multiple origins
+	DefaultDriveFolderId string // Default Google Drive folder ID
 }
 
 // Response structs
@@ -132,6 +133,11 @@ func loadConfig() {
 		config.WorkerCount = runtime.NumCPU()
 	}
 
+	// --- Default Drive Folder ID ---
+	config.DefaultDriveFolderId = getEnv("DEFAULT_DRIVE_FOLDER_ID", "")
+	if config.DefaultDriveFolderId != "" {
+		log.Printf("Default Google Drive Folder ID configured: %s", config.DefaultDriveFolderId)
+	}
 
 	// --- API Key Loading ---
 	config.GoogleDriveAPIKey = os.Getenv("GOOGLE_DRIVE_API_KEY")
@@ -192,6 +198,7 @@ func main() {
 	mux.HandleFunc("/api/delete-file/", deleteFileHandler)        // Prefixed with /api
 	mux.HandleFunc("/api/abort/", abortConversionHandler)         // New endpoint for aborting
 	mux.HandleFunc("/api/active-conversions", activeConversionsHandler) // New endpoint for listing active conversions
+	mux.HandleFunc("/api/config", configHandler)                   // New endpoint for fetching config values
 
 	// --- Public Download Endpoint (no /api prefix needed) ---
 	mux.HandleFunc("/download/", downloadHandler)
@@ -1451,4 +1458,25 @@ func activeConversionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(activeConversionsList)
+}
+
+// configHandler handles requests to get the default folder ID
+func configHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if it's a GET request
+	if r.Method != "GET" {
+		sendErrorResponse(w, "Method not allowed", "Please use GET method to fetch config values", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Create a response object with the default folder ID
+	response := struct {
+		DefaultDriveFolderId string `json:"defaultDriveFolderId"`
+	}{
+		DefaultDriveFolderId: config.DefaultDriveFolderId,
+	}
+
+	// Return the config values
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

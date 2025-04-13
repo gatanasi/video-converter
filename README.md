@@ -46,6 +46,7 @@ This application is configured primarily via environment variables for security 
 -   `MAX_FILE_SIZE_MB`: Maximum allowed size (in Megabytes) for a video file downloaded from Google Drive. (Default: `2000`)
 -   `UPLOADS_DIR`: Directory path for temporary storage of downloaded videos before conversion. (Default: `uploads`)
 -   `CONVERTED_DIR`: Directory path for storing successfully converted videos. (Default: `converted`)
+-   `DEFAULT_DRIVE_FOLDER_ID`: Pre-configures a default Google Drive folder ID for the application. When set, this folder ID will be automatically used as the default when the application loads, saving users from having to manually enter it. Users can still override this by entering a different folder ID in the UI. This is useful for deployments where most users will be accessing the same folder.
 
 **Setting Environment Variables with .env file and systemd:**
 
@@ -54,6 +55,7 @@ Create a `.env` file in your application directory:
 ```
 GOOGLE_DRIVE_API_KEY=YOUR_SECRET_API_KEY_HERE
 ALLOWED_ORIGINS=https://video-converter.example.com,https://video.home.example.com
+DEFAULT_DRIVE_FOLDER_ID=111CeeefGHHHk3LMnoPQQQ44UvwXYZZZZ
 # Add other variables as needed
 ```
 

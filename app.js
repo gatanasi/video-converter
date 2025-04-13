@@ -47,10 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeConversionsPollInterval = null; // For polling active conversions
 
     // --- Initialization ---
-    loadConfiguration();
-    if(filesTab.classList.contains('active')) {
-        loadConvertedFiles();
-    }
+    fetchServerConfig().then(() => {
+        loadConfiguration();
+        if(filesTab.classList.contains('active')) {
+            loadConvertedFiles();
+        }
+    });
+    
     // Start checking for active conversions automatically
     startActiveConversionPolling();
 
@@ -68,6 +71,39 @@ document.addEventListener('DOMContentLoaded', () => {
     hideProgressBtn.addEventListener('click', () => {
         conversionProgressDiv.classList.add('hidden');
     });
+
+    // Function to fetch server configuration (default folder ID, etc.)
+    async function fetchServerConfig() {
+        try {
+            const response = await fetch(`${SERVER_URL}${API_PREFIX}/config`);
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+            const config = await response.json();
+            
+            // If we have a default folder ID from the server and no local config,
+            // save it to the local config for future use
+            if (config.defaultDriveFolderId) {
+                console.log('Default Google Drive Folder ID received from server:', config.defaultDriveFolderId);
+                
+                // Check if we already have a saved config
+                const savedConfig = localStorage.getItem(CONFIG_KEY);
+                if (!savedConfig || JSON.parse(savedConfig).googleDriveFolderId === '') {
+                    // No saved config or empty folder ID, use the default from server
+                    appConfig.googleDriveFolderId = config.defaultDriveFolderId;
+                    folderIdInput.value = config.defaultDriveFolderId;
+                    // Save to local storage
+                    localStorage.setItem(CONFIG_KEY, JSON.stringify({ 
+                        googleDriveFolderId: config.defaultDriveFolderId 
+                    }));
+                    showMessage('convert', 'Default folder ID from server loaded. You may fetch videos.', 'info');
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching server configuration:', error);
+            // No need to show message, as we'll continue with local config
+        }
+    }
 
     // --- Helper Functions (showMessage, clearMessages, formatBytes) ---
     function showMessage(tab, message, type = 'info') {
