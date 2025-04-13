@@ -32,13 +32,13 @@ h2 {
 }
 
 /* Tab Navigation */
-.app-tabs {
+.tabs {
   display: flex;
   margin-bottom: 25px;
   border-bottom: 2px solid #e0e0e0;
 }
 
-.tab-btn {
+.tab-button {
   padding: 12px 24px;
   background-color: transparent;
   color: #5f6368;
@@ -50,22 +50,22 @@ h2 {
   transition: all 0.2s;
 }
 
-.tab-btn:hover {
+.tab-button:hover {
   color: #4285f4;
 }
 
-.tab-btn.active {
+.tab-button.active {
   color: #4285f4;
   border-bottom: 2px solid #4285f4;
   font-weight: bold;
 }
 
-.tab-content {
-  display: none;
+.tab-panel {
+  display: block;
 }
 
-.tab-content.active {
-  display: block;
+.tab-panel.hidden {
+  display: none;
 }
 
 .google-drive-section, .format-selection, .previous-files-section {
@@ -616,4 +616,227 @@ font-size: 14px;
   color: #666;
   margin-top: 5px;
   font-style: italic;
+}
+
+/* Folder Input Section */
+.folder-input-section {
+  margin-bottom: 25px;
+}
+
+.folder-input {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+  border-left: 4px solid #4285f4;
+}
+
+.folder-input label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.note {
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* Video List Section */
+.video-list-section {
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+
+.video-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.video-table th,
+.video-table td {
+  text-align: left;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.video-table th {
+  background-color: #f8f9fa;
+  color: #5f6368;
+  font-weight: bold;
+}
+
+.video-table tr {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.video-table tr:hover {
+  background-color: #f0f7ff;
+}
+
+.video-table tr.selected {
+  background-color: #e8f0fe;
+}
+
+.video-name {
+  width: 50%;
+}
+
+.video-size {
+  width: 25%;
+}
+
+.video-type {
+  width: 25%;
+}
+
+/* Conversion Form Section */
+.conversion-form-section {
+  margin-top: 25px;
+}
+
+.conversion-form {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+  border-left: 4px solid #34a853;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-options {
+  margin: 15px 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  margin-right: 8px;
+}
+
+.form-actions {
+  margin-top: 20px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn.primary {
+  background-color: #4285f4;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #3367d6;
+}
+
+.btn.small {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.multi-progress {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+}
+
+.multi-progress.hidden {
+  display: none;
+}
+
+/* File List Styles */
+.files-section {
+  margin-top: 20px;
+}
+
+.file-list-container {
+  margin-top: 15px;
+}
+
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.file-table th,
+.file-table td {
+  text-align: left;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.file-table th {
+  background-color: #f8f9fa;
+  color: #5f6368;
+  font-weight: bold;
+}
+
+.file-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.empty-message {
+  padding: 20px;
+  text-align: center;
+  color: #5f6368;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  margin-top: 20px;
+}
+
+/* Footer */
+footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
+  font-size: 14px;
+  color: #5f6368;
 }
