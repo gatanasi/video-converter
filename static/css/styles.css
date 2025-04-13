@@ -68,7 +68,9 @@ h2 {
   display: none;
 }
 
-.google-drive-section, .format-selection, .previous-files-section {
+.google-drive-section,
+.format-selection,
+.previous-files-section {
   margin-bottom: 25px;
 }
 
@@ -226,7 +228,8 @@ select {
   border-radius: 5px;
   margin-bottom: 10px;
   background-color: #f8f9fa;
-  gap: 15px; /* Add gap between info and actions */
+  gap: 15px;
+  /* Add gap between info and actions */
 }
 
 .file-item:hover {
@@ -234,27 +237,26 @@ select {
 }
 
 .file-info {
-    flex-grow: 1; /* Allow info section to take available space */
-    min-width: 0; /* Prevent text overflow issues */
+  flex-grow: 1;
+  /* Allow info section to take available space */
+  min-width: 0;
+  /* Prevent text overflow issues */
 }
 
 .file-name {
   font-weight: 500;
-  overflow: hidden; /* Prevent long names from breaking layout */
-  text-overflow: ellipsis; /* Show '...' for long names */
-  white-space: nowrap; /* Keep name on one line */
+  overflow: hidden;
+  /* Prevent long names from breaking layout */
+  text-overflow: ellipsis;
+  /* Show '...' for long names */
+  white-space: nowrap;
+  /* Keep name on one line */
 }
 
 .file-meta {
   font-size: 0.85em;
   color: #666;
   margin-top: 4px;
-}
-
-.file-actions {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0; /* Prevent action buttons from shrinking */
 }
 
 .download-btn {
@@ -277,7 +279,8 @@ select {
   background-color: #d93025;
 }
 
-#conversionOptions, #downloadSection {
+#conversionOptions,
+#downloadSection {
   margin-top: 25px;
   padding-top: 15px;
   border-top: 1px solid #eee;
@@ -345,30 +348,38 @@ select {
 
 /* Adjustments for Config Section */
 .drive-config {
-display: flex;
-flex-wrap: wrap; /* Allow wrapping on smaller screens */
-gap: 10px 15px; /* Row and column gap */
-align-items: center; /* Align items vertically */
-margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  /* Allow wrapping on smaller screens */
+  gap: 10px 15px;
+  /* Row and column gap */
+  align-items: center;
+  /* Align items vertically */
+  margin-bottom: 10px;
 }
 
 .drive-config label {
-/* flex-basis: 100%; */ /* Make label take full width if needed */
-font-weight: bold;
-margin-right: 5px; /* Space between label and input */
+  /* flex-basis: 100%; */
+  /* Make label take full width if needed */
+  font-weight: bold;
+  margin-right: 5px;
+  /* Space between label and input */
 }
 
 .drive-config input {
-flex-grow: 1; /* Allow input to take available space */
-min-width: 200px; /* Minimum width */
-padding: 10px;
-border: 1px solid #ddd;
-border-radius: 4px;
-font-size: 14px;
+  flex-grow: 1;
+  /* Allow input to take available space */
+  min-width: 200px;
+  /* Minimum width */
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .drive-config button {
- flex-shrink: 0; /* Prevent button from shrinking */
+  flex-shrink: 0;
+  /* Prevent button from shrinking */
 }
 
 
@@ -385,6 +396,7 @@ font-size: 14px;
   font-size: 0.9em;
   color: #555;
 }
+
 .config-section .folder-info p {
   margin-bottom: 5px;
 }
@@ -792,20 +804,24 @@ font-size: 14px;
 /* File List Styles */
 .files-section {
   margin-top: 20px;
-  overflow-x: auto; /* Add horizontal scrolling for small screens */
+  overflow-x: auto;
+  /* Add horizontal scrolling for small screens */
 }
 
 .file-list-container {
   margin-top: 15px;
-  max-width: 100%; /* Ensure container respects parent width */
-  overflow-x: hidden; /* Hide horizontal overflow */
+  max-width: 100%;
+  /* Ensure container respects parent width */
+  overflow-x: hidden;
+  /* Hide horizontal overflow */
 }
 
 .file-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
-  table-layout: fixed; /* Fixed table layout for better column control */
+  table-layout: fixed;
+  /* Fixed table layout for better column control */
 }
 
 .file-table th,
@@ -825,19 +841,23 @@ font-size: 14px;
 }
 
 .file-table .file-name {
-  width: 40%; /* Allocate 40% of table width for filename */
+  width: 40%;
+  /* Allocate 40% of table width for filename */
 }
 
 .file-table .file-size {
-  width: 15%; /* Allocate 15% of table width for size */
+  width: 15%;
+  /* Allocate 15% of table width for size */
 }
 
 .file-table .file-date {
-  width: 25%; /* Allocate 25% of table width for date */
+  width: 25%;
+  /* Allocate 25% of table width for date */
 }
 
 .file-table .file-actions {
-  width: 20%; /* Allocate 20% of table width for actions */
+  width: 20%;
+  /* Allocate 20% of table width for actions */
   text-align: center;
   white-space: nowrap;
 }
@@ -858,7 +878,6 @@ font-size: 14px;
 }
 
 .file-table a.btn::after {
-  content: "Download";
   margin-left: 4px;
 }
 
@@ -985,13 +1004,17 @@ footer {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  padding-right: 30px; /* Add padding to prevent text from going under the abort button */
+  padding-right: 30px;
+  /* Add padding to prevent text from going under the abort button */
 }
 
 .multi-progress-percent {
-  margin-left: 10px; /* Give some space between label and percentage */
-  min-width: 40px; /* Ensure the percentage has enough width */
-  text-align: right; /* Right align the text */
+  margin-left: 10px;
+  /* Give some space between label and percentage */
+  min-width: 40px;
+  /* Ensure the percentage has enough width */
+  text-align: right;
+  /* Right align the text */
 }
 
 .multi-progress-download {
@@ -1007,24 +1030,27 @@ footer {
 
 /* Button pulse animation for immediate feedback */
 @keyframes button-pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
-    }
+  0% {
+    box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+  }
 }
 
 .button-pulse {
-    animation: button-pulse 1.5s infinite;
-    background-color: #3367d6; /* Slightly darker blue while processing */
+  animation: button-pulse 1.5s infinite;
+  background-color: #3367d6;
+  /* Slightly darker blue while processing */
 }
 
 /* Disabled button styles */
-button:disabled, 
+button:disabled,
 .btn:disabled {
   background-color: #cccccc;
   color: #666666;
@@ -1033,7 +1059,7 @@ button:disabled,
   box-shadow: none;
 }
 
-button:disabled:hover, 
+button:disabled:hover,
 .btn:disabled:hover {
   background-color: #cccccc;
 }
