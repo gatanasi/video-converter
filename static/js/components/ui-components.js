@@ -18,7 +18,7 @@ export class VideoListComponent {
         this.container = options.container;
         this.onSelectVideo = options.onSelectVideo;
         this.videoList = [];
-        this.selectedVideo = null;
+        this.selectedVideos = new Map(); // Changed to Map for multi-selection
     }
 
     /**
@@ -28,6 +28,7 @@ export class VideoListComponent {
     displayVideos(videos) {
         this.videoList = videos;
         this.container.innerHTML = '';
+        this.selectedVideos.clear(); // Clear selection when loading new videos
 
         if (!videos || videos.length === 0) {
             const emptyMessage = document.createElement('div');
@@ -37,18 +38,51 @@ export class VideoListComponent {
             return;
         }
 
+        // Add multi-selection controls
+        const controlsDiv = document.createElement('div');
+        controlsDiv.className = 'selection-controls';
+        controlsDiv.innerHTML = `
+            <button id="select-all-btn" class="btn small">Select All</button>
+            <button id="deselect-all-btn" class="btn small" disabled>Deselect All</button>
+            <div class="selection-counter">0 videos selected</div>
+        `;
+        this.container.appendChild(controlsDiv);
+
+        // Add event listeners to selection control buttons
+        const selectAllBtn = controlsDiv.querySelector('#select-all-btn');
+        const deselectAllBtn = controlsDiv.querySelector('#deselect-all-btn');
+        
+        selectAllBtn.addEventListener('click', () => this.selectAllVideos());
+        deselectAllBtn.addEventListener('click', () => this.deselectAllVideos());
+        
+        // Store reference to selection counter for later updates
+        this.selectionCounter = controlsDiv.querySelector('.selection-counter');
+
         const table = document.createElement('table');
         table.className = 'video-table';
         
-        // Create table header
+        // Create table header with date column
         const thead = document.createElement('thead');
         thead.innerHTML = `
             <tr>
+                <th class="video-select"><input type="checkbox" id="header-checkbox"></th>
                 <th class="video-name">Name</th>
                 <th class="video-size">Size</th>
                 <th class="video-type">Type</th>
+                <th class="video-date">Modified Date</th>
             </tr>
         `;
+        
+        // Add event listener to header checkbox for select/deselect all
+        const headerCheckbox = thead.querySelector('#header-checkbox');
+        headerCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                this.selectAllVideos();
+            } else {
+                this.deselectAllVideos();
+            }
+        });
+        
         table.appendChild(thead);
         
         // Create table body
@@ -56,14 +90,48 @@ export class VideoListComponent {
         videos.forEach(video => {
             const row = document.createElement('tr');
             row.dataset.id = video.id;
+            
+            // Format the date if available
+            let formattedDate = 'Unknown';
+            if (video.modifiedTime) {
+                const date = new Date(video.modifiedTime);
+                formattedDate = date.toLocaleDateString() + ' ' + 
+                               date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            
             row.innerHTML = `
+                <td class="video-select">
+                    <input type="checkbox" class="video-checkbox" data-id="${video.id}">
+                </td>
                 <td class="video-name">${video.name}</td>
                 <td class="video-size">${formatBytes(video.size)}</td>
                 <td class="video-type">${video.mimeType.split('/')[1]}</td>
+                <td class="video-date">${formattedDate}</td>
             `;
             
-            row.addEventListener('click', () => {
-                this.selectVideo(video, row);
+            // Add event listener to checkbox for individual selection
+            const checkbox = row.querySelector('.video-checkbox');
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.addToSelection(video, row);
+                } else {
+                    this.removeFromSelection(video.id, row);
+                }
+            });
+            
+            // Add event listener for clicking on row
+            row.addEventListener('click', (e) => {
+                // Ignore if the checkbox was clicked directly
+                if (e.target.type === 'checkbox') return;
+                
+                const checkbox = row.querySelector('.video-checkbox');
+                checkbox.checked = !checkbox.checked;
+                
+                if (checkbox.checked) {
+                    this.addToSelection(video, row);
+                } else {
+                    this.removeFromSelection(video.id, row);
+                }
             });
             
             tbody.appendChild(row);
@@ -71,43 +139,201 @@ export class VideoListComponent {
         
         table.appendChild(tbody);
         this.container.appendChild(table);
+        
+        // Add selected files display area
+        this.selectedFilesArea = document.createElement('div');
+        this.selectedFilesArea.id = 'selectedFiles';
+        this.selectedFilesArea.className = 'hidden';
+        this.selectedFilesArea.innerHTML = `
+            <h3>Selected Videos <span id="selected-count">(0)</span></h3>
+            <div id="selectedFilesList"></div>
+        `;
+        this.container.appendChild(this.selectedFilesArea);
     }
 
     /**
-     * Handle video selection
-     * @param {Object} video - Selected video object
-     * @param {HTMLElement} row - Selected table row
+     * Add a video to the selection
+     * @param {Object} video - Video object to add
+     * @param {HTMLElement} row - The table row element
      */
-    selectVideo(video, row) {
-        // Clear previous selection
-        const selectedRows = this.container.querySelectorAll('tr.selected');
-        selectedRows.forEach(r => r.classList.remove('selected'));
-        
-        // Mark this row as selected
+    addToSelection(video, row) {
+        this.selectedVideos.set(video.id, video);
         row.classList.add('selected');
+        this.updateSelectionCounters();
+        this.updateSelectedFilesList();
         
-        // Store selected video and trigger callback
-        this.selectedVideo = video;
-        if (this.onSelectVideo) {
+        // Call the onSelectVideo callback with the first selected video
+        if (this.onSelectVideo && this.selectedVideos.size === 1) {
             this.onSelectVideo(video);
         }
     }
 
     /**
-     * Clear selection
+     * Remove a video from the selection
+     * @param {String} videoId - ID of the video to remove
+     * @param {HTMLElement} row - The table row element
      */
-    clearSelection() {
-        const selectedRows = this.container.querySelectorAll('tr.selected');
-        selectedRows.forEach(r => r.classList.remove('selected'));
-        this.selectedVideo = null;
+    removeFromSelection(videoId, row) {
+        this.selectedVideos.delete(videoId);
+        row.classList.remove('selected');
+        this.updateSelectionCounters();
+        this.updateSelectedFilesList();
+        
+        // Call the onSelectVideo callback with the first remaining selected video or null
+        if (this.onSelectVideo) {
+            const nextVideo = this.selectedVideos.size > 0 ? 
+                [...this.selectedVideos.values()][0] : null;
+            this.onSelectVideo(nextVideo);
+        }
     }
 
     /**
-     * Get selected video
-     * @returns {Object|null} - Currently selected video or null
+     * Select all videos in the list
+     */
+    selectAllVideos() {
+        // Update all checkboxes
+        const checkboxes = this.container.querySelectorAll('.video-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            const row = checkbox.closest('tr');
+            const videoId = checkbox.dataset.id;
+            const video = this.videoList.find(v => v.id === videoId);
+            if (video) {
+                this.selectedVideos.set(videoId, video);
+                row.classList.add('selected');
+            }
+        });
+        
+        // Update header checkbox
+        const headerCheckbox = this.container.querySelector('#header-checkbox');
+        if (headerCheckbox) {
+            headerCheckbox.checked = true;
+        }
+        
+        this.updateSelectionCounters();
+        this.updateSelectedFilesList();
+        
+        // Call the onSelectVideo callback with the first selected video
+        if (this.onSelectVideo && this.selectedVideos.size > 0) {
+            this.onSelectVideo([...this.selectedVideos.values()][0]);
+        }
+    }
+
+    /**
+     * Deselect all videos
+     */
+    deselectAllVideos() {
+        // Update all checkboxes
+        const checkboxes = this.container.querySelectorAll('.video-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            const row = checkbox.closest('tr');
+            row.classList.remove('selected');
+        });
+        
+        // Update header checkbox
+        const headerCheckbox = this.container.querySelector('#header-checkbox');
+        if (headerCheckbox) {
+            headerCheckbox.checked = false;
+        }
+        
+        this.selectedVideos.clear();
+        this.updateSelectionCounters();
+        this.updateSelectedFilesList();
+        
+        // Call the onSelectVideo callback with null
+        if (this.onSelectVideo) {
+            this.onSelectVideo(null);
+        }
+    }
+
+    /**
+     * Update selection counters and button states
+     */
+    updateSelectionCounters() {
+        const count = this.selectedVideos.size;
+        
+        // Update the selection counter
+        if (this.selectionCounter) {
+            this.selectionCounter.textContent = `${count} video${count !== 1 ? 's' : ''} selected`;
+        }
+        
+        // Update selected count in the selected files area
+        const selectedCount = this.container.querySelector('#selected-count');
+        if (selectedCount) {
+            selectedCount.textContent = `(${count})`;
+        }
+        
+        // Update the deselect all button state
+        const deselectAllBtn = this.container.querySelector('#deselect-all-btn');
+        if (deselectAllBtn) {
+            deselectAllBtn.disabled = count === 0;
+        }
+        
+        // Update visibility of selected files area
+        if (this.selectedFilesArea) {
+            this.selectedFilesArea.classList.toggle('hidden', count === 0);
+        }
+    }
+
+    /**
+     * Update the list of selected files
+     */
+    updateSelectedFilesList() {
+        const selectedFilesList = this.container.querySelector('#selectedFilesList');
+        if (!selectedFilesList) return;
+        
+        selectedFilesList.innerHTML = '';
+        
+        for (const video of this.selectedVideos.values()) {
+            const item = document.createElement('div');
+            item.className = 'selected-file-item';
+            item.innerHTML = `
+                <span class="selected-file-name">${video.name}</span>
+                <button class="remove-selected" data-id="${video.id}">Remove</button>
+            `;
+            
+            // Add click handler for the remove button
+            const removeBtn = item.querySelector('.remove-selected');
+            removeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Find the corresponding checkbox and uncheck it
+                const checkbox = this.container.querySelector(`.video-checkbox[data-id="${video.id}"]`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    const row = checkbox.closest('tr');
+                    this.removeFromSelection(video.id, row);
+                }
+            });
+            
+            selectedFilesList.appendChild(item);
+        }
+    }
+
+    /**
+     * Get all selected videos
+     * @returns {Array} - Array of selected videos
+     */
+    getSelectedVideos() {
+        return [...this.selectedVideos.values()];
+    }
+
+    /**
+     * Get the first selected video or null if nothing selected
+     * @returns {Object|null} - First selected video or null
      */
     getSelectedVideo() {
-        return this.selectedVideo;
+        return this.selectedVideos.size > 0 ? 
+            [...this.selectedVideos.values()][0] : null;
+    }
+
+    /**
+     * Clear all selections
+     */
+    clearSelection() {
+        this.deselectAllVideos();
     }
 }
 

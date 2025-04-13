@@ -42,9 +42,12 @@ export function showMessage(container, text, type = 'info') {
     // Auto-hide success and info messages after a delay
     if (type === 'success' || type === 'info') {
         setTimeout(() => {
-            container.removeChild(message);
-            if (container.children.length === 0) {
-                container.classList.add('hidden');
+            // Check if message is still in the DOM before removing
+            if (message.parentNode === container) {
+                container.removeChild(message);
+                if (container.children.length === 0) {
+                    container.classList.add('hidden');
+                }
             }
         }, 5000);
     }
