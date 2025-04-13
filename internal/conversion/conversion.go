@@ -212,7 +212,7 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	// Run exiftool to copy metadata
 	log.Printf("Copying metadata from %s to %s using exiftool", filepath.Base(inputPath), filepath.Base(outputPath))
 	exifCmd := exec.Command("exiftool", "-tagsFromFile", inputPath, outputPath, "-overwrite_original", "-preserve")
-	exifOut, exifErr := exifCmd.CombinedOutput()
+	_, exifErr := exifCmd.CombinedOutput()
 	if exifErr != nil {
 		log.Printf("Warning: exiftool failed to copy metadata: %v", exifErr)
 	} else {

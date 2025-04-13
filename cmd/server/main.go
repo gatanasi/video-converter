@@ -16,6 +16,7 @@ import (
 	"github.com/gatanasi/video-converter/internal/conversion"
 	"github.com/gatanasi/video-converter/internal/filestore"
 	"github.com/gatanasi/video-converter/internal/middleware"
+	"github.com/gatanasi/video-converter/internal/models"
 )
 
 func main() {
@@ -88,7 +89,7 @@ func main() {
 }
 
 // setupFileCleanup creates a goroutine to periodically clean up old files
-func setupFileCleanup(conf config.Config) {
+func setupFileCleanup(conf models.Config) {
 	go func() {
 		// Initial cleanup shortly after start
 		log.Println("Scheduling initial file cleanup in 5 minutes...")
@@ -106,7 +107,7 @@ func setupFileCleanup(conf config.Config) {
 }
 
 // cleanupFiles removes old files from the uploads and converted directories
-func cleanupFiles(conf config.Config) {
+func cleanupFiles(conf models.Config) {
 	maxAge := 24 * time.Hour // Files older than 24 hours
 	log.Println("Running cleanup for old files...")
 	
