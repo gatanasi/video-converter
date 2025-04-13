@@ -593,3 +593,27 @@ font-size: 14px;
 #viewFilesBtn {
   background-color: #4285f4;
 }
+
+/* Reset Configuration Styles */
+.reset-config {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed #ddd;
+}
+
+#resetConfigBtn {
+  background-color: #ea4335;
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+#resetConfigBtn:hover {
+  background-color: #d93025;
+}
+
+.reset-note {
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 5px;
+  font-style: italic;
+}

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filesTab = document.getElementById('filesTab');
     const folderIdInput = document.getElementById('folderIdInput');
     const saveConfigBtn = document.getElementById('saveConfigBtn');
+    const resetConfigBtn = document.getElementById('resetConfigBtn');
     const fetchVideosBtn = document.getElementById('fetchVideosBtn');
     const videoListContainer = document.getElementById('videoListContainer');
     const videoListDiv = document.getElementById('videoList');
@@ -61,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     convertTabBtn.addEventListener('click', () => switchTab('convert'));
     filesTabBtn.addEventListener('click', () => switchTab('files'));
     saveConfigBtn.addEventListener('click', saveConfiguration);
+    resetConfigBtn.addEventListener('click', resetConfiguration);
     fetchVideosBtn.addEventListener('click', handleFetchVideos);
     convertBtn.addEventListener('click', handleConvertVideos);
     viewFilesBtn.addEventListener('click', () => switchTab('files'));
@@ -71,6 +73,24 @@ document.addEventListener('DOMContentLoaded', () => {
     hideProgressBtn.addEventListener('click', () => {
         conversionProgressDiv.classList.add('hidden');
     });
+
+    // Function to reset configuration
+    function resetConfiguration() {
+        if (confirm('Are you sure you want to reset the configuration? This will clear your saved Google Drive folder ID.')) {
+            localStorage.removeItem(CONFIG_KEY);
+            appConfig.googleDriveFolderId = '';
+            folderIdInput.value = '';
+            showMessage('convert', 'Configuration has been reset successfully.', 'success');
+            
+            // Try to load default folder ID from server, if available
+            fetchServerConfig().then(() => {
+                if (appConfig.googleDriveFolderId) {
+                    folderIdInput.value = appConfig.googleDriveFolderId;
+                    showMessage('convert', 'Default folder ID from server loaded.', 'info');
+                }
+            });
+        }
+    }
 
     // Function to fetch server configuration (default folder ID, etc.)
     async function fetchServerConfig() {
