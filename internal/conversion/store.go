@@ -112,20 +112,22 @@ func (s *Store) UpdateStatusWithError(id, errorMsg string) {
 	}
 }
 
-// UpdateProgress updates the progress for a conversion.
-func (s *Store) UpdateProgress(id string, increment float64) {
+// SetProgressPercentage updates the progress percentage for a conversion.
+// It caps the progress at 99.0% until explicitly marked as 100% on success.
+func (s *Store) SetProgressPercentage(id string, percentage float64) {
 	s.statusesMutex.Lock()
 	defer s.statusesMutex.Unlock()
 	if status, exists := s.statuses[id]; exists {
 		// Only update if not already completed or errored
 		if !status.Complete && status.Error == "" {
-			// Increment progress slightly, capped at 99% until 'progress=end'
-			if status.Progress < 99.0 {
-				status.Progress += increment
-				if status.Progress > 99.0 {
-					status.Progress = 99.0
-				}
+			// Clamp percentage between 0 and 99
+			progress := percentage
+			if progress < 0 {
+				progress = 0
+			} else if progress > 99.0 {
+				progress = 99.0
 			}
+			status.Progress = progress
 		}
 	}
 }

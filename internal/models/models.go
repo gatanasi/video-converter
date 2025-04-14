@@ -39,12 +39,13 @@ type DriveConversionRequest struct {
 
 // ConversionStatus tracks the state of a single conversion job.
 type ConversionStatus struct {
-	InputPath  string  // Path to the originally downloaded file
-	OutputPath string  // Path to the target converted file
-	Format     string  // Target format (e.g., "mp4")
-	Progress   float64 // Estimated progress (0-100)
-	Complete   bool    // True if finished (successfully or with error)
-	Error      string  // Error message if conversion failed
+	InputPath       string  // Path to the originally downloaded file
+	OutputPath      string  // Path to the target converted file
+	Format          string  // Target format (e.g., "mp4")
+	DurationSeconds float64 // Total duration of the input video in seconds
+	Progress        float64 // Estimated progress (0-100)
+	Complete        bool    // True if finished (successfully or with error)
+	Error           string  // Error message if conversion failed
 }
 
 // ConversionJob represents a job passed to a conversion worker.

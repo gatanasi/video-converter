@@ -10,7 +10,7 @@ A simple web application that allows users to fetch videos from a specified Goog
     -   **Reverse video**: Play the video in reverse.
     -   **Remove sound**: Strip audio from the output video (enabled by default).
 -   Preserves metadata from original files using exiftool.
--   Displays currently running conversions with progress and abort option.
+-   Displays currently running conversions with accurate progress and abort option.
 -   Includes a tab to browse and manage previously converted videos (download or delete).
 -   Configuration primarily through environment variables for security and flexibility.
 -   Uses a backend worker pool to manage concurrent conversions efficiently.
@@ -21,7 +21,7 @@ A simple web application that allows users to fetch videos from a specified Goog
 Before running the application, make sure you have the following installed:
 
 -   [Go](https://golang.org/dl/) (v1.18 or newer recommended, tested with v1.24)
--   [FFmpeg](https://ffmpeg.org/download.html) - Must be installed and accessible in your system's `PATH`.
+-   [FFmpeg](https://ffmpeg.org/download.html) - Must be installed and accessible in your system's `PATH`. `ffprobe` (usually included with FFmpeg) is also required for accurate progress calculation.
 -   [ExifTool](https://exiftool.org/install.html) - Required for metadata preservation. Must be installed and accessible in your system's `PATH`.
 
 ## Configuration (Environment Variables)

@@ -3,6 +3,7 @@ package conversion
 
 import (
 	"bufio"
+	"context" // Import context package
 	"fmt"
 	"io"
 	"log"
@@ -77,12 +78,64 @@ func (c *VideoConverter) QueueJob(job models.ConversionJob) error {
 	}
 }
 
+// getVideoDuration uses ffprobe to get the duration of a video file in seconds.
+func getVideoDuration(filePath string) (float64, error) {
+	// Use a context with timeout for ffprobe
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // 15-second timeout for ffprobe
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "ffprobe",
+		"-v", "error", // Only show errors
+		"-show_entries", "format=duration", // Get duration from format section
+		"-of", "default=noprint_wrappers=1:nokey=1", // Output only the value
+		filePath,
+	)
+
+	outputBytes, err := cmd.Output()
+	if ctx.Err() == context.DeadlineExceeded {
+		return 0, fmt.Errorf("ffprobe timed out getting duration for %s", filepath.Base(filePath))
+	}
+	if err != nil {
+		// Log the specific ffprobe error if available
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return 0, fmt.Errorf("ffprobe failed for %s: %v, stderr: %s", filepath.Base(filePath), err, string(exitErr.Stderr))
+		}
+		return 0, fmt.Errorf("ffprobe failed for %s: %w", filepath.Base(filePath), err)
+	}
+
+	durationStr := strings.TrimSpace(string(outputBytes))
+	duration, err := strconv.ParseFloat(durationStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse ffprobe duration output '%s': %w", durationStr, err)
+	}
+
+	if duration <= 0 {
+		return 0, fmt.Errorf("invalid duration %f reported by ffprobe for %s", duration, filepath.Base(filePath))
+	}
+
+	log.Printf("Detected duration for %s: %.2f seconds", filepath.Base(filePath), duration)
+	return duration, nil
+}
+
 // convertVideo performs the actual video conversion using FFmpeg.
 func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	status := job.Status // Use the status pointer from the job
 	inputPath := job.UploadedFilePath
 	outputPath := job.OutputFilePath
 	conversionID := job.ConversionID
+
+	// --- Get Video Duration ---
+	duration, durationErr := getVideoDuration(inputPath)
+	if durationErr != nil {
+		// Log warning but continue, progress will be less accurate
+		log.Printf("WARN [job %s]: Could not get video duration: %v. Progress estimation will be inaccurate.", conversionID, durationErr)
+		status.DurationSeconds = 0 // Ensure it's zero if error occurred
+	} else {
+		status.DurationSeconds = duration
+	}
+	// Update status in store immediately with duration info
+	c.store.SetStatus(conversionID, status)
+	// --- End Get Video Duration ---
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
@@ -190,7 +243,9 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	// Goroutine to read stdout (FFmpeg progress)
 	go func() {
 		defer wg.Done()
-		c.processFFmpegProgress(stdoutPipe, conversionID, status) // Pass logger
+		// Pass the original status pointer, which includes the duration if found.
+		// processFFmpegProgress needs a pointer to potentially read DurationSeconds.
+		c.processFFmpegProgress(stdoutPipe, conversionID, status)
 	}()
 
 	// Wait for FFmpeg command to complete
@@ -201,24 +256,45 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 
 	// Check FFmpeg exit code *after* reading pipes
 	if err != nil {
+		// Fetch status *once* after command completion to check for abort/errors
+		currentStatus, exists := c.store.GetStatus(conversionID)
+		if !exists {
+			// This is unexpected if the command ran, log a warning.
+			// The job might have been deleted concurrently?
+			log.Printf("WARN [job %s]: Status not found after FFmpeg command finished.", conversionID)
+			// Attempt cleanup anyway, assuming an error occurred.
+			if removeErr := os.Remove(outputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove potentially incomplete output file %s after status missing: %v", conversionID, outputPath, removeErr)
+			}
+			if removeErr := os.Remove(inputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove input file %s after status missing: %v", conversionID, inputPath, removeErr)
+			}
+			return // Cannot proceed without status
+		}
+
 		// Check if the error is due to the process being killed (aborted)
-		currentStatus, _ := c.store.GetStatus(conversionID) // Re-fetch status via store
-		// Check if the error is *not* the specific "aborted by user" message
-		// or a generic killed message (less reliable check)
 		isAbortError := currentStatus.Error == "Conversion aborted by user"
+		// Check if the FFmpeg error itself indicates a kill signal (less reliable)
 		isKilledError := strings.Contains(err.Error(), "signal: killed") || strings.Contains(err.Error(), "exit status -1") // OS-dependent
 
 		if !isAbortError && !isKilledError {
+			// Genuine FFmpeg execution error
 			errMsg := fmt.Sprintf("FFmpeg execution failed: %v", err)
 			log.Printf("ERROR [job %s]: %s\nFFmpeg Output:\n%s", conversionID, errMsg, ffmpegErrOutput.String())
-			c.store.UpdateStatusWithError(conversionID, errMsg+": "+ffmpegErrOutput.String())
+			// Update status only if it wasn't already marked by abort
+			if currentStatus.Error == "" { // Avoid overwriting specific abort message
+				c.store.UpdateStatusWithError(conversionID, errMsg+": "+ffmpegErrOutput.String())
+			}
 		} else if !isAbortError {
-			// If it was killed but not via our abort, log it but use the generic abort message
+			// If it was killed but not via our specific abort message, log it.
+			// The status might have already been set by the abort handler, or we set a generic one now.
 			log.Printf("WARN [job %s]: FFmpeg process killed unexpectedly: %v", conversionID, err)
-			// Status might already be set by abort handler, or we set it now
-			c.store.UpdateStatusWithError(conversionID, "Conversion process terminated unexpectedly")
+			if currentStatus.Error == "" { // Avoid overwriting specific abort message
+				c.store.UpdateStatusWithError(conversionID, "Conversion process terminated unexpectedly")
+			}
 		}
 		// Cleanup potentially incomplete output file if error occurred (and not aborted cleanly)
+		// We check isAbortError based on the status we fetched.
 		if !isAbortError {
 			if removeErr := os.Remove(outputPath); removeErr != nil && !os.IsNotExist(removeErr) {
 				log.Printf("WARN [job %s]: Failed to remove incomplete output file %s: %v", conversionID, outputPath, removeErr)
@@ -284,6 +360,7 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 }
 
 // processFFmpegProgress parses FFmpeg progress output from stdout.
+// It now uses the duration stored in the status for more accurate calculation.
 func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionID string, status *models.ConversionStatus) {
 	defer func() {
 		if err := stdout.Close(); err != nil {
@@ -292,6 +369,8 @@ func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionI
 	}()
 	scanner := bufio.NewScanner(stdout)
 	var lastProgressUpdate time.Time
+	// Check duration directly from the passed status pointer
+	hasDuration := status != nil && status.DurationSeconds > 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -302,16 +381,37 @@ func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionI
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
-		// Update progress based on 'out_time_us' or similar key if available
-		if key == "out_time_us" || key == "frame" {
-			// Update progress periodically to avoid excessive locking
+		if hasDuration && key == "out_time_us" {
+			outTimeUs, err := strconv.ParseFloat(value, 64)
+			// Ensure status pointer is not nil before accessing DurationSeconds
+			if err == nil && outTimeUs >= 0 && status != nil {
+				outTimeSec := outTimeUs / 1_000_000.0
+				progress := (outTimeSec / status.DurationSeconds) * 100.0
+				// Update progress using the calculated percentage
+				c.store.SetProgressPercentage(conversionID, progress)
+				lastProgressUpdate = time.Now() // Update timestamp even for accurate progress
+			}
+		} else if !hasDuration && (key == "out_time_us" || key == "frame") {
+			// Fallback: Increment progress periodically if duration is unknown
 			if time.Since(lastProgressUpdate) > 500*time.Millisecond {
-				c.store.UpdateProgress(conversionID, 0.5)
-				lastProgressUpdate = time.Now()
+				// Fetch current progress to increment it
+				// Handle the 'exists' boolean correctly
+				currentStatus, exists := c.store.GetStatus(conversionID)
+				if exists {
+					newProgress := currentStatus.Progress + 0.5 // Simple increment
+					c.store.SetProgressPercentage(conversionID, newProgress)
+					lastProgressUpdate = time.Now() // Corrected typo: Now() instead of now()
+				} else {
+					// Log if status is unexpectedly missing during fallback progress update
+					log.Printf("WARN [job %s]: Status not found during fallback progress update.", conversionID)
+					// Optionally break or return if this indicates a problem
+				}
 			}
 		} else if key == "progress" && value == "end" {
 			log.Printf("FFmpeg progress stream ended for job %s", conversionID)
-			// Final progress update will be handled after cmd.Wait() succeeds
+			// Optionally set progress to 99% here if using duration,
+			// but UpdateStatusOnSuccess handles the final 100%
+			// c.store.SetProgressPercentage(conversionID, 99.0)
 			return // Stop processing progress stream
 		}
 	}
