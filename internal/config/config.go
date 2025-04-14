@@ -16,50 +16,43 @@ func New() models.Config {
 	var config models.Config
 
 	config.Port = getEnv("PORT", "3000")
-	
-	// Parse max file size
-	maxFileSizeStr := getEnv("MAX_FILE_SIZE_MB", "2000")
-	maxFileSizeMB, err := strconv.ParseInt(maxFileSizeStr, 10, 64)
-	if err != nil {
-		log.Printf("Warning: Invalid MAX_FILE_SIZE_MB '%s', using default 2000MB", maxFileSizeStr)
-		maxFileSizeMB = 2000
-	}
-	config.MaxFileSize = maxFileSizeMB * 1024 * 1024 // Convert MB to bytes
 
-	// Set directory paths
+	maxFileSizeMB := parseIntEnv("MAX_FILE_SIZE_MB", 2000)
+	config.MaxFileSize = int64(maxFileSizeMB) * 1024 * 1024 // Convert MB to bytes
+
 	config.UploadsDir = getEnv("UPLOADS_DIR", "uploads")
 	config.ConvertedDir = getEnv("CONVERTED_DIR", "converted")
 
-	// Parse worker count
-	workerCountStr := getEnv("WORKER_COUNT", strconv.Itoa(runtime.NumCPU()))
-	config.WorkerCount, err = strconv.Atoi(workerCountStr)
-	if err != nil || config.WorkerCount < 1 {
-		log.Printf("Warning: Invalid WORKER_COUNT '%s', using default %d", workerCountStr, runtime.NumCPU())
-		config.WorkerCount = runtime.NumCPU()
+	defaultWorkers := runtime.NumCPU()
+	workerCountStr := getEnv("WORKER_COUNT", strconv.Itoa(defaultWorkers)) // Get string for logging
+	config.WorkerCount = parseIntEnv("WORKER_COUNT", defaultWorkers)
+	if config.WorkerCount < 1 {
+		log.Printf("Warning: Invalid WORKER_COUNT '%s', using default %d", workerCountStr, defaultWorkers)
+		config.WorkerCount = defaultWorkers
 	}
 
-	// Get default Google Drive folder ID
 	config.DefaultDriveFolderId = getEnv("DEFAULT_DRIVE_FOLDER_ID", "")
 	if config.DefaultDriveFolderId != "" {
 		log.Printf("Default Google Drive Folder ID configured: %s", config.DefaultDriveFolderId)
 	}
 
-	// Get Google Drive API key
 	config.GoogleDriveAPIKey = os.Getenv("GOOGLE_DRIVE_API_KEY")
 	if config.GoogleDriveAPIKey == "" {
 		log.Fatal("FATAL: GOOGLE_DRIVE_API_KEY environment variable not set.")
 	}
 
-	// Parse allowed origins for CORS
 	allowedOriginsStr := getEnv("ALLOWED_ORIGINS", "")
 	if allowedOriginsStr == "" {
-		log.Println("Warning: ALLOWED_ORIGINS environment variable not set. Allowing all origins (*). THIS IS INSECURE FOR PRODUCTION.")
+		log.Println("Warning: ALLOWED_ORIGINS not set. Allowing all origins ('*'). THIS IS INSECURE FOR PRODUCTION.")
 		config.AllowedOrigins = []string{"*"}
 	} else {
-		config.AllowedOrigins = strings.Split(allowedOriginsStr, ",")
-		// Trim whitespace from each origin
-		for i := range config.AllowedOrigins {
-			config.AllowedOrigins[i] = strings.TrimSpace(config.AllowedOrigins[i])
+		origins := strings.Split(allowedOriginsStr, ",")
+		config.AllowedOrigins = make([]string, 0, len(origins))
+		for _, origin := range origins {
+			trimmed := strings.TrimSpace(origin)
+			if trimmed != "" {
+				config.AllowedOrigins = append(config.AllowedOrigins, trimmed)
+			}
 		}
 	}
 
@@ -69,10 +62,24 @@ func New() models.Config {
 	return config
 }
 
-// getEnv retrieves an environment variable or returns a default value if not set
+// getEnv retrieves an environment variable or returns a default value.
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
 	return fallback
+}
+
+// parseIntEnv retrieves an integer environment variable or returns a default.
+func parseIntEnv(key string, fallback int) int {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return fallback
+	}
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		log.Printf("Warning: Invalid integer value for %s ('%s'), using default %d", key, valueStr, fallback)
+		return fallback
+	}
+	return value
 }

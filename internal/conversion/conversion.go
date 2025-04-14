@@ -13,27 +13,28 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time" // Add missing import
 
 	"github.com/gatanasi/video-converter/internal/models"
 )
 
-// VideoConverter encapsulates video conversion operations
+// VideoConverter manages the conversion worker pool and queue.
 type VideoConverter struct {
 	workersCount int
 	queue        chan models.ConversionJob
 	wg           sync.WaitGroup
 }
 
-// NewVideoConverter creates a new VideoConverter with the specified number of workers
+// NewVideoConverter creates a new VideoConverter.
 func NewVideoConverter(workerCount int) *VideoConverter {
-	converter := &VideoConverter{
+	return &VideoConverter{
 		workersCount: workerCount,
-		queue:        make(chan models.ConversionJob, workerCount*2), // Buffer for 2x workers
+		// Buffer size can be tuned based on expected load
+		queue: make(chan models.ConversionJob, workerCount*2),
 	}
-	return converter
 }
 
-// Start initializes and starts the conversion workers
+// Start initializes and starts the conversion workers.
 func (c *VideoConverter) Start() {
 	c.wg.Add(c.workersCount)
 	for i := 0; i < c.workersCount; i++ {
@@ -42,57 +43,51 @@ func (c *VideoConverter) Start() {
 	log.Printf("Started %d conversion workers", c.workersCount)
 }
 
-// Stop waits for all workers to finish and stops the converter
+// Stop signals workers to stop and waits for them to finish.
 func (c *VideoConverter) Stop() {
-	close(c.queue)
-	c.wg.Wait()
+	close(c.queue) // Signal workers no more jobs are coming
+	c.wg.Wait()    // Wait for all worker goroutines to exit
 	log.Println("All conversion workers stopped")
 }
 
-// worker is a goroutine that processes jobs from the queue
+// worker processes jobs from the queue until the queue is closed.
 func (c *VideoConverter) worker(id int) {
 	defer c.wg.Done()
 	log.Printf("Worker %d started", id)
-	
 	for job := range c.queue {
-		log.Printf("Worker %d: Processing job %s (File ID: %s)", id, job.ConversionID, job.FileID)
-		c.processConversionJob(job)
+		log.Printf("Worker %d: Processing job %s (File: %s)", id, job.ConversionID, filepath.Base(job.UploadedFilePath))
+		c.convertVideo(job) // Directly call conversion logic
 		log.Printf("Worker %d: Finished job %s", id, job.ConversionID)
 	}
-	
 	log.Printf("Worker %d stopped", id)
 }
 
-// QueueJob adds a job to the conversion queue
+// QueueJob adds a job to the conversion queue. Returns error if queue is full.
 func (c *VideoConverter) QueueJob(job models.ConversionJob) error {
 	select {
 	case c.queue <- job:
-		log.Printf("Job %s queued for file ID %s", job.ConversionID, job.FileID)
+		log.Printf("Job %s queued (File: %s)", job.ConversionID, filepath.Base(job.UploadedFilePath))
 		return nil
 	default:
-		// Queue is full
-		return fmt.Errorf("conversion queue is full")
+		// Non-blocking check if queue is full
+		return fmt.Errorf("conversion queue is full, cannot accept job %s", job.ConversionID)
 	}
 }
 
-// processConversionJob handles the actual conversion process
-func (c *VideoConverter) processConversionJob(job models.ConversionJob) {
-	// Skip download step as that's now handled by the drive package
-	// Just handle conversion
-	c.convertVideo(job)
-}
-
-// convertVideo performs the actual video conversion
+// convertVideo performs the actual video conversion using FFmpeg.
 func (c *VideoConverter) convertVideo(job models.ConversionJob) {
-	status := job.Status
-	inputPath := status.InputPath
-	outputPath := status.OutputPath
-	format := status.Format
-	reverseVideo := job.ReverseVideo
-	removeSound := job.RemoveSound
+	status := job.Status // Use the status pointer from the job
+	inputPath := job.UploadedFilePath
+	outputPath := job.OutputFilePath
 	conversionID := job.ConversionID
 
-	// Set optimal thread count for the hardware
+	// Ensure output directory exists (should be handled at startup, but good practice)
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		models.UpdateStatusWithError(conversionID, fmt.Sprintf("Failed to ensure output directory exists: %v", err))
+		return
+	}
+
+	// Determine optimal thread count (can be adjusted)
 	threadCount := runtime.NumCPU() - 2
 	if threadCount < 1 {
 		threadCount = 1
@@ -103,28 +98,29 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 		"-i", inputPath,
 		"-threads", strconv.Itoa(threadCount),
 		"-progress", "pipe:1", // Send progress info to stdout
-		"-nostats",            // Do not print verbose encoding stats to stderr
-		"-v", "warning",       // Reduce log verbosity on stderr
+		"-nostats",            // Suppress encoding stats on stderr
+		"-v", "warning",       // Log level for FFmpeg messages on stderr
 	}
 
-	// Add video filters
-	if reverseVideo {
+	// Add video filters if requested
+	if job.ReverseVideo {
 		ffmpegArgs = append(ffmpegArgs, "-vf", "reverse")
 	}
 
 	// Handle audio options
-	if removeSound {
-		ffmpegArgs = append(ffmpegArgs, "-an") // Remove audio
+	if job.RemoveSound {
+		ffmpegArgs = append(ffmpegArgs, "-an") // No audio
 	} else {
-		if reverseVideo {
-			ffmpegArgs = append(ffmpegArgs, "-af", "areverse") // Reverse audio if video is reversed
+		if job.ReverseVideo {
+			ffmpegArgs = append(ffmpegArgs, "-af", "areverse") // Reverse audio to match video
 		} else {
-			ffmpegArgs = append(ffmpegArgs, "-c:a", "copy") // Keep original audio
+			// Default: copy audio stream without re-encoding if possible
+			ffmpegArgs = append(ffmpegArgs, "-c:a", "copy")
 		}
 	}
 
-	// Add format-specific args
-	switch format {
+	// Add format-specific arguments (consider making these configurable)
+	switch job.TargetFormat {
 	case "mov":
 		ffmpegArgs = append(ffmpegArgs, "-tag:v", "hvc1", "-c:v", "libx265", "-preset", "slow", "-crf", "22")
 	case "mp4":
@@ -132,133 +128,133 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	case "avi":
 		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "3")
 	default:
-		reportError(status, fmt.Sprintf("Unsupported target format '%s'", format))
+		// This case should ideally be caught by validation in the handler
+		models.UpdateStatusWithError(conversionID, fmt.Sprintf("Unsupported target format '%s'", job.TargetFormat))
 		return
 	}
 
 	ffmpegArgs = append(ffmpegArgs, outputPath)
 
-	ffmpegCmd := fmt.Sprintf("ffmpeg %s", strings.Join(ffmpegArgs, " "))
-	log.Printf("Executing FFmpeg: %s", ffmpegCmd)
-
+	log.Printf("Executing FFmpeg for job %s: ffmpeg %s", conversionID, strings.Join(ffmpegArgs, " "))
 	cmd := exec.Command("ffmpeg", ffmpegArgs...)
 
-	// Register the command with the conversion ID to allow for aborting
-	registerActiveConversion(conversionID, cmd)
-	defer unregisterActiveConversion(conversionID)
+	// Register command for potential abort
+	models.RegisterActiveConversion(conversionID, cmd)
+	defer models.UnregisterActiveConversion(conversionID) // Ensure unregister happens
 
-	// Get pipes for progress and error reporting
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		reportError(status, fmt.Sprintf("Failed to create stderr pipe: %v", err))
+		models.UpdateStatusWithError(conversionID, fmt.Sprintf("Failed to create stderr pipe: %v", err))
 		return
 	}
-	
 	stdoutPipe, err := cmd.StdoutPipe() // For progress
 	if err != nil {
-		reportError(status, fmt.Sprintf("Failed to create stdout pipe: %v", err))
+		models.UpdateStatusWithError(conversionID, fmt.Sprintf("Failed to create stdout pipe: %v", err))
 		return
 	}
 
-	// Start FFmpeg
 	if err := cmd.Start(); err != nil {
-		reportError(status, fmt.Sprintf("Failed to start FFmpeg: %v", err))
+		models.UpdateStatusWithError(conversionID, fmt.Sprintf("Failed to start FFmpeg: %v", err))
 		return
 	}
 
-	// Read stderr in a separate goroutine
+	// Read stderr and stdout concurrently
+	var wg sync.WaitGroup
 	var ffmpegErrOutput strings.Builder
-	stderrDone := make(chan struct{})
+	wg.Add(2)
+
+	// Goroutine to read stderr (FFmpeg logs/errors)
 	go func() {
-		defer close(stderrDone)
+		defer wg.Done()
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
 			line := scanner.Text()
-			log.Printf("FFmpeg stderr (%s): %s", filepath.Base(inputPath), line)
-			ffmpegErrOutput.WriteString(line + "\n")
+			// Log FFmpeg output for debugging, associate with job ID
+			log.Printf("FFmpeg stderr [%s]: %s", conversionID, line)
+			ffmpegErrOutput.WriteString(line + "\n") // Capture for error reporting
 		}
 	}()
 
-	// Process stdout progress
-	processFFmpegProgress(stdoutPipe, status)
-
-	// Wait for stderr processing to finish
-	<-stderrDone
+	// Goroutine to read stdout (FFmpeg progress)
+	go func() {
+		defer wg.Done()
+		processFFmpegProgress(stdoutPipe, conversionID, status)
+	}()
 
 	// Wait for FFmpeg command to complete
 	err = cmd.Wait()
+
+	// Wait for stderr/stdout reading goroutines to finish
+	wg.Wait()
+
+	// Check FFmpeg exit code *after* reading pipes
 	if err != nil {
-		errMsg := fmt.Sprintf("FFmpeg execution failed: %v. FFmpeg output:\n%s",
-			err, ffmpegErrOutput.String())
-		reportError(status, errMsg)
+		// Check if the error is due to the process being killed (aborted)
+		status, _ := models.GetConversionStatus(conversionID) // Re-fetch status
+		if status.Error != "Conversion aborted by user" && !strings.Contains(status.Error, "process termination failed") {
+			errMsg := fmt.Sprintf("FFmpeg execution failed: %v. Output:\n%s", err, ffmpegErrOutput.String())
+			models.UpdateStatusWithError(conversionID, errMsg)
+		}
+		// Cleanup potentially incomplete output file if error occurred (and not aborted)
+		if status.Error != "Conversion aborted by user" {
+			os.Remove(outputPath)
+		}
+		// Input file cleanup happens regardless of error type if conversion failed/aborted
+		os.Remove(inputPath)
 		return
 	}
 
-	// Verify output file
+	// Verify output file exists and is not empty
 	outputInfo, statErr := os.Stat(outputPath)
 	if statErr != nil {
-		errMsg := fmt.Sprintf("FFmpeg finished but output file could not be accessed: %v", statErr)
-		reportError(status, errMsg)
+		errMsg := fmt.Sprintf("FFmpeg finished but output file error: %v", statErr)
+		models.UpdateStatusWithError(conversionID, errMsg)
+		os.Remove(inputPath) // Clean up input
 		return
 	}
-	
 	if outputInfo.Size() == 0 {
-		errMsg := fmt.Sprintf("FFmpeg finished but output file is empty (0 bytes)")
-		reportError(status, errMsg)
-		os.Remove(outputPath)
+		errMsg := "FFmpeg finished but output file is empty (0 bytes)"
+		models.UpdateStatusWithError(conversionID, errMsg)
+		os.Remove(outputPath) // Clean up empty output
+		os.Remove(inputPath)  // Clean up input
 		return
 	}
 
-	// Run exiftool to copy metadata
-	log.Printf("Copying metadata from %s to %s using exiftool", filepath.Base(inputPath), filepath.Base(outputPath))
-	exifCmd := exec.Command("exiftool", "-tagsFromFile", inputPath, outputPath, "-overwrite_original", "-preserve")
-	_, exifErr := exifCmd.CombinedOutput()
+	// Attempt to copy metadata using exiftool (optional, log warning on failure)
+	log.Printf("Attempting metadata copy for job %s using exiftool...", conversionID)
+	// -overwrite_original modifies the output file directly
+	// -preserve keeps original file modification time if possible
+	// -P preserves filesystem timestamp
+	exifCmd := exec.Command("exiftool", "-tagsFromFile", inputPath, "-all:all>all:all", "-preserve", "-overwrite_original", outputPath)
+	exifOutput, exifErr := exifCmd.CombinedOutput()
 	if exifErr != nil {
-		log.Printf("Warning: exiftool failed to copy metadata: %v", exifErr)
+		// Log warning, don't fail the conversion
+		log.Printf("Warning [job %s]: exiftool failed to copy metadata: %v. Output: %s", conversionID, exifErr, string(exifOutput))
 	} else {
-		log.Printf("Successfully copied metadata with exiftool")
+		log.Printf("Successfully copied metadata for job %s", conversionID)
 	}
 
 	// Mark as complete
-	models.ConversionMutex.Lock()
-	if status.Error == "" {
-		status.Complete = true
-		status.Progress = 100.0
-		log.Printf("Conversion successful: %s -> %s (%d bytes)",
-			filepath.Base(inputPath), filepath.Base(outputPath), outputInfo.Size())
-	}
-	models.ConversionMutex.Unlock()
+	models.UpdateStatusOnSuccess(conversionID)
+	log.Printf("Conversion successful for job %s: %s -> %s (%d bytes)",
+		conversionID, filepath.Base(inputPath), filepath.Base(outputPath), outputInfo.Size())
 
-	// Clean up the original downloaded file
-	if status.Complete && status.Error == "" {
-		err := os.Remove(inputPath)
-		if err != nil {
-			log.Printf("Warning: Failed to remove original downloaded file: %v", err)
-		} else {
-			log.Printf("Removed original downloaded file: %s", inputPath)
-		}
+	// Clean up the original downloaded file *after* successful conversion and metadata copy
+	err = os.Remove(inputPath)
+	if err != nil {
+		log.Printf("Warning [job %s]: Failed to remove original downloaded file %s: %v", conversionID, inputPath, err)
+	} else {
+		log.Printf("Removed original downloaded file for job %s: %s", conversionID, inputPath)
 	}
 }
 
-// Helper functions for tracking active conversions
-func registerActiveConversion(conversionID string, cmd *exec.Cmd) {
-	models.ActiveMutex.Lock()
-	defer models.ActiveMutex.Unlock()
-	models.ActiveConversions[conversionID] = cmd
-	log.Printf("Registered active conversion: %s", conversionID)
-}
-
-func unregisterActiveConversion(conversionID string) {
-	models.ActiveMutex.Lock()
-	defer models.ActiveMutex.Unlock()
-	delete(models.ActiveConversions, conversionID)
-	log.Printf("Unregistered conversion: %s", conversionID)
-}
-
-// processFFmpegProgress parses FFmpeg progress output
-func processFFmpegProgress(stdout io.ReadCloser, status *models.ConversionStatus) {
+// processFFmpegProgress parses FFmpeg progress output from stdout.
+// NOTE: Accurate percentage requires total duration, which is complex to get reliably beforehand.
+// This provides a basic indication of activity rather than precise percentage.
+func processFFmpegProgress(stdout io.ReadCloser, conversionID string, status *models.ConversionStatus) {
 	defer stdout.Close()
 	scanner := bufio.NewScanner(stdout)
+	var lastProgressUpdate time.Time
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -266,71 +262,28 @@ func processFFmpegProgress(stdout io.ReadCloser, status *models.ConversionStatus
 		if len(parts) != 2 {
 			continue
 		}
-		
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
-		switch key {
-		case "out_time_us":
-			// Handle progress update based on time
-			// This is simplified as we'd typically need the total duration
-			// Just update some progress to show activity
-			models.ConversionMutex.Lock()
-			if !status.Complete && status.Error == "" {
-				// Just increment progress as we can't calculate percentage without duration
-				status.Progress += 5
-				if status.Progress > 95 {
-					status.Progress = 95 // Cap at 95% until complete
-				}
+		// Update progress based on 'out_time_us' or similar key if available
+		// This is a very rough estimate as total duration isn't known easily
+		if key == "out_time_us" || key == "frame" {
+			// Update progress periodically to avoid excessive locking
+			if time.Since(lastProgressUpdate) > 500*time.Millisecond {
+				// Use the helper function from models package
+				models.UpdateProgress(conversionID, 0.5) // Increment by 0.5%
+				lastProgressUpdate = time.Now()
 			}
-			models.ConversionMutex.Unlock()
-			
-		case "progress":
-			if value == "end" {
-				log.Printf("FFmpeg progress stream ended for %s", filepath.Base(status.InputPath))
-				models.ConversionMutex.Lock()
-				if !status.Complete && status.Error == "" {
-					status.Progress = 100.0
-				}
-				models.ConversionMutex.Unlock()
-				return
-			}
+		} else if key == "progress" && value == "end" {
+			log.Printf("FFmpeg progress stream ended for job %s", conversionID)
+			// Final progress update will be handled after cmd.Wait() succeeds
+			return // Stop processing progress stream
 		}
 	}
 
 	if err := scanner.Err(); err != nil && err != io.EOF {
-		log.Printf("Error reading FFmpeg progress: %v", err)
+		log.Printf("Error reading FFmpeg progress for job %s: %v", conversionID, err)
 	}
 }
 
-// reportError updates the status with an error message and cleans up
-func reportError(status *models.ConversionStatus, errorMsg string) {
-	// Truncate overly long error messages
-	const maxErrorLength = 500
-	trimmedErrorMsg := errorMsg
-	if len(trimmedErrorMsg) > maxErrorLength {
-		trimmedErrorMsg = trimmedErrorMsg[:maxErrorLength] + "... (truncated)"
-	}
-
-	log.Printf("ERROR for job %s -> %s: %s", 
-		filepath.Base(status.InputPath), filepath.Base(status.OutputPath), errorMsg)
-
-	models.ConversionMutex.Lock()
-	if status.Error == "" {
-		status.Error = trimmedErrorMsg
-	}
-	status.Complete = true
-	models.ConversionMutex.Unlock()
-
-	// Clean up the input file on error
-	if status.InputPath != "" {
-		os.Remove(status.InputPath)
-	}
-
-	// Remove potentially incomplete output file
-	if status.OutputPath != "" {
-		if _, err := os.Stat(status.OutputPath); err == nil {
-			os.Remove(status.OutputPath)
-		}
-	}
-}
+// Note: reportError logic is now integrated into convertVideo and uses model helpers.

@@ -18,11 +18,9 @@ func EnsureDirectoryExists(dirPath string) error {
 	if dirPath == "" {
 		return fmt.Errorf("empty directory path")
 	}
-	
 	// Use MkdirAll which is idempotent and creates parent dirs if needed
-	err := os.MkdirAll(dirPath, 0755) // Use 0755 permissions
-	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %v", dirPath, err)
+	if err := os.MkdirAll(dirPath, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dirPath, err)
 	}
 	return nil
 }
@@ -30,38 +28,28 @@ func EnsureDirectoryExists(dirPath string) error {
 // SanitizeFilename sanitizes a filename to be safe for file system operations
 func SanitizeFilename(fileName string) string {
 	if fileName == "" {
-		return "" // Return empty if input is empty
+		return ""
 	}
-	
-	// Get base name to prevent path manipulation like "../../etc/passwd"
+
 	baseName := filepath.Base(fileName)
-	
-	// Replace potentially harmful characters with underscores
 	sanitized := filenameSanitizeRegex.ReplaceAllString(baseName, "_")
-	
-	// Replace multiple consecutive underscores with a single one
 	sanitized = regexp.MustCompile(`_+`).ReplaceAllString(sanitized, "_")
-	
-	// Trim leading/trailing underscores/dots that might cause issues
 	sanitized = strings.Trim(sanitized, "._")
 
-	// Limit length to prevent excessively long names
-	maxLength := 100
+	// Limit length
+	const maxLength = 100
 	if len(sanitized) > maxLength {
-		// Try to keep the extension if possible
 		ext := filepath.Ext(sanitized)
-		base := strings.TrimSuffix(sanitized, ext)
-		
-		// Handle multibyte characters correctly
-		runes := []rune(base)
-		if len(runes) > maxLength-len(ext) {
-			base = string(runes[:maxLength-len(ext)])
+		// Ensure base name length calculation handles multibyte characters correctly
+		baseRunes := []rune(strings.TrimSuffix(sanitized, ext))
+		maxBaseLen := maxLength - len(ext)
+		if len(baseRunes) > maxBaseLen {
+			sanitized = string(baseRunes[:maxBaseLen]) + ext
 		}
-		sanitized = base + ext
 	}
-	
-	// Check if sanitization resulted in empty/invalid name
+
 	if sanitized == "" || sanitized == "." || sanitized == ".." {
+		// Fallback for edge cases where sanitization results in an invalid name
 		return fmt.Sprintf("sanitized_fallback_%d", time.Now().UnixNano())
 	}
 	return sanitized
@@ -71,11 +59,10 @@ func SanitizeFilename(fileName string) string {
 func CleanupOldFiles(dirPath string, maxAge time.Duration) int {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return 0 // Directory doesn't exist, nothing to cleanup
+		if !os.IsNotExist(err) { // Log only if it's not a "directory not found" error
+			log.Printf("Error reading directory %s for cleanup: %v", dirPath, err)
 		}
-		log.Printf("Error reading directory %s for cleanup: %v", dirPath, err)
-		return 0
+		return 0 // Directory doesn't exist or error reading, nothing removed
 	}
 
 	now := time.Now()
@@ -93,17 +80,14 @@ func CleanupOldFiles(dirPath string, maxAge time.Duration) int {
 		if now.Sub(info.ModTime()) > maxAge {
 			filePath := filepath.Join(dirPath, entry.Name())
 			err := os.Remove(filePath)
-			if err != nil {
-				// Avoid logging errors for files that might already be deleted
-				if !os.IsNotExist(err) {
-					log.Printf("Error removing old file %s: %v", filePath, err)
-				}
-			} else {
+			if err != nil && !os.IsNotExist(err) { // Avoid logging errors for files already deleted
+				log.Printf("Error removing old file %s: %v", filePath, err)
+			} else if err == nil {
 				removedCount++
 			}
 		}
 	}
-	
+
 	if removedCount > 0 {
 		log.Printf("Removed %d old files from %s", removedCount, dirPath)
 	}
