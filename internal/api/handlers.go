@@ -176,7 +176,10 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	if err := h.Converter.QueueJob(job); err != nil {
 		log.Printf("ERROR [job %s]: Failed to queue job: %v", conversionID, err)
 		h.Store.DeleteStatus(conversionID)
-		os.Remove(uploadedFilePath)
+		// Attempt to remove the uploaded file, log if it fails
+		if removeErr := os.Remove(uploadedFilePath); removeErr != nil {
+			log.Printf("WARN [job %s]: Failed to remove uploaded file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
+		}
 		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
 		return
 	}

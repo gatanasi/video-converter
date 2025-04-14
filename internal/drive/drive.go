@@ -33,7 +33,11 @@ func DownloadFile(fileID, apiKey, destinationPath string, maxFileSize int64) err
 	if err != nil {
 		return fmt.Errorf("download request failed for file ID %s: %w", fileID, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("WARN: Error closing response body for file ID %s download: %v", fileID, closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return handleDriveAPIError(resp, fmt.Sprintf("download failed for file ID %s", fileID))
@@ -51,20 +55,30 @@ func DownloadFile(fileID, apiKey, destinationPath string, maxFileSize int64) err
 	if err != nil {
 		return fmt.Errorf("failed to create output file %s: %w", destinationPath, err)
 	}
-	defer out.Close() // Ensure file handle is closed
+	defer func() {
+		if closeErr := out.Close(); closeErr != nil { // Ensure file handle is closed
+			log.Printf("WARN: Error closing output file %s for file ID %s: %v", destinationPath, fileID, closeErr)
+		}
+	}()
 
 	// Use io.LimitedReader to enforce maxFileSize during download, even if Content-Length was wrong/missing
 	limitedReader := &io.LimitedReader{R: resp.Body, N: maxFileSize + 1} // Read one extra byte to detect oversize
 
 	written, err := io.Copy(out, limitedReader)
 	if err != nil {
-		os.Remove(destinationPath) // Clean up partially written file on copy error
+		// Clean up partially written file on copy error
+		if removeErr := os.Remove(destinationPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Printf("WARN: Failed to remove partially written file %s: %v", destinationPath, removeErr)
+		}
 		return fmt.Errorf("failed to write file %s during download: %w", destinationPath, err)
 	}
 
 	// Check if the limit was hit
 	if limitedReader.N <= 0 {
-		os.Remove(destinationPath) // Clean up oversized file
+		// Clean up oversized file
+		if removeErr := os.Remove(destinationPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Printf("WARN: Failed to remove oversized file %s: %v", destinationPath, removeErr)
+		}
 		return fmt.Errorf("file ID %s download exceeded maximum size of %d bytes", fileID, maxFileSize)
 	}
 
@@ -94,7 +108,11 @@ func ListVideos(folderID string, apiKey string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list request failed for folder %s: %w", folderID, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Printf("WARN: Error closing response body for folder %s list: %v", folderID, closeErr)
+		}
+	}()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
