@@ -120,14 +120,14 @@ func (s *Store) SetProgressPercentage(id string, percentage float64) {
 	if status, exists := s.statuses[id]; exists {
 		// Only update if not already completed or errored
 		if !status.Complete && status.Error == "" {
-				// Clamp percentage between 0 and 99
-				progress := percentage
-				if progress < 0 {
-					progress = 0
-				} else if progress > 99.0 {
-					progress = 99.0
-				}
-				status.Progress = progress
+			// Clamp percentage between 0 and 99
+			progress := percentage
+			if progress < 0 {
+				progress = 0
+			} else if progress > 99.0 {
+				progress = 99.0
+			}
+			status.Progress = progress
 		}
 	}
 }

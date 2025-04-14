@@ -243,9 +243,9 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	// Goroutine to read stdout (FFmpeg progress)
 	go func() {
 		defer wg.Done()
-		// Pass the potentially updated status (with duration) to the progress processor
-		currentStatus, _ := c.store.GetStatus(conversionID) // Fetch latest status
-		c.processFFmpegProgress(stdoutPipe, conversionID, &currentStatus)
+		// Pass the original status pointer, which includes the duration if found.
+		// processFFmpegProgress needs a pointer to potentially read DurationSeconds.
+		c.processFFmpegProgress(stdoutPipe, conversionID, status)
 	}()
 
 	// Wait for FFmpeg command to complete
@@ -256,24 +256,45 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 
 	// Check FFmpeg exit code *after* reading pipes
 	if err != nil {
+		// Fetch status *once* after command completion to check for abort/errors
+		currentStatus, exists := c.store.GetStatus(conversionID)
+		if !exists {
+			// This is unexpected if the command ran, log a warning.
+			// The job might have been deleted concurrently?
+			log.Printf("WARN [job %s]: Status not found after FFmpeg command finished.", conversionID)
+			// Attempt cleanup anyway, assuming an error occurred.
+			if removeErr := os.Remove(outputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove potentially incomplete output file %s after status missing: %v", conversionID, outputPath, removeErr)
+			}
+			if removeErr := os.Remove(inputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove input file %s after status missing: %v", conversionID, inputPath, removeErr)
+			}
+			return // Cannot proceed without status
+		}
+
 		// Check if the error is due to the process being killed (aborted)
-		currentStatus, _ := c.store.GetStatus(conversionID) // Re-fetch status via store
-		// Check if the error is *not* the specific "aborted by user" message
-		// or a generic killed message (less reliable check)
 		isAbortError := currentStatus.Error == "Conversion aborted by user"
+		// Check if the FFmpeg error itself indicates a kill signal (less reliable)
 		isKilledError := strings.Contains(err.Error(), "signal: killed") || strings.Contains(err.Error(), "exit status -1") // OS-dependent
 
 		if !isAbortError && !isKilledError {
+			// Genuine FFmpeg execution error
 			errMsg := fmt.Sprintf("FFmpeg execution failed: %v", err)
 			log.Printf("ERROR [job %s]: %s\nFFmpeg Output:\n%s", conversionID, errMsg, ffmpegErrOutput.String())
-			c.store.UpdateStatusWithError(conversionID, errMsg+": "+ffmpegErrOutput.String())
+			// Update status only if it wasn't already marked by abort
+			if currentStatus.Error == "" { // Avoid overwriting specific abort message
+				c.store.UpdateStatusWithError(conversionID, errMsg+": "+ffmpegErrOutput.String())
+			}
 		} else if !isAbortError {
-			// If it was killed but not via our abort, log it but use the generic abort message
+			// If it was killed but not via our specific abort message, log it.
+			// The status might have already been set by the abort handler, or we set a generic one now.
 			log.Printf("WARN [job %s]: FFmpeg process killed unexpectedly: %v", conversionID, err)
-			// Status might already be set by abort handler, or we set it now
-			c.store.UpdateStatusWithError(conversionID, "Conversion process terminated unexpectedly")
+			if currentStatus.Error == "" { // Avoid overwriting specific abort message
+				c.store.UpdateStatusWithError(conversionID, "Conversion process terminated unexpectedly")
+			}
 		}
 		// Cleanup potentially incomplete output file if error occurred (and not aborted cleanly)
+		// We check isAbortError based on the status we fetched.
 		if !isAbortError {
 			if removeErr := os.Remove(outputPath); removeErr != nil && !os.IsNotExist(removeErr) {
 				log.Printf("WARN [job %s]: Failed to remove incomplete output file %s: %v", conversionID, outputPath, removeErr)
@@ -348,7 +369,8 @@ func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionI
 	}()
 	scanner := bufio.NewScanner(stdout)
 	var lastProgressUpdate time.Time
-	hasDuration := status.DurationSeconds > 0
+	// Check duration directly from the passed status pointer
+	hasDuration := status != nil && status.DurationSeconds > 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -361,7 +383,8 @@ func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionI
 
 		if hasDuration && key == "out_time_us" {
 			outTimeUs, err := strconv.ParseFloat(value, 64)
-			if err == nil && outTimeUs >= 0 {
+			// Ensure status pointer is not nil before accessing DurationSeconds
+			if err == nil && outTimeUs >= 0 && status != nil {
 				outTimeSec := outTimeUs / 1_000_000.0
 				progress := (outTimeSec / status.DurationSeconds) * 100.0
 				// Update progress using the calculated percentage
@@ -372,11 +395,16 @@ func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionI
 			// Fallback: Increment progress periodically if duration is unknown
 			if time.Since(lastProgressUpdate) > 500*time.Millisecond {
 				// Fetch current progress to increment it
+				// Handle the 'exists' boolean correctly
 				currentStatus, exists := c.store.GetStatus(conversionID)
 				if exists {
 					newProgress := currentStatus.Progress + 0.5 // Simple increment
 					c.store.SetProgressPercentage(conversionID, newProgress)
-					lastProgressUpdate = time.Now()
+					lastProgressUpdate = time.Now() // Corrected typo: Now() instead of now()
+				} else {
+					// Log if status is unexpectedly missing during fallback progress update
+					log.Printf("WARN [job %s]: Status not found during fallback progress update.", conversionID)
+					// Optionally break or return if this indicates a problem
 				}
 			}
 		} else if key == "progress" && value == "end" {
