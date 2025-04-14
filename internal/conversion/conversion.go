@@ -220,10 +220,14 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 		}
 		// Cleanup potentially incomplete output file if error occurred (and not aborted cleanly)
 		if !isAbortError {
-			os.Remove(outputPath)
+			if removeErr := os.Remove(outputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove incomplete output file %s: %v", conversionID, outputPath, removeErr)
+			}
 		}
 		// Input file cleanup happens regardless of error type if conversion failed/aborted
-		os.Remove(inputPath)
+		if removeErr := os.Remove(inputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Printf("WARN [job %s]: Failed to remove input file %s after error/abort: %v", conversionID, inputPath, removeErr)
+		}
 		return
 	}
 
@@ -233,15 +237,21 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 		errMsg := fmt.Sprintf("FFmpeg finished but output file error: %v", statErr)
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
 		c.store.UpdateStatusWithError(conversionID, errMsg)
-		os.Remove(inputPath) // Clean up input
+		if removeErr := os.Remove(inputPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Printf("WARN [job %s]: Failed to remove input file %s after output file error: %v", conversionID, inputPath, removeErr)
+		}
 		return
 	}
 	if outputInfo.Size() == 0 {
 		errMsg := "FFmpeg finished but output file is empty (0 bytes)"
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
 		c.store.UpdateStatusWithError(conversionID, errMsg)
-		os.Remove(outputPath) // Clean up empty output
-		os.Remove(inputPath)  // Clean up input
+		if removeErr := os.Remove(outputPath); removeErr != nil && !os.IsNotExist(removeErr) { // Clean up empty output
+			log.Printf("WARN [job %s]: Failed to remove empty output file %s: %v", conversionID, outputPath, removeErr)
+		}
+		if removeErr := os.Remove(inputPath); removeErr != nil && !os.IsNotExist(removeErr) { // Clean up input
+			log.Printf("WARN [job %s]: Failed to remove input file %s after empty output: %v", conversionID, inputPath, removeErr)
+		}
 		return
 	}
 
@@ -275,7 +285,11 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 
 // processFFmpegProgress parses FFmpeg progress output from stdout.
 func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionID string, status *models.ConversionStatus) {
-	defer stdout.Close()
+	defer func() {
+		if err := stdout.Close(); err != nil {
+			log.Printf("WARN [job %s]: Error closing FFmpeg stdout pipe: %v", conversionID, err)
+		}
+	}()
 	scanner := bufio.NewScanner(stdout)
 	var lastProgressUpdate time.Time
 
