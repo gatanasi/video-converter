@@ -4,21 +4,27 @@
 import configManager from './config/config-manager.js';
 import apiService from './api/api-service.js';
 import { VideoListComponent, ConversionFormComponent, FileListComponent, ActiveConversionsComponent } from './components/ui-components.js';
-import { showMessage, clearMessages } from './utils/utils.js';
-import { formatBytes } from './utils/utils.js'; // Import formatBytes
+import { showMessage, clearMessages, formatBytes } from './utils/utils.js'; // Combined imports
 
 class App {
     constructor() {
         // DOM Element References
-        this.folderIdInput = document.getElementById('folder-id');
-        this.loadVideosBtn = document.getElementById('load-videos-btn');
         this.messageArea = document.getElementById('message-area');
-        this.videoListContainer = document.getElementById('video-list');
-        this.conversionFormContainer = document.getElementById('conversion-form');
-        this.fileListContainer = document.getElementById('file-list');
         this.activeConversionsContainer = document.getElementById('active-conversions');
         this.tabButtons = document.querySelectorAll('.tab-button');
         this.tabPanels = document.querySelectorAll('.tab-panel');
+        this.fileListContainer = document.getElementById('file-list');
+
+        // Source Selection
+        this.sourceRadioButtons = document.querySelectorAll('input[name="videoSource"]');
+        this.driveSourceSection = document.getElementById('drive-source-section');
+        this.uploadSourceSection = document.getElementById('upload-source-section');
+        this.driveVideoListSection = document.getElementById('drive-video-list-section'); // Includes the list and button
+
+        // Drive elements
+        this.folderIdInput = document.getElementById('folder-id');
+        this.loadVideosBtn = document.getElementById('load-videos-btn');
+        this.videoListContainer = document.getElementById('video-list'); // The actual list inside the section
 
         // Upload elements
         this.fileUploadInput = document.getElementById('file-upload');
@@ -27,17 +33,21 @@ class App {
         this.uploadFileName = document.getElementById('upload-file-name');
         this.uploadFileSize = document.getElementById('upload-file-size');
 
-        // Drive conversion button (needs to be added back, maybe near video list?)
-        // Let's add a dedicated button for Drive conversions near the video list controls
-        // We'll create it dynamically in setupEventListeners or initComponents
+        // Conversion Options
+        this.conversionFormContainer = document.getElementById('conversion-options-section'); // Use section ID
+
+        // Drive conversion button (created dynamically)
+        this.driveConvertBtn = null;
 
         this.selectedDriveVideos = []; // Keep track of selected Drive videos
         this.selectedUploadFile = null; // Keep track of the selected file for upload
+        this.currentVideoSource = 'drive'; // Default source
 
         this.initComponents();
         this.setupEventListeners();
         this.loadConfigAndInitialData();
         this.activateTab('convert'); // Start on the convert tab
+        this.updateSourceVisibility(); // Set initial visibility based on default source
     }
 
     initComponents() {
@@ -61,14 +71,13 @@ class App {
 
         // Conversion form component (for 'convert' tab) - Now just displays options
         this.conversionFormComponent = new ConversionFormComponent({
-            container: this.conversionFormContainer,
+            container: this.conversionFormContainer, // Pass the section container
             messageContainer: this.messageArea,
-            // onConversionComplete is handled by submit handlers below
         });
 
         // Video list component (for 'convert' tab)
         this.videoListComponent = new VideoListComponent({
-            container: this.videoListContainer,
+            container: this.videoListContainer, // Pass the inner list container
             // Pass selected videos array to the app
             onSelectVideo: (selectedVideos) => {
                 this.selectedDriveVideos = selectedVideos;
@@ -76,15 +85,15 @@ class App {
             }
         });
 
-        // Create Drive Convert Button dynamically
+        // Create Drive Convert Button dynamically and append to its section
         this.driveConvertBtn = document.createElement('button');
         this.driveConvertBtn.id = 'drive-convert-btn';
         this.driveConvertBtn.className = 'btn primary';
         this.driveConvertBtn.textContent = 'Convert Selected Drive Videos';
         this.driveConvertBtn.disabled = true;
-        // Insert it after the video list container (or adjust placement as needed)
-        this.videoListContainer.parentNode.insertBefore(this.driveConvertBtn, this.videoListContainer.nextSibling);
-
+        this.driveConvertBtn.style.marginTop = '15px'; // Add some space above the button
+        // Append button inside the drive video list *section*
+        this.driveVideoListSection.appendChild(this.driveConvertBtn);
     }
 
     setupEventListeners() {
@@ -104,12 +113,46 @@ class App {
             });
         });
 
+        // Source selection listener
+        this.sourceRadioButtons.forEach(radio => {
+            radio.addEventListener('change', (e) => this.handleSourceChange(e));
+        });
+
         // Upload listeners
         this.fileUploadInput.addEventListener('change', (e) => this.handleFileSelection(e));
         this.uploadConvertBtn.addEventListener('click', () => this.submitUploadConversion());
 
         // Drive conversion listener
         this.driveConvertBtn.addEventListener('click', () => this.submitDriveConversion());
+    }
+
+    // Handle change in video source selection
+    handleSourceChange(event) {
+        this.currentVideoSource = event.target.value;
+        this.updateSourceVisibility();
+        // Optionally clear messages or reset states when switching sources
+        clearMessages(this.messageArea);
+        if (this.currentVideoSource === 'drive') {
+            // Reset upload state if switching to drive
+            this.fileUploadInput.value = '';
+            this.handleFileSelection({ target: { files: [] } });
+        } else {
+            // Reset drive state if switching to upload
+            this.videoListComponent.displayVideos([]); // Clear video list
+            this.selectedDriveVideos = [];
+            this.updateDriveConvertButtonState();
+        }
+    }
+
+    // Show/hide sections based on the selected source
+    updateSourceVisibility() {
+        const isDrive = this.currentVideoSource === 'drive';
+        this.driveSourceSection.classList.toggle('hidden', !isDrive);
+        this.driveVideoListSection.classList.toggle('hidden', !isDrive); // Hide list+button section
+        this.uploadSourceSection.classList.toggle('hidden', isDrive);
+
+        // Ensure conversion options are always visible on this tab
+        this.conversionFormContainer.classList.remove('hidden');
     }
 
     // Update Drive Convert Button based on selection
@@ -161,6 +204,9 @@ class App {
     }
 
     async loadVideosFromDrive() {
+        // Only proceed if Drive is the selected source
+        if (this.currentVideoSource !== 'drive') return;
+
         const folderInputValue = this.folderIdInput.value;
         const folderId = configManager.extractFolderId(folderInputValue);
 
@@ -200,6 +246,9 @@ class App {
 
     // Renamed from submitConversion in ConversionFormComponent
     async submitDriveConversion() {
+        // Only proceed if Drive is the selected source
+        if (this.currentVideoSource !== 'drive') return;
+
         if (this.selectedDriveVideos.length === 0) {
             showMessage(this.messageArea, 'Please select at least one video from Google Drive first.', 'error');
             return;
@@ -295,6 +344,9 @@ class App {
 
     // New method for handling upload conversion submission
     async submitUploadConversion() {
+        // Only proceed if Upload is the selected source
+        if (this.currentVideoSource !== 'upload') return;
+
         if (!this.selectedUploadFile) {
             showMessage(this.messageArea, 'Please select a file to upload first.', 'error');
             return;
@@ -368,8 +420,12 @@ class App {
         if (tabId === 'files') {
             this.fileListComponent.loadFiles();
         } else if (tabId === 'convert') {
+            // Ensure correct source sections are visible when switching TO convert tab
+            this.updateSourceVisibility();
             // Optionally reload videos if needed, or rely on initial load/button click
-            // this.loadVideosFromDrive();
+            // if (this.currentVideoSource === 'drive' && this.folderIdInput.value) {
+            //     this.loadVideosFromDrive();
+            // }
         }
 
         // Clear general messages when switching tabs?

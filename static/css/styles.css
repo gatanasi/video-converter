@@ -26,7 +26,7 @@ h1 {
   color: #4285f4;
 }
 
-h2 {
+h2, h3 { /* Apply to both h2 and h3 */
   margin-bottom: 15px;
   color: #5f6368;
 }
@@ -75,6 +75,45 @@ h2 {
   padding: 15px;
   border-radius: 5px;
 }
+
+/* Add source selection section */
+.source-selection-section,
+.folder-input-section,
+.upload-section,
+.video-list-section,
+.conversion-form-section,
+.files-section {
+  margin-bottom: 25px;
+}
+
+/* Style for source selection */
+.source-selection-section {
+    background-color: #e8f0fe; /* Light blue background */
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #4285f4;
+}
+
+.source-options {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.radio-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.radio-container input[type="radio"] {
+    margin-right: 8px;
+    width: 18px; /* Explicit size */
+    height: 18px; /* Explicit size */
+    cursor: pointer;
+}
+/* End source selection style */
 
 .folder-input-section,
 .upload-section, /* Add upload section */
