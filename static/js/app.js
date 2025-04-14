@@ -41,7 +41,7 @@ class App {
 
         this.selectedDriveVideos = []; // Keep track of selected Drive videos
         this.selectedUploadFile = null; // Keep track of the selected file for upload
-        this.currentVideoSource = 'drive'; // Default source
+        this.currentVideoSource = 'upload'; // Default source
 
         this.initComponents();
         this.setupEventListeners();
@@ -191,12 +191,7 @@ class App {
             // Use server default only if local config is empty and server provides one
             if (serverConfig.defaultDriveFolderId && !this.folderIdInput.value) {
                 this.folderIdInput.value = serverConfig.defaultDriveFolderId;
-                // Optionally save this default back to local config?
-                // configManager.set('googleDriveFolderId', serverConfig.defaultDriveFolderId);
             }
-
-            // Pre-load files for the files tab (will be displayed when tab is activated)
-            // this.fileListComponent.loadFiles(); // Moved to activateTab for efficiency
         } catch (error) {
             console.error('Error loading configuration:', error);
             showMessage(this.messageArea, error.message || 'Failed to load configuration.', 'error');
@@ -422,14 +417,7 @@ class App {
         } else if (tabId === 'convert') {
             // Ensure correct source sections are visible when switching TO convert tab
             this.updateSourceVisibility();
-            // Optionally reload videos if needed, or rely on initial load/button click
-            // if (this.currentVideoSource === 'drive' && this.folderIdInput.value) {
-            //     this.loadVideosFromDrive();
-            // }
         }
-
-        // Clear general messages when switching tabs?
-        // clearMessages(this.messageArea);
     }
 }
 

@@ -118,8 +118,6 @@ export class ActiveConversionsComponent {
             }
         } catch (error) {
             console.error('Error loading active conversions:', error);
-            // Avoid flooding UI during polling, show error only on initial load failure?
-            // Or maybe show a persistent but dismissible error bar? For now, just log.
         } finally {
             this.isPolling = false;
         }
