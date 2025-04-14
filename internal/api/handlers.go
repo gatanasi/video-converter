@@ -3,13 +3,14 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort" // Import the sort package
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -25,13 +26,15 @@ import (
 type Handler struct {
 	Config    models.Config
 	Converter *conversion.VideoConverter
+	Store     *conversion.Store
 }
 
 // NewHandler creates a new API handler.
-func NewHandler(config models.Config, converter *conversion.VideoConverter) *Handler {
+func NewHandler(config models.Config, converter *conversion.VideoConverter, store *conversion.Store) *Handler {
 	return &Handler{
 		Config:    config,
 		Converter: converter,
+		Store:     store,
 	}
 }
 
@@ -45,7 +48,6 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/abort/", h.AbortConversionHandler) // Expects /api/abort/{id}
 	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
 	mux.HandleFunc("/api/config", h.ConfigHandler)
-
 	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
 
 	// Serve static files (CSS, JS, images) from the 'static' directory
@@ -82,14 +84,17 @@ func (h *Handler) ListDriveVideosHandler(w http.ResponseWriter, r *http.Request)
 	log.Printf("Listing videos for folder: %s", folderID)
 	responseBytes, err := drive.ListVideos(folderID, h.Config.GoogleDriveAPIKey)
 	if err != nil {
-		h.sendErrorResponse(w, fmt.Sprintf("Failed to list videos from Google Drive: %v", err), http.StatusInternalServerError)
+		errMsg := fmt.Sprintf("Failed to list videos from Google Drive: %v", err)
+		log.Printf("ERROR: %s", errMsg)
+		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
-	// Parse the response to extract just the files array
 	var fileList models.GoogleDriveFileList
 	if err := json.Unmarshal(responseBytes, &fileList); err != nil {
-		h.sendErrorResponse(w, fmt.Sprintf("Failed to parse response from Google Drive: %v", err), http.StatusInternalServerError)
+		errMsg := fmt.Sprintf("Failed to parse response from Google Drive: %v", err)
+		log.Printf("ERROR: %s", errMsg)
+		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
@@ -104,9 +109,11 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var request models.DriveConversionRequest
-	r.Body = http.MaxBytesReader(w, r.Body, 1*1024*1024) // 1MB limit for JSON request
+	r.Body = http.MaxBytesReader(w, r.Body, 1*1024*1024)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		h.sendErrorResponse(w, fmt.Sprintf("Failed to parse request: %v", err), http.StatusBadRequest)
+		errMsg := fmt.Sprintf("Failed to parse request: %v", err)
+		log.Printf("WARN: %s", errMsg)
+		h.sendErrorResponse(w, errMsg, http.StatusBadRequest)
 		return
 	}
 
@@ -121,7 +128,6 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Prepare filenames and paths
 	sanitizedBaseName := filestore.SanitizeFilename(request.FileName)
 	if sanitizedBaseName == "" {
 		sanitizedBaseName = fmt.Sprintf("gdrive-video-%s", request.FileID) // Fallback
@@ -136,52 +142,49 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	outputFileName := fmt.Sprintf("%s-%d.%s", fileNameWithoutExt, timestamp, request.TargetFormat)
 	outputFilePath := filepath.Join(h.Config.ConvertedDir, outputFileName)
 
-	// Create initial status entry
 	status := &models.ConversionStatus{
-		InputPath:  uploadedFilePath, // Store path where it *will* be downloaded
+		InputPath:  uploadedFilePath,
 		OutputPath: outputFilePath,
 		Format:     request.TargetFormat,
 		Progress:   0,
 		Complete:   false,
 	}
-	models.SetConversionStatus(conversionID, status) // Use helper
+	h.Store.SetStatus(conversionID, status)
 
-	// Download the file from Drive
 	log.Printf("Starting download for job %s (File ID: %s)", conversionID, request.FileID)
 	if err := drive.DownloadFile(request.FileID, h.Config.GoogleDriveAPIKey, uploadedFilePath, h.Config.MaxFileSize); err != nil {
 		errMsg := fmt.Sprintf("Failed to download file from Google Drive: %v", err)
-		models.UpdateStatusWithError(conversionID, errMsg) // Use helper
+		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
+		h.Store.UpdateStatusWithError(conversionID, errMsg)
 		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 	log.Printf("Download complete for job %s", conversionID)
 
-	// Create and queue the conversion job
 	job := models.ConversionJob{
 		ConversionID:     conversionID,
-		FileID:           request.FileID, // Keep for logging/tracking
-		FileName:         request.FileName, // Original name for context
+		FileID:           request.FileID,
+		FileName:         request.FileName,
 		TargetFormat:     request.TargetFormat,
-		UploadedFilePath: uploadedFilePath, // Path of the *downloaded* file
+		UploadedFilePath: uploadedFilePath,
 		OutputFilePath:   outputFilePath,
-		Status:           status, // Pass the pointer
+		Status:           status,
 		ReverseVideo:     request.ReverseVideo,
 		RemoveSound:      request.RemoveSound,
 	}
 
 	if err := h.Converter.QueueJob(job); err != nil {
-		models.DeleteConversionStatus(conversionID) // Clean up status if queue fails
-		os.Remove(uploadedFilePath)                 // Clean up downloaded file
+		log.Printf("ERROR [job %s]: Failed to queue job: %v", conversionID, err)
+		h.Store.DeleteStatus(conversionID)
+		os.Remove(uploadedFilePath)
 		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
 		return
 	}
 
-	// Respond with success and job ID
 	response := models.ConversionResponse{
 		Success:      true,
 		Message:      "Conversion job queued successfully",
 		ConversionID: conversionID,
-		// Download URL is determined later based on status
 	}
 	h.sendJSONResponse(w, response, http.StatusAccepted)
 }
@@ -194,13 +197,12 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, exists := models.GetConversionStatus(id) // Use helper
+	status, exists := h.Store.GetStatus(id)
 	if !exists {
 		h.sendErrorResponse(w, "Conversion not found or expired", http.StatusNotFound)
 		return
 	}
 
-	// Create response object from the retrieved status
 	response := struct {
 		ID          string  `json:"id"`
 		Progress    float64 `json:"progress"`
@@ -216,7 +218,6 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		Format:   status.Format,
 		DownloadURL: func() string {
 			if status.Complete && status.Error == "" {
-				// Generate download URL only if completed successfully
 				return fmt.Sprintf("/download/%s", filepath.Base(status.OutputPath))
 			}
 			return ""
@@ -230,31 +231,32 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	filename := strings.TrimPrefix(r.URL.Path, "/download/")
 	if filename == "" || strings.Contains(filename, "..") || strings.ContainsAny(filename, "/\\") {
+		log.Printf("WARN: Invalid filename requested for download: %s", filename)
 		http.Error(w, "Invalid filename", http.StatusBadRequest)
 		return
 	}
 
 	filePath := filepath.Join(h.Config.ConvertedDir, filename)
 
-	// Check if file exists and is not a directory before serving
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			log.Printf("WARN: Requested download file not found: %s", filePath)
 			http.Error(w, "File not found", http.StatusNotFound)
 		} else {
-			log.Printf("Error stating file %s: %v", filePath, err)
+			log.Printf("ERROR: Error stating download file %s: %v", filePath, err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
 	if fileInfo.IsDir() {
+		log.Printf("WARN: Directory requested for download instead of file: %s", filePath)
 		http.Error(w, "Invalid request (directory specified)", http.StatusBadRequest)
 		return
 	}
 
-	// Set headers for download
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-	contentType := "application/octet-stream" // Default
+	contentType := "application/octet-stream"
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
 	case ".mov": contentType = "video/quicktime"
@@ -276,12 +278,14 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 	entries, err := os.ReadDir(h.Config.ConvertedDir)
 	if err != nil {
-		// Don't treat "not found" as an error, just return empty list
 		if os.IsNotExist(err) {
+			log.Printf("INFO: Converted directory not found, returning empty list: %s", h.Config.ConvertedDir)
 			h.sendJSONResponse(w, []models.FileInfo{}, http.StatusOK)
 			return
 		}
-		h.sendErrorResponse(w, fmt.Sprintf("Failed to list files: %v", err), http.StatusInternalServerError)
+		errMsg := fmt.Sprintf("Failed to list files: %v", err)
+		log.Printf("ERROR: %s", errMsg)
+		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
@@ -290,8 +294,8 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 		if !entry.IsDir() {
 			info, err := entry.Info()
 			if err != nil {
-				log.Printf("Could not get info for file %s: %v", entry.Name(), err)
-				continue // Skip files we can't get info for
+				log.Printf("WARN: Could not get info for file %s: %v", entry.Name(), err)
+				continue
 			}
 			fileInfos = append(fileInfos, models.FileInfo{
 				Name:    entry.Name(),
@@ -302,7 +306,6 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Sort files by modification time, newest first
 	sort.Slice(fileInfos, func(i, j int) bool {
 		return fileInfos[i].ModTime.After(fileInfos[j].ModTime)
 	})
@@ -312,26 +315,27 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteFileHandler handles deleting a converted file.
 func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
+	filename := strings.TrimPrefix(r.URL.Path, "/api/delete-file/")
 	if r.Method != http.MethodDelete {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	filename := strings.TrimPrefix(r.URL.Path, "/api/delete-file/")
 	if filename == "" || strings.Contains(filename, "..") || strings.ContainsAny(filename, "/\\") {
+		log.Printf("WARN: Invalid filename requested for deletion: %s", filename)
 		http.Error(w, "Invalid filename", http.StatusBadRequest)
 		return
 	}
 
 	filePath := filepath.Join(h.Config.ConvertedDir, filename)
 
-	// Attempt to remove the file
 	err := os.Remove(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			log.Printf("WARN: File not found for deletion: %s", filePath)
 			http.Error(w, "File not found", http.StatusNotFound)
 		} else {
-			log.Printf("Failed to delete file %s: %v", filePath, err)
+			log.Printf("ERROR: Failed to delete file %s: %v", filePath, err)
 			h.sendErrorResponse(w, fmt.Sprintf("Failed to delete file: %v", err), http.StatusInternalServerError)
 		}
 		return
@@ -343,18 +347,18 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // AbortConversionHandler handles requests to abort a conversion job.
 func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/api/abort/")
 	if r.Method != http.MethodPost {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	id := strings.TrimPrefix(r.URL.Path, "/api/abort/")
 	if id == "" {
 		h.sendErrorResponse(w, "Missing conversion ID", http.StatusBadRequest)
 		return
 	}
 
-	status, exists := models.GetConversionStatus(id)
+	status, exists := h.Store.GetStatus(id)
 	if !exists {
 		h.sendErrorResponse(w, "Conversion not found", http.StatusNotFound)
 		return
@@ -365,45 +369,43 @@ func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	cmd, active := models.GetActiveConversionCmd(id)
+	cmd, active := h.Store.GetActiveCmd(id)
 	if !active {
-		// It might have just finished between the status check and here.
-		// Re-check status. If it's now complete, report conflict. Otherwise, report not found.
-		status, exists = models.GetConversionStatus(id)
+		status, exists = h.Store.GetStatus(id)
 		if exists && status.Complete {
+			log.Printf("WARN [job %s]: Abort requested but conversion completed before processing", id)
 			h.sendErrorResponse(w, "Conversion completed before abort request processed", http.StatusConflict)
 		} else {
+			log.Printf("WARN [job %s]: Abort requested but active conversion process not found", id)
 			h.sendErrorResponse(w, "Active conversion process not found (may have already finished)", http.StatusNotFound)
 		}
 		return
 	}
 
-	// Attempt to terminate the process
+	log.Printf("INFO [job %s]: Attempting to abort conversion process", id)
 	var abortErr error
 	if runtime.GOOS == "windows" {
 		abortErr = cmd.Process.Kill()
 	} else {
-		// Send SIGTERM first for potentially cleaner shutdown
 		abortErr = cmd.Process.Signal(syscall.SIGTERM)
-		if abortErr != nil {
-			// If SIGTERM fails, try SIGKILL
-			log.Printf("SIGTERM failed for conversion %s, trying SIGKILL: %v", id, abortErr)
+		if abortErr != nil && !errors.Is(abortErr, os.ErrProcessDone) {
+			log.Printf("WARN [job %s]: SIGTERM failed, trying SIGKILL: %v", id, abortErr)
 			abortErr = cmd.Process.Signal(syscall.SIGKILL)
+		} else if abortErr == nil {
+			log.Printf("INFO [job %s]: Sent SIGTERM to process", id)
 		}
 	}
 
-	if abortErr != nil {
-		// Even if killing fails, update status to reflect the attempt
+	if abortErr != nil && !errors.Is(abortErr, os.ErrProcessDone) {
 		errMsg := fmt.Sprintf("Failed to stop FFmpeg process: %v", abortErr)
-		log.Printf("Error aborting conversion %s: %s", id, errMsg)
-		models.UpdateStatusWithError(id, "Abort requested, but process termination failed: "+abortErr.Error())
+		log.Printf("ERROR [job %s]: %s", id, errMsg)
+		h.Store.UpdateStatusWithError(id, "Abort requested, but process termination failed: "+abortErr.Error())
 		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
-	// Update status after successful signal/kill
-	models.UpdateStatusWithError(id, "Conversion aborted by user")
-	log.Printf("Conversion %s aborted by user request", id)
+	h.Store.UpdateStatusWithError(id, "Conversion aborted by user")
+	log.Printf("INFO [job %s]: Conversion abort request processed successfully", id)
 
 	response := models.ConversionResponse{
 		Success:      true,
@@ -420,7 +422,7 @@ func (h *Handler) ActiveConversionsHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	activeJobs := models.GetActiveConversionsInfo() // Use helper
+	activeJobs := h.Store.GetActiveConversionsInfo()
 
 	h.sendJSONResponse(w, activeJobs, http.StatusOK)
 }
@@ -432,7 +434,6 @@ func (h *Handler) ConfigHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Only expose necessary config to the frontend
 	response := struct {
 		DefaultDriveFolderId string `json:"defaultDriveFolderId"`
 	}{
@@ -447,7 +448,6 @@ func (h *Handler) sendJSONResponse(w http.ResponseWriter, data interface{}, stat
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		// Log error, but can't send another response if headers are already sent
 		log.Printf("Error encoding JSON response: %v", err)
 	}
 }
@@ -458,5 +458,7 @@ func (h *Handler) sendErrorResponse(w http.ResponseWriter, errMsg string, status
 		Success: false,
 		Error:   errMsg,
 	}
+	// Log the error being sent to the client
+	log.Printf("WARN: Sending error response (status %d): %s", statusCode, errMsg)
 	h.sendJSONResponse(w, response, statusCode)
 }
