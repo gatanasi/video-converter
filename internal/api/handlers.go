@@ -48,8 +48,8 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
 
 	// Serve static files and the root index.html
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	mux.Handle("/", http.FileServer(http.Dir(".")))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("video-converter/static"))))
+	mux.Handle("/", http.FileServer(http.Dir("video-converter")))
 }
 
 // ListDriveVideosHandler lists videos from a Google Drive folder.

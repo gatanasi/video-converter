@@ -69,9 +69,9 @@ After=network.target
 [Service]
 Type=simple
 User=converter
-WorkingDirectory=/home/converter/video-converter
-EnvironmentFile=/home/converter/video-converter/.env
-ExecStart=/home/converter/video-converter/video-converter
+WorkingDirectory=/home/converter
+EnvironmentFile=/home/converter/.env
+ExecStart=/home/converter/video-converter-app
 Restart=on-failure
 RestartSec=5
 
