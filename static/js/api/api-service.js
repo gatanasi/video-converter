@@ -72,6 +72,32 @@ class ApiService {
     }
 
     /**
+     * Upload a video file and start conversion.
+     * @param {File} file - The video file to upload.
+     * @param {Object} options - Conversion options (targetFormat, reverseVideo, removeSound).
+     * @returns {Promise<Object>} - Conversion initiation response.
+     */
+    async uploadAndConvert(file, options) {
+        const formData = new FormData();
+        formData.append('videoFile', file);
+        formData.append('targetFormat', options.targetFormat);
+        formData.append('reverseVideo', options.reverseVideo);
+        formData.append('removeSound', options.removeSound);
+
+        // Note: We don't set Content-Type header when using FormData with fetch,
+        // the browser sets it correctly including the boundary.
+        return this.apiRequest(
+            `/api/upload-convert`,
+            {
+                method: 'POST',
+                body: formData
+                // No 'Content-Type' header needed here
+            },
+            'uploadAndConvert'
+        );
+    }
+
+    /**
      * Get the status of a specific conversion.
      * @param {String} conversionId - ID of the conversion.
      * @returns {Promise<Object>} - Conversion status object.

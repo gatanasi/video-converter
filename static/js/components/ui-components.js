@@ -511,24 +511,29 @@ export class VideoListComponent {
 
 /**
  * Conversion Form Component - Handles conversion options and submission.
+ * Now primarily displays options; submission logic is handled by App for Drive/Upload separately.
  */
 export class ConversionFormComponent {
     constructor(options) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
-        this.onConversionComplete = options.onConversionComplete;
+        // onConversionComplete is now handled by App's specific submit handlers
         // activeConversionsComponent is passed but not directly used here, maybe remove?
-        this.selectedVideos = []; // Store the array of selected videos
+        this.selectedVideos = []; // Still useful if App needs to read it
 
         this.createForm();
-        this.convertButton = this.container.querySelector('#convert-button');
-        this.updateFormState(); // Initial state
+        // Remove button reference and initial state update
+        // this.convertButton = this.container.querySelector('#convert-button');
+        // this.updateFormState(); // Initial state removed
     }
 
     createForm() {
         const form = document.createElement('form');
         form.className = 'conversion-form';
+        // Removed the submit button from here, it will be handled separately
+        // for Drive selection and Upload.
         form.innerHTML = `
+            <h3>Conversion Options</h3>
             <div class="form-group">
                 <label for="target-format">Target Format:</label>
                 <select id="target-format" class="form-control">
@@ -547,15 +552,14 @@ export class ConversionFormComponent {
                     Remove Sound
                 </label>
             </div>
-            <div class="form-actions">
-                <button type="submit" id="convert-button" class="btn primary">Convert Video</button>
-            </div>
+            <!-- Removed form-actions and submit button -->
         `;
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.submitConversion();
-        });
+        // Remove form submit listener, as options are read directly
+        // form.addEventListener('submit', (e) => {
+        //     e.preventDefault();
+        //     this.submitConversion(); // This logic moves to App.js
+        // });
 
         this.container.appendChild(form);
     }
@@ -563,117 +567,22 @@ export class ConversionFormComponent {
     /** Update based on the list of selected videos from VideoListComponent */
     updateSelectedVideos(videos) {
         this.selectedVideos = videos || [];
-        this.updateFormState();
+        // No longer updates form state directly, App will handle button enablement
+        // this.updateFormState();
     }
 
-    updateFormState() {
-        const count = this.selectedVideos.length;
-        if (this.convertButton) {
-            this.convertButton.disabled = count === 0;
-            this.convertButton.textContent = count > 1 ? `Convert ${count} Videos` : 'Convert Video';
-        }
-        // Hide/show form section based on selection?
-        this.container.classList.toggle('hidden', count === 0);
-    }
+    // Removed updateFormState method
+    // updateFormState() { ... }
 
-    async submitConversion() {
-        if (this.selectedVideos.length === 0) {
-            showMessage(this.messageContainer, 'Please select at least one video first.', 'error');
-            return;
-        }
+    // Removed submitConversion method - logic moved to App.js
+    // async submitConversion() { ... }
 
+    /** Helper method for App.js to get current options */
+    getConversionOptions() {
         const targetFormat = this.container.querySelector('#target-format').value;
         const reverseVideo = this.container.querySelector('#reverse-video').checked;
         const removeSound = this.container.querySelector('#remove-sound').checked;
-
-        // Disable button and show processing state
-        this.convertButton.disabled = true;
-        this.convertButton.classList.add('button-pulse');
-        const originalButtonText = this.convertButton.textContent;
-        this.convertButton.textContent = 'Processing...';
-
-        const videoCount = this.selectedVideos.length;
-        showMessage(
-            this.messageContainer,
-            `Starting conversion of ${videoCount} video${videoCount !== 1 ? 's' : ''}...`,
-            'info',
-            0 // Don't auto-hide this initial message
-        );
-
-        let successCount = 0;
-        let failCount = 0;
-        const conversionPromises = this.selectedVideos.map(video => {
-            const conversionData = {
-                fileId: video.id,
-                fileName: video.name,
-                mimeType: video.mimeType,
-                targetFormat: targetFormat,
-                reverseVideo: reverseVideo,
-                removeSound: removeSound
-            };
-            return apiService.convertFromDrive(conversionData)
-                .then(response => {
-                    if (response.success) {
-                        successCount++;
-                    } else {
-                        failCount++;
-                        // Show individual failure message immediately
-                        showMessage(
-                            this.messageContainer, // Or a dedicated error area?
-                            `Conversion failed for ${video.name}: ${response.error || 'Unknown error'}`,
-                            'error'
-                        );
-                    }
-                })
-                .catch(error => {
-                    failCount++;
-                    showMessage(
-                        this.messageContainer,
-                        `Error starting conversion for ${video.name}: ${error.message}`,
-                        'error'
-                    );
-                    console.error(`Conversion start error for ${video.name}:`, error);
-                });
-        });
-
-        // Wait for all conversion requests to be sent
-        await Promise.all(conversionPromises);
-
-        // Restore button state
-        this.convertButton.disabled = false; // Re-enable based on selection after completion
-        this.convertButton.classList.remove('button-pulse');
-        this.convertButton.textContent = originalButtonText; // Restore original text or update based on selection
-        this.updateFormState(); // Update button based on current selection state
-
-        // Show summary message
-        if (failCount === 0 && successCount > 0) {
-            showMessage(
-                this.messageContainer,
-                `Successfully started ${successCount} conversion${successCount > 1 ? 's' : ''}. See progress above.`,
-                'success'
-            );
-        } else if (successCount > 0) {
-            showMessage(
-                this.messageContainer,
-                `Started ${successCount} conversion${successCount > 1 ? 's' : ''}, but ${failCount} failed to start. See progress/errors above.`,
-                'warning'
-            );
-        } else {
-            // All failed to start, specific errors shown above
-            showMessage(
-                this.messageContainer,
-                `Failed to start any conversions. See errors above.`,
-                'error'
-            );
-        }
-
-        // Trigger callback (e.g., to refresh active conversions list)
-        if (this.onConversionComplete) {
-            this.onConversionComplete();
-        }
-
-        // Optionally scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return { targetFormat, reverseVideo, removeSound };
     }
 }
 
