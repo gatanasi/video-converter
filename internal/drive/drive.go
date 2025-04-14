@@ -125,7 +125,9 @@ func handleDriveAPIErrorResponse(statusCode int, status string, bodyBytes []byte
 	}
 
 	// Attempt to parse Google's specific error format
-	json.Unmarshal(bodyBytes, &googleError)
+	if err := json.Unmarshal(bodyBytes, &googleError); err != nil {
+		log.Printf("Failed to parse Google API error response: %v", err)
+	}
 
 	errMsg := fmt.Sprintf("%s: %s", contextMsg, status)
 	if googleError.Error.Message != "" {
@@ -142,5 +144,5 @@ func handleDriveAPIErrorResponse(statusCode int, status string, bodyBytes []byte
 	// Log the detailed error
 	log.Printf("Google Drive API Error: %s", errMsg)
 
-	return fmt.Errorf(errMsg) // Return the formatted error
+	return fmt.Errorf("%s", errMsg) // Use a constant format string with the variable as argument
 }

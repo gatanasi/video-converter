@@ -52,9 +52,6 @@ func CORS(next http.Handler) http.Handler {
 				// Vary header is important when reflecting specific origins
 				w.Header().Add("Vary", "Origin")
 			}
-		} else {
-			// Requests without an Origin header (e.g., same-origin, curl) are typically allowed implicitly
-			// No CORS headers needed for these.
 		}
 
 		// Set headers only if an origin was present and allowed
@@ -62,7 +59,7 @@ func CORS(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", allowOriginValue)
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE") // Adjust methods as needed
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")     // Adjust headers as needed
-			w.Header().Set("Access-Control-Allow-Credentials", "true")                       // If using credentials
+			w.Header().Set("Access-Control-Allow-Credentials", "true")                        // If using credentials
 		}
 
 		// Handle preflight (OPTIONS) requests

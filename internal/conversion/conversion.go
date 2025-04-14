@@ -103,8 +103,8 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 		"-i", inputPath,
 		"-threads", strconv.Itoa(threadCount),
 		"-progress", "pipe:1", // Send progress info to stdout
-		"-nostats",            // Suppress encoding stats on stderr
-		"-v", "warning",       // Log level for FFmpeg messages on stderr
+		"-nostats",      // Suppress encoding stats on stderr
+		"-v", "warning", // Log level for FFmpeg messages on stderr
 	}
 
 	// Add video filters if requested

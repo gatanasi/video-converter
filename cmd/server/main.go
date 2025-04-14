@@ -33,7 +33,7 @@ func main() {
 
 	// Create conversion store for tracking active conversions
 	store := conversion.NewStore()
-	
+
 	converter := conversion.NewVideoConverter(conf.WorkerCount, store)
 	converter.Start()
 	defer converter.Stop()
