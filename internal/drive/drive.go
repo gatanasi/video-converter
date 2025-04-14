@@ -142,5 +142,5 @@ func handleDriveAPIErrorResponse(statusCode int, status string, bodyBytes []byte
 	// Log the detailed error
 	log.Printf("Google Drive API Error: %s", errMsg)
 
-	return fmt.Errorf(errMsg) // Return the formatted error
+	return fmt.Errorf("%s", errMsg) // Use a constant format string with the variable as argument
 }
