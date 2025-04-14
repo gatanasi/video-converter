@@ -189,14 +189,6 @@ h2, h3 { /* Apply to both h2 and h3 */
   background-color: #3367d6;
 }
 
-.btn.primary {
-  /* Already default blue */
-}
-
-.btn.primary:hover {
-  /* Already default blue hover */
-}
-
 .btn.success {
   background-color: #34a853;
 }
@@ -324,10 +316,6 @@ input[type="file"]::file-selector-button {
 
 input[type="file"]::file-selector-button:hover {
   background-color: #d0d0d0;
-}
-
-select {
-  /* Override width for select if needed, or use specific class */
 }
 
 .input-group {
