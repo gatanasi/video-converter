@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort" // Import the sort package
 	"strconv"
 	"strings"
 	"syscall"
@@ -261,7 +262,7 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entries, err := os.ReadDir(h.Config.ConvertedDir)
-	if (err != nil) {
+	if err != nil {
 		// Don't treat "not found" as an error, just return empty list
 		if os.IsNotExist(err) {
 			h.sendJSONResponse(w, []models.FileInfo{}, http.StatusOK)
@@ -287,6 +288,11 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+
+	// Sort files by modification time, newest first
+	sort.Slice(fileInfos, func(i, j int) bool {
+		return fileInfos[i].ModTime.After(fileInfos[j].ModTime)
+	})
 
 	h.sendJSONResponse(w, fileInfos, http.StatusOK)
 }

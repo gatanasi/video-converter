@@ -691,12 +691,8 @@ export class FileListComponent {
     async loadFiles() {
         try {
             const files = await apiService.listFiles();
-            // Sort files by modTime descending (newest first)
-            this.fileList = (files || []).sort((a, b) => {
-                const dateA = a.modTime ? new Date(a.modTime) : 0;
-                const dateB = b.modTime ? new Date(b.modTime) : 0;
-                return dateB - dateA; // Descending order
-            });
+            // Data is now pre-sorted by the backend
+            this.fileList = files || [];
             this.displayFiles();
         } catch (error) {
             console.error('Error loading files:', error);
