@@ -1,208 +1,204 @@
 /**
- * UI Components - Reusable UI components and elements for the application
+ * UI Components for the Video Converter application.
  */
 import { formatBytes, showMessage, clearMessages, createProgressItem } from '../utils/utils.js';
 import apiService from '../api/api-service.js';
 
+const REMOVAL_DELAY = 10000; // Delay before removing completed/failed items (ms)
+const ABORT_REMOVAL_DELAY = 5000; // Shorter delay for aborted items
+
 /**
- * Active Conversions Component - Shows running conversions even after page reload
+ * Active Conversions Component - Displays and manages ongoing conversions.
  */
 export class ActiveConversionsComponent {
-    /**
-     * Initialize the active conversions component
-     * @param {Object} options - Configuration options
-     * @param {HTMLElement} options.container - Container element for active conversions
-     * @param {HTMLElement} options.messageContainer - Container for status messages
-     * @param {Function} options.onConversionComplete - Callback when a conversion completes
-     */
     constructor(options) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.onConversionComplete = options.onConversionComplete;
-        this.activeConversions = new Map(); // Track active conversions by ID
+        this.activeConversions = new Map(); // Map<conversionId, { fileName, format, element, aborted?, timeoutId? }>
         this.progressInterval = null;
-        this.pollingInterval = null; // New interval for polling active conversions
-        
-        // Create UI elements
+        this.pollingInterval = null;
+        this.isPolling = false; // Flag to prevent multiple simultaneous polls
+
         this.createElements();
-        
-        // Load active conversions on initialization
-        this.loadActiveConversions();
-        
-        // Start polling for active conversions every 5 seconds
+        this.loadActiveConversions(); // Initial load
         this.startPolling();
     }
-    
-    /**
-     * Start polling for active conversions
-     */
+
     startPolling() {
-        // Clear existing polling interval if any
-        if (this.pollingInterval) {
-            clearInterval(this.pollingInterval);
-        }
-        
-        // Set up a new polling interval that runs every 3 seconds
+        if (this.pollingInterval) clearInterval(this.pollingInterval);
+        // Poll immediately, then set interval
+        this.loadActiveConversions();
         this.pollingInterval = setInterval(() => this.loadActiveConversions(), 5000);
         console.log('Started polling for active conversions every 5 seconds');
     }
-    
-    /**
-     * Stop polling for active conversions
-     */
+
     stopPolling() {
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);
             this.pollingInterval = null;
             console.log('Stopped polling for active conversions');
         }
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+        }
     }
-    
-    /**
-     * Create the UI elements
-     */
+
     createElements() {
-        // Clear container
-        this.container.innerHTML = '';
-        
-        // Create header
+        this.container.innerHTML = ''; // Clear previous content
+
         const header = document.createElement('h2');
-        header.className = 'section-title';
+        header.className = 'section-title'; // Use class if defined in CSS
         header.textContent = 'Running Conversions';
         this.container.appendChild(header);
-        
-        // Create progress container
+
         this.progressContainer = document.createElement('div');
         this.progressContainer.className = 'multi-progress';
         this.container.appendChild(this.progressContainer);
-        
-        // Always show the container, even when empty
-        this.container.classList.remove('hidden');
+
+        this.container.classList.remove('hidden'); // Ensure section is visible
+        this.showEmptyStateMessage(); // Show initially
     }
-    
-    /**
-     * Show empty state message if no conversions are active
-     */
+
     showEmptyStateMessage() {
-        // Only add empty message if it doesn't already exist
-        if (!this.progressContainer.querySelector('#no-conversions-message')) {
-            this.progressContainer.innerHTML = '';
+        // Add message only if container is empty and message doesn't exist
+        if (this.progressContainer.children.length === 0 && !this.progressContainer.querySelector('.empty-message')) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
-            emptyMessage.id = 'no-conversions-message';
+            emptyMessage.id = 'no-conversions-message'; // Keep ID for potential removal
             emptyMessage.textContent = 'No active conversions.';
             this.progressContainer.appendChild(emptyMessage);
         }
     }
-    
-    /**
-     * Load active conversions from the server
-     */
+
+    removeEmptyStateMessage() {
+        const emptyMessage = this.progressContainer.querySelector('#no-conversions-message');
+        if (emptyMessage) {
+            emptyMessage.remove();
+        }
+    }
+
     async loadActiveConversions() {
+        if (this.isPolling) return; // Prevent concurrent polls
+        this.isPolling = true;
+
         try {
-            const activeConversions = await apiService.listActiveConversions();
-            
-            // New way to track conversions that need to be added or removed
-            const currentIds = new Set([...this.activeConversions.keys()]);
-            const newIds = new Set(activeConversions.map(conv => conv.id));
-            
-            // Handle newly added conversions
-            activeConversions.forEach(conversion => {
-                const conversionId = conversion.id;
-                
-                // Only add new conversions that aren't already tracked
-                if (!this.activeConversions.has(conversionId)) {
-                    this.trackConversionProgress(
-                        conversionId,
-                        conversion.fileName,
-                        conversion.format,
-                        conversion.progress
-                    );
+            const serverConversions = await apiService.listActiveConversions();
+            const serverIds = new Set(serverConversions.map(conv => conv.id));
+            const clientIds = new Set(this.activeConversions.keys());
+
+            // Add new conversions not tracked by the client
+            serverConversions.forEach(conv => {
+                if (!clientIds.has(conv.id)) {
+                    this.addConversionItem(conv.id, conv.fileName, conv.format, conv.progress);
                 }
             });
-            
-            // Find and remove conversions that no longer exist
-            currentIds.forEach(id => {
-                if (!newIds.has(id)) {
-                    const conversion = this.activeConversions.get(id);
-                    if (conversion && conversion.element) {
-                        conversion.element.remove();
-                    }
-                    this.activeConversions.delete(id);
+
+            // Remove conversions from client that are no longer active on the server
+            clientIds.forEach(id => {
+                if (!serverIds.has(id)) {
+                    this.removeConversionItem(id);
                 }
             });
-            
-            // Start or maintain progress tracking
+
+            // Update UI state (empty message, progress interval)
             if (this.activeConversions.size > 0) {
-                // Remove the empty state message if it exists
-                const emptyMessage = this.progressContainer.querySelector('#no-conversions-message');
-                if (emptyMessage) {
-                    emptyMessage.remove();
-                }
-                
+                this.removeEmptyStateMessage();
                 if (!this.progressInterval) {
+                    // Start progress updates only if there are active items
                     this.progressInterval = setInterval(() => this.updateAllProgressBars(), 2000);
                 }
             } else {
-                // Show empty state message if there are no active conversions
                 this.showEmptyStateMessage();
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                    this.progressInterval = null;
+                }
             }
         } catch (error) {
             console.error('Error loading active conversions:', error);
-            // Don't show error message during regular polling to avoid flooding the UI
-            if (!this.pollingInterval) {
-                showMessage(this.messageContainer, `Error loading active conversions: ${error.message}`, 'error');
-            }
+            // Avoid flooding UI during polling, show error only on initial load failure?
+            // Or maybe show a persistent but dismissible error bar? For now, just log.
+        } finally {
+            this.isPolling = false;
         }
     }
-    
-    /**
-     * Track conversion progress
-     * @param {String} conversionId - ID of the conversion to track
-     * @param {String} fileName - Name of the file being converted
-     * @param {String} format - Target format
-     * @param {Number} initialProgress - Initial progress percentage
-     */
-    trackConversionProgress(conversionId, fileName, format, initialProgress = 0) {
-        // Create progress item
+
+    addConversionItem(conversionId, fileName, format, initialProgress = 0) {
+        this.removeEmptyStateMessage(); // Ensure empty message is gone
+
         const progressItem = createProgressItem(`${fileName} → ${format.toUpperCase()}`);
         progressItem.dataset.id = conversionId;
-        
-        // Add abort button
+
         const abortButton = document.createElement('button');
-        abortButton.className = 'abort-button';
-        abortButton.innerHTML = '×';
+        abortButton.className = 'abort-button'; // Use class for styling
+        abortButton.innerHTML = '×'; // Use HTML entity for cross
         abortButton.title = 'Abort conversion';
         abortButton.addEventListener('click', (e) => {
             e.stopPropagation();
             this.abortConversion(conversionId);
         });
         progressItem.appendChild(abortButton);
-        
+
         // Set initial progress
-        const progressBar = progressItem.querySelector('.multi-progress-bar');
-        const percentText = progressItem.querySelector('.multi-progress-percent');
-        if (progressBar && percentText) {
-            progressBar.style.width = `${initialProgress}%`;
-            percentText.textContent = `${Math.round(initialProgress)}%`;
-        }
-        
+        this.updateProgressBar(progressItem, initialProgress);
+
         this.progressContainer.appendChild(progressItem);
-        
-        // Add to active conversions map
+
         this.activeConversions.set(conversionId, {
             fileName,
             format,
             element: progressItem
         });
     }
-    
-    /**
-     * Update all progress bars for active conversions
-     */
+
+    /** Safely removes a conversion item from the UI and map */
+    removeConversionItem(conversionId, delay = 0) {
+        const conversion = this.activeConversions.get(conversionId);
+        if (!conversion) return;
+
+        // Clear any existing removal timeout
+        if (conversion.timeoutId) {
+            clearTimeout(conversion.timeoutId);
+        }
+
+        const performRemoval = () => {
+            if (conversion.element) {
+                conversion.element.remove();
+            }
+            this.activeConversions.delete(conversionId);
+
+            // Check if UI should show empty state after removal
+            if (this.activeConversions.size === 0) {
+                this.showEmptyStateMessage();
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                    this.progressInterval = null;
+                }
+            }
+        };
+
+        if (delay > 0) {
+            conversion.timeoutId = setTimeout(performRemoval, delay);
+        } else {
+            performRemoval();
+        }
+    }
+
+    updateProgressBar(element, progress) {
+        const progressBar = element.querySelector('.multi-progress-bar');
+        const percentText = element.querySelector('.multi-progress-percent');
+        if (progressBar && percentText) {
+            const percent = Math.max(0, Math.min(100, Math.round(progress))); // Clamp between 0-100
+            progressBar.style.width = `${percent}%`;
+            percentText.textContent = `${percent}%`;
+        }
+    }
+
     async updateAllProgressBars() {
         if (this.activeConversions.size === 0) {
-            // Only clear the progress update interval, not the polling interval
+            // Should be handled by loadActiveConversions, but as a safeguard:
             if (this.progressInterval) {
                 clearInterval(this.progressInterval);
                 this.progressInterval = null;
@@ -210,490 +206,352 @@ export class ActiveConversionsComponent {
             this.showEmptyStateMessage();
             return;
         }
-        
-        // Check each active conversion
-        for (const [conversionId, conversion] of this.activeConversions.entries()) {
-            try {
-                const status = await apiService.getConversionStatus(conversionId);
-                const progressBar = conversion.element.querySelector('.multi-progress-bar');
-                const percentText = conversion.element.querySelector('.multi-progress-percent');
-                
-                if (progressBar && percentText) {
-                    const percent = Math.round(status.progress);
-                    progressBar.style.width = `${percent}%`;
-                    percentText.textContent = `${percent}%`;
-                    
-                    // If complete, update the UI
-                    if (status.complete) {
-                        if (status.error && !conversion.aborted) {
-                            // Only show error if this wasn't already handled by the abort function
-                            conversion.element.classList.add('error');
-                            const errorMsg = document.createElement('div');
-                            errorMsg.className = 'multi-progress-error';
-                            errorMsg.textContent = status.error;
-                            conversion.element.appendChild(errorMsg);
-                            
-                            // Clean up after delay
-                            setTimeout(() => {
-                                this.activeConversions.delete(conversionId);
-                                conversion.element.remove();
-                                
-                                // Check if we need to show empty state
-                                if (this.activeConversions.size === 0) {
-                                    this.showEmptyStateMessage();
-                                }
-                            }, 10000);
-                        } else if (!status.error) {
-                            // Success - add download link
-                            conversion.element.classList.add('complete');
-                            const downloadLink = document.createElement('a');
-                            downloadLink.className = 'multi-progress-download';
-                            downloadLink.href = status.outputPath;
-                            downloadLink.textContent = 'Download';
-                            downloadLink.target = '_blank';
-                            conversion.element.appendChild(downloadLink);
-                            
-                            // Trigger completion callback
-                            if (this.onConversionComplete) {
-                                this.onConversionComplete();
-                            }
-                            
-                            // Clean up after delay
-                            setTimeout(() => {
-                                this.activeConversions.delete(conversionId);
-                                conversion.element.remove();
-                                
-                                // Check if we need to show empty state
-                                if (this.activeConversions.size === 0) {
-                                    this.showEmptyStateMessage();
-                                }
-                            }, 10000);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error(`Error updating progress for ${conversionId}:`, error);
+
+        // Create promises for all status requests
+        const statusPromises = Array.from(this.activeConversions.keys()).map(id =>
+            apiService.getConversionStatus(id).catch(error => {
+                console.error(`Error fetching status for ${id}:`, error);
+                return null; // Return null on error to avoid breaking Promise.all
+            })
+        );
+
+        const statuses = await Promise.all(statusPromises);
+
+        statuses.forEach(status => {
+            if (!status) return; // Skip if fetching status failed
+
+            const conversionId = status.id;
+            const conversion = this.activeConversions.get(conversionId);
+            if (!conversion || !conversion.element) return; // Skip if conversion was removed
+
+            this.updateProgressBar(conversion.element, status.progress);
+
+            if (status.complete) {
+                this.handleCompletion(conversionId, status);
             }
-        }
+        });
     }
-    
-    /**
-     * Abort an active conversion
-     * @param {String} conversionId - ID of the conversion to abort
-     */
+
+    handleCompletion(conversionId, status) {
+        const conversion = this.activeConversions.get(conversionId);
+        if (!conversion || !conversion.element) return;
+
+        // Remove abort button on completion
+        const abortButton = conversion.element.querySelector('.abort-button');
+        if (abortButton) abortButton.remove();
+
+        if (status.error && !conversion.aborted) {
+            // Handle error completion
+            conversion.element.classList.add('error');
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'multi-progress-error'; // Use specific class
+            errorMsg.textContent = status.error;
+            // Append error message only if not already present
+            if (!conversion.element.querySelector('.multi-progress-error')) {
+                conversion.element.appendChild(errorMsg);
+            }
+            this.removeConversionItem(conversionId, REMOVAL_DELAY);
+        } else if (!status.error && !conversion.aborted) {
+            // Handle successful completion
+            conversion.element.classList.add('complete');
+            const downloadLink = document.createElement('a');
+            downloadLink.className = 'multi-progress-download'; // Use specific class
+            downloadLink.href = status.downloadUrl; // Use downloadUrl from status API
+            downloadLink.textContent = 'Download';
+            downloadLink.target = '_blank'; // Open in new tab
+            downloadLink.setAttribute('download', ''); // Suggest download
+            // Append download link only if not already present
+            if (!conversion.element.querySelector('.multi-progress-download')) {
+                conversion.element.appendChild(downloadLink);
+            }
+
+            if (this.onConversionComplete) {
+                this.onConversionComplete(); // Notify app (e.g., refresh file list)
+            }
+            this.removeConversionItem(conversionId, REMOVAL_DELAY);
+        }
+        // If conversion.aborted is true, the abort function handles the UI update and removal.
+    }
+
     async abortConversion(conversionId) {
         const conversion = this.activeConversions.get(conversionId);
-        if (!conversion) return;
-        
+        if (!conversion || conversion.aborted) return; // Already aborted or gone
+
+        // Disable button immediately
+        const abortButton = conversion.element.querySelector('.abort-button');
+        if (abortButton) abortButton.disabled = true;
+
         try {
-            const response = await apiService.abortConversion(conversionId);
-            if (response.success) {
-                // Mark this conversion as already aborted to prevent duplicate messages
-                conversion.aborted = true;
-                conversion.element.classList.add('aborted');
-                const abortMsg = document.createElement('div');
-                abortMsg.className = 'multi-progress-error';
-                abortMsg.textContent = 'Conversion aborted';
+            await apiService.abortConversion(conversionId);
+            conversion.aborted = true; // Mark as aborted
+            conversion.element.classList.add('aborted');
+
+            // Remove abort button and progress bar details, show status message
+            if (abortButton) abortButton.remove();
+            const info = conversion.element.querySelector('.multi-progress-info');
+            const barContainer = conversion.element.querySelector('.multi-progress-bar-container');
+            if (info) info.style.opacity = '0.5'; // Dim the info
+            if (barContainer) barContainer.remove(); // Remove progress bar
+
+            const abortMsg = document.createElement('div');
+            abortMsg.className = 'multi-progress-status aborted'; // Use general status class
+            abortMsg.textContent = 'Conversion aborted';
+            // Append message only if not already present
+            if (!conversion.element.querySelector('.multi-progress-status')) {
                 conversion.element.appendChild(abortMsg);
-                
-                // Clean up after delay
-                setTimeout(() => {
-                    this.activeConversions.delete(conversionId);
-                    conversion.element.remove();
-                    
-                    if (this.activeConversions.size === 0) {
-                        this.showEmptyStateMessage();
-                    }
-                }, 5000);
             }
+
+            this.removeConversionItem(conversionId, ABORT_REMOVAL_DELAY);
+
         } catch (error) {
             console.error('Error aborting conversion:', error);
             showMessage(this.messageContainer, `Failed to abort conversion: ${error.message}`, 'error');
+            // Re-enable button if abort failed
+            if (abortButton) abortButton.disabled = false;
         }
     }
 }
 
 /**
- * Video List Component - Manages the video list display and interaction
+ * Video List Component - Displays videos from Google Drive and handles selection.
  */
 export class VideoListComponent {
-    /**
-     * Initialize the video list component
-     * @param {Object} options - Configuration options
-     * @param {HTMLElement} options.container - Container element for the video list
-     * @param {Function} options.onSelectVideo - Callback when a video is selected
-     */
     constructor(options) {
         this.container = options.container;
-        this.onSelectVideo = options.onSelectVideo;
+        this.onSelectVideos = options.onSelectVideo; // Renamed for clarity
         this.videoList = [];
-        this.selectedVideos = new Map(); // Changed to Map for multi-selection
+        this.selectedVideos = new Map(); // Map<videoId, videoObject>
+        this.headerCheckbox = null;
+        this.selectionCounter = null;
+        this.deselectAllBtn = null;
     }
 
-    /**
-     * Display videos in the list container
-     * @param {Array} videos - Array of video objects from Google Drive
-     */
     displayVideos(videos) {
-        this.videoList = videos;
-        this.container.innerHTML = '';
-        this.selectedVideos.clear(); // Clear selection when loading new videos
+        this.videoList = videos || [];
+        this.container.innerHTML = ''; // Clear previous list
+        this.selectedVideos.clear();
 
-        if (!videos || videos.length === 0) {
+        if (this.videoList.length === 0) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
             emptyMessage.textContent = 'No videos found in this folder.';
             this.container.appendChild(emptyMessage);
+            this.updateSelectionUI(); // Ensure controls are hidden/disabled
             return;
         }
 
-        // Add multi-selection controls
+        this.createControls();
+        this.createTable(this.videoList);
+        this.updateSelectionUI(); // Initial UI state
+    }
+
+    createControls() {
         const controlsDiv = document.createElement('div');
         controlsDiv.className = 'selection-controls';
         controlsDiv.innerHTML = `
             <button id="select-all-btn" class="btn small">Select All</button>
-            <button id="deselect-all-btn" class="btn small" disabled>Deselect All</button>
+            <button id="deselect-all-btn" class="btn small">Deselect All</button>
             <div class="selection-counter">0 videos selected</div>
         `;
         this.container.appendChild(controlsDiv);
 
-        // Add event listeners to selection control buttons
         const selectAllBtn = controlsDiv.querySelector('#select-all-btn');
-        const deselectAllBtn = controlsDiv.querySelector('#deselect-all-btn');
-        
-        selectAllBtn.addEventListener('click', () => this.selectAllVideos());
-        deselectAllBtn.addEventListener('click', () => this.deselectAllVideos());
-        
-        // Store reference to selection counter for later updates
+        this.deselectAllBtn = controlsDiv.querySelector('#deselect-all-btn');
         this.selectionCounter = controlsDiv.querySelector('.selection-counter');
 
+        selectAllBtn.addEventListener('click', () => this.selectAllVideos());
+        this.deselectAllBtn.addEventListener('click', () => this.deselectAllVideos());
+    }
+
+    createTable(videos) {
         const table = document.createElement('table');
         table.className = 'video-table';
-        
-        // Create table header with date column
+
         const thead = document.createElement('thead');
         thead.innerHTML = `
             <tr>
-                <th class="video-select"><input type="checkbox" id="header-checkbox"></th>
+                <th class="video-select"><input type="checkbox" id="header-checkbox" title="Select/Deselect All"></th>
                 <th class="video-name">Name</th>
                 <th class="video-size">Size</th>
                 <th class="video-type">Type</th>
                 <th class="video-date">Modified Date</th>
             </tr>
         `;
-        
-        // Add event listener to header checkbox for select/deselect all
-        const headerCheckbox = thead.querySelector('#header-checkbox');
-        headerCheckbox.addEventListener('change', (e) => {
+        this.headerCheckbox = thead.querySelector('#header-checkbox');
+        this.headerCheckbox.addEventListener('change', (e) => {
             if (e.target.checked) {
                 this.selectAllVideos();
             } else {
                 this.deselectAllVideos();
             }
         });
-        
         table.appendChild(thead);
-        
-        // Create table body
+
         const tbody = document.createElement('tbody');
         videos.forEach(video => {
-            const row = document.createElement('tr');
-            row.dataset.id = video.id;
-            
-            // Format the date if available
-            let formattedDate = 'Unknown';
-            if (video.modifiedTime) {
-                const date = new Date(video.modifiedTime);
-                formattedDate = date.toLocaleDateString() + ' ' + 
-                               date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-            
-            row.innerHTML = `
-                <td class="video-select">
-                    <input type="checkbox" class="video-checkbox" data-id="${video.id}">
-                </td>
-                <td class="video-name">${video.name}</td>
-                <td class="video-size">${formatBytes(video.size)}</td>
-                <td class="video-type">${video.mimeType.split('/')[1]}</td>
-                <td class="video-date">${formattedDate}</td>
-            `;
-            
-            // Add event listener to checkbox for individual selection
-            const checkbox = row.querySelector('.video-checkbox');
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    this.addToSelection(video, row);
-                } else {
-                    this.removeFromSelection(video.id, row);
-                }
-            });
-            
-            // Add event listener for clicking on row
-            row.addEventListener('click', (e) => {
-                // Ignore if the checkbox was clicked directly
-                if (e.target.type === 'checkbox') return;
-                
-                const checkbox = row.querySelector('.video-checkbox');
-                checkbox.checked = !checkbox.checked;
-                
-                if (checkbox.checked) {
-                    this.addToSelection(video, row);
-                } else {
-                    this.removeFromSelection(video.id, row);
-                }
-            });
-            
+            const row = this.createTableRow(video);
             tbody.appendChild(row);
         });
-        
         table.appendChild(tbody);
         this.container.appendChild(table);
     }
 
-    /**
-     * Add a video to the selection
-     * @param {Object} video - Video object to add
-     * @param {HTMLElement} row - The table row element
-     */
-    addToSelection(video, row) {
-        this.selectedVideos.set(video.id, video);
-        row.classList.add('selected');
-        this.updateSelectionCounters();
-        this.updateSelectedFilesList();
-        
-        // Call the onSelectVideo callback with all selected videos
-        if (this.onSelectVideo) {
-            this.onSelectVideo(video); // This will trigger the callback in App.js that calls updateSelectedVideos
+    createTableRow(video) {
+        const row = document.createElement('tr');
+        row.dataset.id = video.id;
+
+        let formattedDate = 'N/A';
+        if (video.modifiedTime) {
+            try {
+                const date = new Date(video.modifiedTime);
+                formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            } catch (e) { console.error("Error formatting date:", e); }
         }
+
+        const mimeTypeShort = video.mimeType ? video.mimeType.split('/')[1] || 'unknown' : 'unknown';
+        const sizeFormatted = video.size ? formatBytes(video.size) : 'N/A';
+
+        row.innerHTML = `
+            <td class="video-select">
+                <input type="checkbox" class="video-checkbox" data-id="${video.id}">
+            </td>
+            <td class="video-name" title="${video.name}">${video.name}</td>
+            <td class="video-size">${sizeFormatted}</td>
+            <td class="video-type">${mimeTypeShort}</td>
+            <td class="video-date">${formattedDate}</td>
+        `;
+
+        const checkbox = row.querySelector('.video-checkbox');
+        checkbox.addEventListener('change', (e) => {
+            this.toggleSelection(video.id, e.target.checked, row);
+        });
+
+        // Allow clicking anywhere on the row (except checkbox cell) to toggle
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('.video-select')) return; // Ignore clicks on the checkbox cell itself
+            checkbox.checked = !checkbox.checked;
+            this.toggleSelection(video.id, checkbox.checked, row);
+        });
+
+        return row;
     }
 
-    /**
-     * Remove a video from the selection
-     * @param {String} videoId - ID of the video to remove
-     * @param {HTMLElement} row - The table row element
-     */
-    removeFromSelection(videoId, row) {
-        this.selectedVideos.delete(videoId);
-        row.classList.remove('selected');
-        this.updateSelectionCounters();
-        this.updateSelectedFilesList();
-        
-        // Call the onSelectVideo callback with the first remaining selected video or null
-        if (this.onSelectVideo) {
-            const nextVideo = this.selectedVideos.size > 0 ? 
-                [...this.selectedVideos.values()][0] : null;
-            this.onSelectVideo(nextVideo); // This will trigger the callback in App.js that calls updateSelectedVideos
+    toggleSelection(videoId, isSelected, rowElement) {
+        const video = this.videoList.find(v => v.id === videoId);
+        if (!video) return;
+
+        if (isSelected) {
+            this.selectedVideos.set(videoId, video);
+            rowElement.classList.add('selected');
+        } else {
+            this.selectedVideos.delete(videoId);
+            rowElement.classList.remove('selected');
         }
+        this.updateSelectionUI();
+        this.notifySelectionChange();
     }
 
-    /**
-     * Select all videos in the list
-     */
     selectAllVideos() {
-        // Update all checkboxes
-        const checkboxes = this.container.querySelectorAll('.video-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = true;
-            const row = checkbox.closest('tr');
-            const videoId = checkbox.dataset.id;
-            const video = this.videoList.find(v => v.id === videoId);
-            if (video) {
-                this.selectedVideos.set(videoId, video);
-                row.classList.add('selected');
+        this.videoList.forEach(video => {
+            if (!this.selectedVideos.has(video.id)) {
+                this.selectedVideos.set(video.id, video);
+                const row = this.container.querySelector(`tr[data-id="${video.id}"]`);
+                if (row) {
+                    row.classList.add('selected');
+                    const checkbox = row.querySelector('.video-checkbox');
+                    if (checkbox) checkbox.checked = true;
+                }
             }
         });
-        
-        // Update header checkbox
-        const headerCheckbox = this.container.querySelector('#header-checkbox');
-        if (headerCheckbox) {
-            headerCheckbox.checked = true;
-        }
-        
-        this.updateSelectionCounters();
-        this.updateSelectedFilesList();
-        
-        // Call the onSelectVideo callback with all selected videos
-        if (this.onSelectVideo && this.selectedVideos.size > 0) {
-            this.onSelectVideo([...this.selectedVideos.values()][0]); // This will trigger the callback in App.js
-        }
+        this.updateSelectionUI();
+        this.notifySelectionChange();
     }
 
-    /**
-     * Deselect all videos
-     */
     deselectAllVideos() {
-        // Update all checkboxes
-        const checkboxes = this.container.querySelectorAll('.video-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = false;
-            const row = checkbox.closest('tr');
-            row.classList.remove('selected');
+        this.selectedVideos.forEach((video, videoId) => {
+            const row = this.container.querySelector(`tr[data-id="${videoId}"]`);
+            if (row) {
+                row.classList.remove('selected');
+                const checkbox = row.querySelector('.video-checkbox');
+                if (checkbox) checkbox.checked = false;
+            }
         });
-        
-        // Update header checkbox
-        const headerCheckbox = this.container.querySelector('#header-checkbox');
-        if (headerCheckbox) {
-            headerCheckbox.checked = false;
-        }
-        
         this.selectedVideos.clear();
-        this.updateSelectionCounters();
-        this.updateSelectedFilesList();
-        
-        // Call the onSelectVideo callback with null
-        if (this.onSelectVideo) {
-            this.onSelectVideo(null);
-        }
+        this.updateSelectionUI();
+        this.notifySelectionChange();
     }
 
-    /**
-     * Update selection counters and button states
-     */
-    updateSelectionCounters() {
+    updateSelectionUI() {
         const count = this.selectedVideos.size;
-        
-        // Update the selection counter
+        const total = this.videoList.length;
+
         if (this.selectionCounter) {
             this.selectionCounter.textContent = `${count} video${count !== 1 ? 's' : ''} selected`;
         }
-        
-        // Update selected count in the selected files area
-        const selectedCount = this.container.querySelector('#selected-count');
-        if (selectedCount) {
-            selectedCount.textContent = `(${count})`;
+        if (this.deselectAllBtn) {
+            this.deselectAllBtn.disabled = count === 0;
         }
-        
-        // Update the deselect all button state
-        const deselectAllBtn = this.container.querySelector('#deselect-all-btn');
-        if (deselectAllBtn) {
-            deselectAllBtn.disabled = count === 0;
-        }
-        
-        // Update visibility of selected files area
-        if (this.selectedFilesArea) {
-            this.selectedFilesArea.classList.toggle('hidden', count === 0);
+        if (this.headerCheckbox) {
+            this.headerCheckbox.checked = count > 0 && count === total;
+            this.headerCheckbox.indeterminate = count > 0 && count < total;
         }
     }
 
-    /**
-     * Update the list of selected files
-     */
-    updateSelectedFilesList() {
-        const selectedFilesList = this.container.querySelector('#selectedFilesList');
-        if (!selectedFilesList) return;
-        
-        selectedFilesList.innerHTML = '';
-        
-        for (const video of this.selectedVideos.values()) {
-            const item = document.createElement('div');
-            item.className = 'selected-file-item';
-            item.innerHTML = `
-                <span class="selected-file-name">${video.name}</span>
-                <button class="remove-selected" data-id="${video.id}">Remove</button>
-            `;
-            
-            // Add click handler for the remove button
-            const removeBtn = item.querySelector('.remove-selected');
-            removeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Find the corresponding checkbox and uncheck it
-                const checkbox = this.container.querySelector(`.video-checkbox[data-id="${video.id}"]`);
-                if (checkbox) {
-                    checkbox.checked = false;
-                    const row = checkbox.closest('tr');
-                    this.removeFromSelection(video.id, row);
-                }
-            });
-            
-            selectedFilesList.appendChild(item);
+    notifySelectionChange() {
+        if (this.onSelectVideos) {
+            // Pass an array of the selected video objects
+            this.onSelectVideos([...this.selectedVideos.values()]);
         }
     }
 
-    /**
-     * Get all selected videos
-     * @returns {Array} - Array of selected videos
-     */
     getSelectedVideos() {
         return [...this.selectedVideos.values()];
-    }
-
-    /**
-     * Get the first selected video or null if nothing selected
-     * @returns {Object|null} - First selected video or null
-     */
-    getSelectedVideo() {
-        return this.selectedVideos.size > 0 ? 
-            [...this.selectedVideos.values()][0] : null;
-    }
-
-    /**
-     * Clear all selections
-     */
-    clearSelection() {
-        this.deselectAllVideos();
     }
 }
 
 /**
- * Conversion Form Component - Handles the conversion form display and submission
+ * Conversion Form Component - Handles conversion options and submission.
  */
 export class ConversionFormComponent {
-    /**
-     * Initialize the conversion form component
-     * @param {Object} options - Configuration options
-     * @param {HTMLElement} options.container - Container element for the form
-     * @param {HTMLElement} options.messageContainer - Container for status messages
-     * @param {Function} options.onConversionComplete - Callback when conversion completes
-     * @param {ActiveConversionsComponent} options.activeConversionsComponent - Reference to active conversions component
-     */
     constructor(options) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.onConversionComplete = options.onConversionComplete;
-        this.activeConversionsComponent = options.activeConversionsComponent;
-        this.currentVideo = null;
-        this.selectedVideos = new Map(); // Track all selected videos
-        
-        // Create the form element
+        // activeConversionsComponent is passed but not directly used here, maybe remove?
+        this.selectedVideos = []; // Store the array of selected videos
+
         this.createForm();
+        this.convertButton = this.container.querySelector('#convert-button');
+        this.updateFormState(); // Initial state
     }
 
-    /**
-     * Create the conversion form
-     */
     createForm() {
-        // Create form elements
         const form = document.createElement('form');
         form.className = 'conversion-form';
         form.innerHTML = `
             <div class="form-group">
                 <label for="target-format">Target Format:</label>
                 <select id="target-format" class="form-control">
-                    <option value="mov">MOV</option>
-                    <option value="mp4">MP4</option>
-                    <option value="avi">AVI</option>
+                    <option value="mov">MOV (H.265)</option>
+                    <option value="mp4">MP4 (H.265)</option>
+                    <option value="avi">AVI (Xvid)</option>
                 </select>
             </div>
             <div class="form-options">
                 <label class="checkbox-container">
                     <input type="checkbox" id="reverse-video">
-                    <span class="checkmark"></span>
                     Reverse Video
                 </label>
                 <label class="checkbox-container">
                     <input type="checkbox" id="remove-sound" checked>
-                    <span class="checkmark"></span>
                     Remove Sound
                 </label>
             </div>
             <div class="form-actions">
-                <button type="submit" id="convert-button" disabled class="btn primary">Convert Video</button>
+                <button type="submit" id="convert-button" class="btn primary">Convert Video</button>
             </div>
         `;
 
-        // Add event listeners
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             this.submitConversion();
@@ -702,102 +560,49 @@ export class ConversionFormComponent {
         this.container.appendChild(form);
     }
 
-    /**
-     * Set the current video for conversion
-     * @param {Object} video - Video object to convert
-     */
-    setVideo(video) {
-        this.currentVideo = video;
-        
-        // Clear previous selected videos when selecting a new primary video
-        if (video === null) {
-            this.selectedVideos.clear();
-        } else {
-            // Add to selected videos map
-            this.selectedVideos.set(video.id, video);
-        }
-        
-        const convertButton = this.container.querySelector('#convert-button');
-        
-        // Update button text based on number of selected videos
-        if (this.selectedVideos.size > 1) {
-            convertButton.textContent = `Convert ${this.selectedVideos.size} Videos`;
-        } else {
-            convertButton.textContent = 'Convert Video';
-        }
-        
-        // Enable or disable the convert button based on whether a video is selected
-        convertButton.disabled = !video;
-    }
-    
-    /**
-     * Update the selected videos from VideoListComponent
-     * @param {Array} videos - Array of selected video objects
-     */
+    /** Update based on the list of selected videos from VideoListComponent */
     updateSelectedVideos(videos) {
-        this.selectedVideos.clear();
-        
-        if (videos && videos.length > 0) {
-            // Add all videos to the map
-            videos.forEach(video => {
-                this.selectedVideos.set(video.id, video);
-            });
-            
-            // Update the primary video (used for form validation)
-            this.currentVideo = videos[0];
-        } else {
-            this.currentVideo = null;
-        }
-        
-        const convertButton = this.container.querySelector('#convert-button');
-        
-        // Update button text based on number of selected videos
-        if (this.selectedVideos.size > 1) {
-            convertButton.textContent = `Convert ${this.selectedVideos.size} Videos`;
-        } else {
-            convertButton.textContent = 'Convert Video';
-        }
-        
-        // Enable or disable the convert button
-        convertButton.disabled = this.selectedVideos.size === 0;
+        this.selectedVideos = videos || [];
+        this.updateFormState();
     }
 
-    /**
-     * Submit the conversion request
-     */
+    updateFormState() {
+        const count = this.selectedVideos.length;
+        if (this.convertButton) {
+            this.convertButton.disabled = count === 0;
+            this.convertButton.textContent = count > 1 ? `Convert ${count} Videos` : 'Convert Video';
+        }
+        // Hide/show form section based on selection?
+        this.container.classList.toggle('hidden', count === 0);
+    }
+
     async submitConversion() {
-        if (this.selectedVideos.size === 0) {
+        if (this.selectedVideos.length === 0) {
             showMessage(this.messageContainer, 'Please select at least one video first.', 'error');
             return;
         }
-        
+
         const targetFormat = this.container.querySelector('#target-format').value;
         const reverseVideo = this.container.querySelector('#reverse-video').checked;
         const removeSound = this.container.querySelector('#remove-sound').checked;
-        
-        // Get and disable the convert button to prevent multiple submissions
-        const convertButton = this.container.querySelector('#convert-button');
-        const originalButtonText = convertButton.textContent;
-        
-        // Add immediate visual feedback - pulsing effect when button is clicked
-        convertButton.classList.add('button-pulse');
-        convertButton.textContent = 'Processing...';
-        convertButton.disabled = true;
-        
-        // Show loading message immediately
-        const videoCount = this.selectedVideos.size;
+
+        // Disable button and show processing state
+        this.convertButton.disabled = true;
+        this.convertButton.classList.add('button-pulse');
+        const originalButtonText = this.convertButton.textContent;
+        this.convertButton.textContent = 'Processing...';
+
+        const videoCount = this.selectedVideos.length;
         showMessage(
-            this.messageContainer, 
-            `Starting conversion of ${videoCount} video${videoCount !== 1 ? 's' : ''}...`, 
-            'info'
+            this.messageContainer,
+            `Starting conversion of ${videoCount} video${videoCount !== 1 ? 's' : ''}...`,
+            'info',
+            0 // Don't auto-hide this initial message
         );
-        
-        // Prepare for batch conversion
-        let allStarted = true;
-        let conversionCount = 0;
-        
-        // Convert each selected video
-        for (const video of this.selectedVideos.values()) {
+
+        let successCount = 0;
+        let failCount = 0;
+        const conversionPromises = this.selectedVideos.map(video => {
             const conversionData = {
                 fileId: video.id,
                 fileName: video.name,
@@ -806,170 +611,190 @@ export class ConversionFormComponent {
                 reverseVideo: reverseVideo,
                 removeSound: removeSound
             };
-            
-            try {
-                // Send conversion request
-                const response = await apiService.convertFromDrive(conversionData);
-                
-                if (response.success) {
-                    // No need to track conversion progress here
-                    // The ActiveConversionsComponent will handle this when loadActiveConversions is called
-                    conversionCount++;
-                } else {
+            return apiService.convertFromDrive(conversionData)
+                .then(response => {
+                    if (response.success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        // Show individual failure message immediately
+                        showMessage(
+                            this.messageContainer, // Or a dedicated error area?
+                            `Conversion failed for ${video.name}: ${response.error || 'Unknown error'}`,
+                            'error'
+                        );
+                    }
+                })
+                .catch(error => {
+                    failCount++;
                     showMessage(
-                        this.messageContainer, 
-                        `Conversion failed for ${video.name}: ${response.error || 'Unknown error'}`, 
+                        this.messageContainer,
+                        `Error starting conversion for ${video.name}: ${error.message}`,
                         'error'
                     );
-                    allStarted = false;
-                }
-            } catch (error) {
-                showMessage(
-                    this.messageContainer, 
-                    `Error converting ${video.name}: ${error.message}`, 
-                    'error'
-                );
-                console.error('Conversion error:', error);
-                allStarted = false;
-            }
-        }
-        
-        // Show success message after starting all conversions
-        if (allStarted && conversionCount > 0) {
+                    console.error(`Conversion start error for ${video.name}:`, error);
+                });
+        });
+
+        // Wait for all conversion requests to be sent
+        await Promise.all(conversionPromises);
+
+        // Restore button state
+        this.convertButton.disabled = false; // Re-enable based on selection after completion
+        this.convertButton.classList.remove('button-pulse');
+        this.convertButton.textContent = originalButtonText; // Restore original text or update based on selection
+        this.updateFormState(); // Update button based on current selection state
+
+        // Show summary message
+        if (failCount === 0 && successCount > 0) {
             showMessage(
                 this.messageContainer,
-                `Successfully started conversion${conversionCount > 1 ? 's' : ''}. See active conversions section for progress.`,
+                `Successfully started ${successCount} conversion${successCount > 1 ? 's' : ''}. See progress above.`,
                 'success'
             );
-        } else if (conversionCount > 0) {
+        } else if (successCount > 0) {
             showMessage(
                 this.messageContainer,
-                `Started ${conversionCount} conversion${conversionCount > 1 ? 's' : ''}, but some failed. See active conversions for progress.`,
+                `Started ${successCount} conversion${successCount > 1 ? 's' : ''}, but ${failCount} failed to start. See progress/errors above.`,
                 'warning'
             );
+        } else {
+            // All failed to start, specific errors shown above
+            showMessage(
+                this.messageContainer,
+                `Failed to start any conversions. See errors above.`,
+                'error'
+            );
         }
-        
-        // If callback provided, call it
+
+        // Trigger callback (e.g., to refresh active conversions list)
         if (this.onConversionComplete) {
             this.onConversionComplete();
-
-            // Scroll to the top of the page to show the message
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            convertButton.classList.remove('button-pulse');
         }
+
+        // Optionally scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
+
 /**
- * File List Component - Manages the converted files list
+ * File List Component - Displays previously converted files.
  */
 export class FileListComponent {
-    /**
-     * Initialize the file list component
-     * @param {Object} options - Configuration options
-     * @param {HTMLElement} options.container - Container element for the list
-     * @param {HTMLElement} options.messageContainer - Container for status messages
-     */
     constructor(options) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.fileList = [];
     }
 
-    /**
-     * Load and display converted files
-     */
     async loadFiles() {
         try {
             const files = await apiService.listFiles();
-            this.fileList = files;
+            // Data is now pre-sorted by the backend
+            this.fileList = files || [];
             this.displayFiles();
         } catch (error) {
             console.error('Error loading files:', error);
-            showMessage(this.messageContainer, `Failed to load files: ${error.message}`, 'error');
+            // Show error in the file list container itself if it's empty
+            if (this.fileList.length === 0) {
+                this.container.innerHTML = `<div class="empty-message error">Failed to load files: ${error.message}</div>`;
+            } else {
+                // Show error in the main message area if list already has content
+                showMessage(this.messageContainer, `Failed to load files: ${error.message}`, 'error');
+            }
         }
     }
 
-    /**
-     * Display files in the list container
-     */
     displayFiles() {
-        this.container.innerHTML = '';
-        
-        if (!this.fileList || this.fileList.length === 0) {
+        this.container.innerHTML = ''; // Clear previous list
+
+        if (this.fileList.length === 0) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
             emptyMessage.textContent = 'No converted files found.';
             this.container.appendChild(emptyMessage);
             return;
         }
-        
+
         const table = document.createElement('table');
         table.className = 'file-table';
-        
-        // Create table header
-        const thead = document.createElement('thead');
-        thead.innerHTML = `
-            <tr>
-                <th class="file-name">Name</th>
-                <th class="file-size">Size</th>
-                <th class="file-date">Date</th>
-                <th class="file-actions">Actions</th>
-            </tr>
+
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th class="file-name">Name</th>
+                    <th class="file-size">Size</th>
+                    <th class="file-date">Date Created</th>
+                    <th class="file-actions">Actions</th>
+                </tr>
+            </thead>
         `;
-        table.appendChild(thead);
-        
-        // Create table body
+
         const tbody = document.createElement('tbody');
         this.fileList.forEach(file => {
-            const row = document.createElement('tr');
-            // Format the date
-            const date = new Date(file.modTime);
-            const formattedDate = date.toLocaleDateString() + ' ' + 
-                                 date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            row.innerHTML = `
-                <td class="file-name">${file.name}</td>
-                <td class="file-size">${formatBytes(file.size)}</td>
-                <td class="file-date">${formattedDate}</td>
-                <td class="file-actions">
-                    <a href="${file.url}" class="btn small" download title="Download file">↓</a>
-                    <button class="btn small delete" title="Delete file">×</button>
-                </td>
-            `;
-            
-            // Add delete button event listener
-            const deleteButton = row.querySelector('button.delete');
-            deleteButton.addEventListener('click', () => this.deleteFile(file.name));
-            
+            const row = this.createFileRow(file);
             tbody.appendChild(row);
         });
-        
+
         table.appendChild(tbody);
         this.container.appendChild(table);
     }
 
-    /**
-     * Delete a converted file
-     * @param {String} fileName - Name of the file to delete
-     */
-    async deleteFile(fileName) {
-        if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+    createFileRow(file) {
+        const row = document.createElement('tr');
+
+        let formattedDate = 'N/A';
+        if (file.modTime) {
+            try {
+                const date = new Date(file.modTime);
+                formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            } catch (e) { console.error("Error formatting date:", e); }
+        }
+        const sizeFormatted = file.size ? formatBytes(file.size) : 'N/A';
+
+        row.innerHTML = `
+            <td class="file-name" title="${file.name}">${file.name}</td>
+            <td class="file-size">${sizeFormatted}</td>
+            <td class="file-date">${formattedDate}</td>
+            <td class="file-actions">
+                <a href="${file.url}" class="btn small success" download title="Download file">↓</a>
+                <button class="btn small danger delete" title="Delete file">×</button>
+            </td>
+        `;
+
+        const deleteButton = row.querySelector('button.delete');
+        deleteButton.addEventListener('click', () => this.deleteFile(file.name, row)); // Pass row for potential UI feedback
+
+        return row;
+    }
+
+    async deleteFile(fileName, rowElement) {
+        // Optional: Add visual cue that deletion is in progress
+        rowElement.style.opacity = '0.5';
+        const deleteButton = rowElement.querySelector('button.delete');
+        if (deleteButton) deleteButton.disabled = true;
+
+        if (!confirm(`Are you sure you want to delete "${fileName}"? This cannot be undone.`)) {
+            rowElement.style.opacity = '1'; // Restore appearance
+            if (deleteButton) deleteButton.disabled = false;
             return;
         }
-        
+
         try {
-            const response = await apiService.deleteFile(fileName);
-            if (response.success) {
-                showMessage(this.messageContainer, `File "${fileName}" deleted successfully.`, 'success');
-                await this.loadFiles(); // Refresh file list
-            } else {
-                showMessage(this.messageContainer, `Failed to delete file: ${response.error || 'Unknown error'}`, 'error');
-            }
+            await apiService.deleteFile(fileName);
+            showMessage(this.messageContainer, `File "${fileName}" deleted successfully.`, 'success');
+            // Animate removal before reloading
+            rowElement.style.transition = 'opacity 0.3s ease-out';
+            rowElement.style.opacity = '0';
+            setTimeout(() => {
+                this.loadFiles(); // Refresh the list after animation
+            }, 300);
         } catch (error) {
             console.error('Error deleting file:', error);
-            showMessage(this.messageContainer, `Error deleting file: ${error.message}`, 'error');
+            showMessage(this.messageContainer, `Failed to delete file "${fileName}": ${error.message}`, 'error');
+            rowElement.style.opacity = '1'; // Restore appearance on error
+            if (deleteButton) deleteButton.disabled = false;
         }
     }
 }

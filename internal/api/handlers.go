@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort" // Import the sort package
 	"strconv"
 	"strings"
 	"syscall"
@@ -47,9 +48,22 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
 
-	// Serve static files and the root index.html
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	mux.Handle("/", http.FileServer(http.Dir(".")))
+	// Serve static files (CSS, JS, images) from the 'static' directory
+	// Use http.Dir with a relative path. Assumes 'static' is relative to the executable.
+	staticFileServer := http.FileServer(http.Dir("static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", staticFileServer))
+
+	// Serve the main index.html file for the root path ONLY.
+	// Prevents serving other files or directory listings from the root.
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Ensure only the root path "/" serves index.html
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		// Explicitly serve the index.html file.
+		http.ServeFile(w, r, filepath.Join("index.html"))
+	})
 }
 
 // ListDriveVideosHandler lists videos from a Google Drive folder.
@@ -261,7 +275,7 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entries, err := os.ReadDir(h.Config.ConvertedDir)
-	if (err != nil) {
+	if err != nil {
 		// Don't treat "not found" as an error, just return empty list
 		if os.IsNotExist(err) {
 			h.sendJSONResponse(w, []models.FileInfo{}, http.StatusOK)
@@ -287,6 +301,11 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+
+	// Sort files by modification time, newest first
+	sort.Slice(fileInfos, func(i, j int) bool {
+		return fileInfos[i].ModTime.After(fileInfos[j].ModTime)
+	})
 
 	h.sendJSONResponse(w, fileInfos, http.StatusOK)
 }

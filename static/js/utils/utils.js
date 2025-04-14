@@ -1,103 +1,101 @@
 /**
- * Utility functions for the video converter application
+ * Utility functions for the video converter application.
  */
 
 /**
- * Format bytes to human-readable format
- * @param {Number} bytes - Number of bytes to format
- * @param {Number} decimals - Number of decimal places
- * @returns {String} - Formatted string
+ * Format bytes to a human-readable string (e.g., KB, MB, GB).
+ * @param {Number} bytes - Number of bytes.
+ * @param {Number} [decimals=2] - Number of decimal places.
+ * @returns {String} Formatted string.
  */
 export function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
-    
+    if (!+bytes) return '0 Bytes'; // Handles 0, null, undefined, NaN
+
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
 /**
- * Show a message in the specified container
- * @param {HTMLElement} container - Container for messages
- * @param {String} text - Message text
- * @param {String} type - Message type (info, success, warning, error)
+ * Show a message in the specified container, clearing previous messages.
+ * @param {HTMLElement} container - The container element for messages.
+ * @param {String} text - The message text.
+ * @param {String} [type='info'] - Message type ('info', 'success', 'warning', 'error').
+ * @param {Number} [timeout=5000] - Auto-hide delay in ms for 'info' and 'success'. 0 to disable.
  */
-export function showMessage(container, text, type = 'info') {
-    // First, clear any existing messages
+export function showMessage(container, text, type = 'info', timeout = 5000) {
     clearMessages(container);
-    
-    // Create message element
+
     const message = document.createElement('div');
-    message.className = 'message ' + type;
+    message.className = `message ${type}`;
     message.textContent = text;
-    
-    // Ensure container is visible
-    container.classList.remove('hidden');
-    
-    // Add message to container
+    message.setAttribute('role', 'alert'); // Accessibility
+
     container.appendChild(message);
-    
-    // Auto-hide success and info messages after a delay
-    if (type === 'success' || type === 'info') {
+    container.classList.remove('hidden');
+
+    // Auto-hide non-error messages
+    if ((type === 'success' || type === 'info') && timeout > 0) {
         setTimeout(() => {
-            // Check if message is still in the DOM before removing
+            // Check if the message is still the one we added before removing
             if (message.parentNode === container) {
-                container.removeChild(message);
+                message.remove();
+                // Hide container if no other messages were added in the meantime
                 if (container.children.length === 0) {
                     container.classList.add('hidden');
                 }
             }
-        }, 5000);
+        }, timeout);
     }
 }
 
 /**
- * Clear all messages from the specified container
- * @param {HTMLElement} container - Container to clear
+ * Clear all messages from the specified container.
+ * @param {HTMLElement} container - The container element to clear.
  */
 export function clearMessages(container) {
-    while (container.firstChild) {
-        container.removeChild(container.firstChild);
-    }
+    container.innerHTML = ''; // More concise than looping
     container.classList.add('hidden');
 }
 
 /**
- * Create a progress item element for multi-progress display
- * @param {String} label - Label text for the progress item
- * @returns {HTMLElement} - The created progress item element
+ * Create a progress item element for multi-progress display.
+ * @param {String} label - Label text for the progress item.
+ * @returns {HTMLElement} The created progress item element.
  */
 export function createProgressItem(label) {
     const item = document.createElement('div');
     item.className = 'multi-progress-item';
-    
+
     const info = document.createElement('div');
     info.className = 'multi-progress-info';
-    
+
     const labelEl = document.createElement('span');
     labelEl.className = 'multi-progress-label';
     labelEl.textContent = label;
-    
+
     const percent = document.createElement('span');
     percent.className = 'multi-progress-percent';
     percent.textContent = '0%';
-    
+
     info.appendChild(labelEl);
     info.appendChild(percent);
-    
+
     const barContainer = document.createElement('div');
     barContainer.className = 'multi-progress-bar-container';
-    
+
     const bar = document.createElement('div');
     bar.className = 'multi-progress-bar';
     bar.style.width = '0%';
-    
+
     barContainer.appendChild(bar);
-    
+
     item.appendChild(info);
     item.appendChild(barContainer);
-    
+
     return item;
 }

@@ -1,41 +1,50 @@
 /**
- * API Service - Handles all API communication with the backend
+ * API Service - Handles all communication with the backend API.
  */
 class ApiService {
-    /**
-     * Initialize the API service
-     */
     constructor() {
-        this.baseUrl = ''; // Same origin
+        this.baseUrl = ''; // Assumes API is served from the same origin
     }
 
     /**
-     * Helper method to handle API requests
-     * @param {String} endpoint - API endpoint
-     * @param {Object} options - Fetch options
-     * @param {String} errorContext - Context for error logging
-     * @returns {Promise<Object>} - Response data
+     * Helper method to make API requests and handle common errors.
+     * @param {String} endpoint - API endpoint path (e.g., '/api/users').
+     * @param {Object} [options={}] - Fetch options (method, headers, body, etc.).
+     * @param {String} [errorContext='API call'] - Context for error logging.
+     * @returns {Promise<Object>} - The JSON response data.
+     * @throws {Error} - Throws an error if the request fails or response is not ok.
      */
     async apiRequest(endpoint, options = {}, errorContext = 'API call') {
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`, options);
-            
+
             if (!response.ok) {
-                const errorData = await response.json();
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    // If response is not JSON, use status text
+                    errorData = { error: response.statusText || `HTTP error ${response.status}` };
+                }
                 throw new Error(errorData.error || `HTTP error ${response.status}`);
             }
-            
+
+            // Handle cases where response might be empty (e.g., 204 No Content)
+            if (response.status === 204) {
+                return {}; // Return empty object for consistency
+            }
+
             return await response.json();
         } catch (error) {
-            console.error(`API error in ${errorContext}:`, error);
-            throw error;
+            console.error(`API error in ${errorContext}:`, error.message);
+            throw error; // Re-throw the error for the caller to handle
         }
     }
 
     /**
-     * Fetch videos from Google Drive folder
-     * @param {String} folderId - Google Drive folder ID
-     * @returns {Promise<Array>} - Array of video objects
+     * Fetch videos from a Google Drive folder.
+     * @param {String} folderId - Google Drive folder ID.
+     * @returns {Promise<Array>} - Array of video file objects.
      */
     async listVideos(folderId) {
         return this.apiRequest(
@@ -46,9 +55,9 @@ class ApiService {
     }
 
     /**
-     * Start video conversion from Google Drive
-     * @param {Object} conversionData - Data for conversion
-     * @returns {Promise<Object>} - Conversion response
+     * Start video conversion for a file from Google Drive.
+     * @param {Object} conversionData - Data required for conversion (fileId, fileName, etc.).
+     * @returns {Promise<Object>} - Conversion initiation response.
      */
     async convertFromDrive(conversionData) {
         return this.apiRequest(
@@ -63,9 +72,9 @@ class ApiService {
     }
 
     /**
-     * Get conversion status
-     * @param {String} conversionId - ID of the conversion
-     * @returns {Promise<Object>} - Status object
+     * Get the status of a specific conversion.
+     * @param {String} conversionId - ID of the conversion.
+     * @returns {Promise<Object>} - Conversion status object.
      */
     async getConversionStatus(conversionId) {
         return this.apiRequest(
@@ -76,30 +85,30 @@ class ApiService {
     }
 
     /**
-     * Get server configuration
-     * @returns {Promise<Object>} - Server configuration
+     * Get server configuration relevant to the frontend.
+     * @returns {Promise<Object>} - Server configuration object.
      */
     async getServerConfig() {
         try {
             return await this.apiRequest('/api/config', {}, 'getServerConfig');
         } catch (error) {
-            // Special handling for server config to provide a more user-friendly error
-            throw new Error('Failed to load server configuration');
+            // Provide a more user-friendly error for this specific case
+            throw new Error('Failed to load server configuration. Please check the connection or server status.');
         }
     }
 
     /**
-     * List converted files
-     * @returns {Promise<Array>} - Array of file objects
+     * List previously converted files available for download.
+     * @returns {Promise<Array>} - Array of converted file objects.
      */
     async listFiles() {
         return this.apiRequest('/api/files', {}, 'listFiles');
     }
 
     /**
-     * Delete a converted file
-     * @param {String} fileName - Name of file to delete
-     * @returns {Promise<Object>} - Delete response
+     * Delete a converted file from the server.
+     * @param {String} fileName - Name of the file to delete.
+     * @returns {Promise<Object>} - Deletion confirmation response.
      */
     async deleteFile(fileName) {
         return this.apiRequest(
@@ -110,26 +119,26 @@ class ApiService {
     }
 
     /**
-     * Abort an active conversion
-     * @param {String} conversionId - ID of conversion to abort
-     * @returns {Promise<Object>} - Abort response
+     * Request to abort an active conversion.
+     * @param {String} conversionId - ID of the conversion to abort.
+     * @returns {Promise<Object>} - Abort confirmation response.
      */
     async abortConversion(conversionId) {
         return this.apiRequest(
             `/api/abort/${encodeURIComponent(conversionId)}`,
-            { method: 'POST' },
+            { method: 'POST' }, // Using POST as it changes server state
             'abortConversion'
         );
     }
 
     /**
-     * List active conversions
-     * @returns {Promise<Array>} - Array of active conversion objects
+     * List all currently active (running or queued) conversions.
+     * @returns {Promise<Array>} - Array of active conversion info objects.
      */
     async listActiveConversions() {
         return this.apiRequest('/api/active-conversions', {}, 'listActiveConversions');
     }
 }
 
-// Export as singleton
+// Export a single instance (singleton pattern)
 export default new ApiService();

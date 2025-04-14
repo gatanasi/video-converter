@@ -31,7 +31,7 @@ h2 {
   color: #5f6368;
 }
 
-/* Tab Navigation */
+/* --- Tabs --- */
 .tabs {
   display: flex;
   margin-bottom: 25px;
@@ -68,378 +68,34 @@ h2 {
   display: none;
 }
 
-.google-drive-section,
-.format-selection,
-.previous-files-section {
+/* --- Sections --- */
+.section {
+  margin-bottom: 25px;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+.folder-input-section,
+.video-list-section,
+.conversion-form-section,
+.files-section {
   margin-bottom: 25px;
 }
 
-.config-section {
+.folder-input,
+.conversion-form {
   background-color: #f8f9fa;
   padding: 15px;
   border-radius: 5px;
-  margin-bottom: 20px;
+}
+
+.folder-input {
   border-left: 4px solid #4285f4;
 }
 
-.api-config {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.api-config label {
-  flex: 0 0 100%;
-  font-weight: bold;
-}
-
-.api-config input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 15px;
-}
-
-button {
-  padding: 12px 24px;
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
-}
-
-button:hover {
-  background-color: #3367d6;
-}
-
-#saveConfigBtn {
-  background-color: #34a853;
-}
-
-#saveConfigBtn:hover {
-  background-color: #2d9249;
-}
-
-#refreshFilesBtn {
-  background-color: #fbbc05;
-  color: #333;
-  margin-bottom: 15px;
-}
-
-#refreshFilesBtn:hover {
-  background-color: #f8ae00;
-}
-
-.format-selection {
-  margin-top: 20px;
-}
-
-select {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-  margin-left: 10px;
-}
-
-.hidden {
-  display: none;
-}
-
-.progress-bar-container {
-  width: 100%;
-  height: 20px;
-  background-color: #e0e0e0;
-  border-radius: 10px;
-  margin: 15px 0;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background-color: #4285f4;
-  width: 0%;
-  border-radius: 10px;
-  transition: width 0.3s;
-}
-
-#progressPercent {
-  text-align: center;
-  font-weight: bold;
-}
-
-#selectedFile {
-  margin: 20px 0;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  border-left: 4px solid #4285f4;
-}
-
-#videoList {
-  margin: 20px 0;
-}
-
-#videoListContainer {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  margin-top: 15px;
-}
-
-.video-item {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.video-item:hover {
-  background-color: #f0f7ff;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-}
-
-.video-item.selected {
-  background-color: #e8f0fe;
-  border-color: #4285f4;
-}
-
-/* Previous Files List */
-.file-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  background-color: #f8f9fa;
-  gap: 15px;
-  /* Add gap between info and actions */
-}
-
-.file-item:hover {
-  background-color: #f0f7ff;
-}
-
-.file-info {
-  flex-grow: 1;
-  /* Allow info section to take available space */
-  min-width: 0;
-  /* Prevent text overflow issues */
-}
-
-.file-name {
-  font-weight: 500;
-  overflow: hidden;
-  /* Prevent long names from breaking layout */
-  text-overflow: ellipsis;
-  /* Show '...' for long names */
-  white-space: nowrap;
-  /* Keep name on one line */
-}
-
-.file-meta {
-  font-size: 0.85em;
-  color: #666;
-  margin-top: 4px;
-}
-
-.download-btn {
-  background-color: #34a853;
-  padding: 8px 16px;
-  font-size: 14px;
-}
-
-.download-btn:hover {
-  background-color: #2d9249;
-}
-
-.delete-btn {
-  background-color: #ea4335;
-  padding: 8px 16px;
-  font-size: 14px;
-}
-
-.delete-btn:hover {
-  background-color: #d93025;
-}
-
-#conversionOptions,
-#downloadSection {
-  margin-top: 25px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-}
-
-#downloadBtn {
-  background-color: #0f9d58;
-  margin-top: 10px;
-}
-
-#downloadBtn:hover {
-  background-color: #0b8043;
-}
-
-.conversion-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.conversion-controls select {
-  margin-left: 0;
-  min-width: 100px;
-}
-
-/* Message Area Styles */
-.messages {
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  border: 1px solid transparent;
-  font-size: 14px;
-}
-
-.messages.hidden {
-  display: none;
-}
-
-.message.info {
-  color: #0c5460;
-  background-color: #d1ecf1;
-  border-color: #bee5eb;
-}
-
-.message.success {
-  color: #155724;
-  background-color: #d4edda;
-  border-color: #c3e6cb;
-}
-
-.message.warning {
-  color: #856404;
-  background-color: #fff3cd;
-  border-color: #ffeeba;
-}
-
-.message.error {
-  color: #721c24;
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-}
-
-
-/* Adjustments for Config Section */
-.drive-config {
-  display: flex;
-  flex-wrap: wrap;
-  /* Allow wrapping on smaller screens */
-  gap: 10px 15px;
-  /* Row and column gap */
-  align-items: center;
-  /* Align items vertically */
-  margin-bottom: 10px;
-}
-
-.drive-config label {
-  /* flex-basis: 100%; */
-  /* Make label take full width if needed */
-  font-weight: bold;
-  margin-right: 5px;
-  /* Space between label and input */
-}
-
-.drive-config input {
-  flex-grow: 1;
-  /* Allow input to take available space */
-  min-width: 200px;
-  /* Minimum width */
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.drive-config button {
-  flex-shrink: 0;
-  /* Prevent button from shrinking */
-}
-
-
-/* Video List Item Meta Data */
-.video-item .video-meta {
-  font-size: 0.85em;
-  color: #666;
-  margin-top: 4px;
-}
-
-/* Ensure config section elements layout nicely */
-.config-section .folder-info {
-  margin-top: 15px;
-  font-size: 0.9em;
-  color: #555;
-}
-
-.config-section .folder-info p {
-  margin-bottom: 5px;
-}
-
-.conversion-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-
-.option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.option input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.option label {
-  cursor: pointer;
-  user-select: none;
-}
-
-.abort-btn {
-  background-color: #ea4335;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 10px 20px;
-  margin-top: 15px;
-  transition: background-color 0.3s;
-}
-
-.abort-btn:hover {
-  background-color: #d93025;
+.conversion-form {
+  border-left: 4px solid #34a853;
 }
 
 .active-conversions-section {
@@ -455,209 +111,148 @@ select {
   margin-top: 0;
 }
 
-.conversion-item {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  background-color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.conversion-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.conversion-id {
-  font-weight: bold;
-  color: #4285f4;
-}
-
-.conversion-progress {
-  flex-grow: 1;
-}
-
-.conversion-actions {
-  display: flex;
-  gap: 10px;
-}
-
-#refreshActiveBtn {
-  background-color: #fbbc05;
-  color: #333;
-  margin-top: 10px;
-}
-
-#refreshActiveBtn:hover {
-  background-color: #f8ae00;
-}
-
-/* Multi-selection styles */
-.selection-controls {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  gap: 10px;
-}
-
-.selection-counter {
-  margin-left: auto;
-  font-size: 14px;
-  color: #5f6368;
-}
-
-#selectedFiles {
-  margin: 20px 0;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  border-left: 4px solid #4285f4;
-}
-
-#selectedFilesList {
-  margin-top: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-}
-
-.selected-file-item {
-  padding: 8px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.selected-file-item:last-child {
-  border-bottom: none;
-}
-
-.selected-file-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.remove-selected {
-  background-color: #ea4335;
-  color: white;
+/* --- Buttons --- */
+.btn {
+  padding: 10px 20px;
   border: none;
-  border-radius: 3px;
-  padding: 3px 8px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
-}
-
-.multi-progress-item {
-  position: relative;
-  padding: 15px;
-  margin-bottom: 10px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-}
-
-.multi-progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  padding-right: 40px; /* Increased padding to prevent text from going under the abort button */
-}
-
-.multi-progress-bar-container {
-  width: 100%;
-  height: 10px;
-  background-color: #e0e0e0;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.multi-progress-bar {
-  height: 100%;
-  background-color: #4285f4;
-  width: 0%;
-  border-radius: 5px;
-  transition: width 0.3s;
-}
-
-.multi-progress-error {
-  color: #ea4335;
-  margin-top: 5px;
-  font-size: 13px;
-}
-
-.multi-progress-percent {
-  margin-left: 10px;
-  /* Give some space between label and percentage */
-  min-width: 45px;
-  /* Ensure the percentage has enough width */
-  text-align: right;
-  /* Right align the text */
-  font-weight: bold; /* Make percentage more visible */
-}
-
-.secondary-btn {
-  background-color: #9aa0a6;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  font-size: 16px;
   color: white;
-  margin-top: 10px;
+  background-color: #4285f4; /* Default blue */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none; /* For <a> tags styled as buttons */
+  vertical-align: middle; /* Align with text/inputs */
 }
 
-.secondary-btn:hover {
-  background-color: #80868b;
+.btn:hover {
+  background-color: #3367d6;
 }
 
-#viewFilesBtn {
-  background-color: #4285f4;
+.btn.primary {
+  /* Already default blue */
 }
 
-/* Reset Configuration Styles */
-.reset-config {
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px dashed #ddd;
+.btn.primary:hover {
+  /* Already default blue hover */
 }
 
-#resetConfigBtn {
+.btn.success {
+  background-color: #34a853;
+}
+
+.btn.success:hover {
+  background-color: #2d9249;
+}
+
+.btn.danger {
   background-color: #ea4335;
-  font-size: 14px;
-  padding: 8px 16px;
 }
 
-#resetConfigBtn:hover {
+.btn.danger:hover {
   background-color: #d93025;
 }
 
-.reset-note {
-  font-size: 0.85em;
-  color: #666;
-  margin-top: 5px;
-  font-style: italic;
+.btn.warning {
+  background-color: #fbbc05;
+  color: #333;
 }
 
-/* Folder Input Section */
-.folder-input-section {
-  margin-bottom: 25px;
+.btn.warning:hover {
+  background-color: #f8ae00;
 }
 
-.folder-input {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 5px;
-  border-left: 4px solid #4285f4;
+.btn.small {
+  padding: 5px 10px;
+  font-size: 14px;
+  min-width: 32px; /* Ensure small buttons have minimum size */
 }
 
-.folder-input label {
+.btn:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+.btn:disabled:hover {
+  background-color: #cccccc;
+}
+
+/* Specific button instances */
+.file-table a.btn { /* Download button in file list */
+  background-color: #34a853;
+  margin-right: 5px;
+}
+
+.file-table button.delete { /* Delete button in file list */
+  background-color: #ea4335;
+}
+
+.remove-selected { /* Remove button in selected list (currently unused) */
+  background-color: #ea4335;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.abort-button { /* Abort button in progress item */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #ea4335;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* Button pulse animation */
+@keyframes button-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(66, 133, 244, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
+}
+
+.button-pulse {
+  animation: button-pulse 1.5s infinite;
+  background-color: #3367d6; /* Slightly darker blue while processing */
+}
+
+/* --- Forms & Inputs --- */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
   display: block;
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
+}
+
+.form-control,
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+select {
+  /* Override width for select if needed, or use specific class */
 }
 
 .input-group {
@@ -667,10 +262,28 @@ select {
 
 .input-group input {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+}
+
+.form-options {
+  margin: 15px 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  margin-right: 8px;
+  width: 18px; /* Explicit size */
+  height: 18px; /* Explicit size */
+}
+
+.form-actions {
+  margin-top: 20px;
 }
 
 .note {
@@ -680,26 +293,28 @@ select {
   font-style: italic;
 }
 
-/* Video List Section */
-.video-list-section {
-  margin-top: 25px;
-  margin-bottom: 25px;
-}
-
-.video-table {
+/* --- Tables --- */
+.video-table,
+.file-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 15px;
 }
 
 .video-table th,
-.video-table td {
+.video-table td,
+.file-table th,
+.file-table td {
   text-align: left;
   padding: 12px 15px;
   border-bottom: 1px solid #e0e0e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.video-table th {
+.video-table th,
+.file-table th {
   background-color: #f8f9fa;
   color: #5f6368;
   font-weight: bold;
@@ -718,290 +333,47 @@ select {
   background-color: #e8f0fe;
 }
 
-.video-name {
-  width: 50%;
-}
+/* Column Widths */
+.video-select { width: 40px; text-align: center; }
+.video-name { width: 45%; }
+.video-size { width: 15%; }
+.video-type { width: 15%; }
+.video-date { width: 25%; }
 
-.video-size {
-  width: 25%;
-}
+.file-table { table-layout: fixed; }
+.file-table .file-name { width: 40%; }
+.file-table .file-size { width: 15%; }
+.file-table .file-date { width: 25%; }
+.file-table .file-actions { width: 20%; text-align: center; }
 
-.video-type {
-  width: 25%;
-}
-
-/* Conversion Form Section */
-.conversion-form-section {
-  margin-top: 25px;
-}
-
-.conversion-form {
-  background-color: #f8f9fa;
+/* --- Messages --- */
+.messages {
   padding: 15px;
+  margin-bottom: 20px;
   border-radius: 5px;
-  border-left: 4px solid #34a853;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid transparent;
   font-size: 14px;
 }
 
-.form-options {
-  margin: 15px 0;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.checkbox-container input {
-  margin-right: 8px;
-}
-
-.form-actions {
-  margin-top: 20px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.btn.primary {
-  background-color: #4285f4;
-  color: white;
-}
-
-.btn.primary:hover {
-  background-color: #3367d6;
-}
-
-.btn.small {
-  padding: 5px 10px;
-  font-size: 14px;
-}
-
-.multi-progress {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-}
-
-.multi-progress.hidden {
+.messages.hidden {
   display: none;
 }
 
-/* File List Styles */
-.files-section {
-  margin-top: 20px;
-  overflow-x: auto;
-  /* Add horizontal scrolling for small screens */
+.message {
+  margin-bottom: 5px; /* Space between multiple messages if ever needed */
+}
+.message:last-child {
+  margin-bottom: 0;
 }
 
-.file-list-container {
-  margin-top: 15px;
-  max-width: 100%;
-  /* Ensure container respects parent width */
-  overflow-x: hidden;
-  /* Hide horizontal overflow */
-}
+.message.info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
+.message.success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+.message.warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
+.message.error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
 
-.file-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  table-layout: fixed;
-  /* Fixed table layout for better column control */
-}
-
-.file-table th,
-.file-table td {
-  text-align: left;
-  padding: 12px 15px;
-  border-bottom: 1px solid #e0e0e0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-table th {
-  background-color: #f8f9fa;
-  color: #5f6368;
-  font-weight: bold;
-}
-
-.file-table .file-name {
-  width: 40%;
-  /* Allocate 40% of table width for filename */
-}
-
-.file-table .file-size {
-  width: 15%;
-  /* Allocate 15% of table width for size */
-}
-
-.file-table .file-date {
-  width: 25%;
-  /* Allocate 25% of table width for date */
-}
-
-.file-table .file-actions {
-  width: 20%;
-  /* Allocate 20% of table width for actions */
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* Make download button more clear */
-.file-table a.btn {
-  padding: 6px 12px;
-  background-color: #34a853;
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 5px;
-  min-width: 32px;
-}
-
-.file-table a.btn::after {
-  margin-left: 4px;
-}
-
-.file-table button.delete {
-  background-color: #ea4335;
-  min-width: 32px;
-}
-
-/* Footer */
-footer {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
-  text-align: center;
-  font-size: 14px;
-  color: #5f6368;
-}
-
-/* Video Table Selection Styles */
-.video-select {
-  width: 40px;
-  text-align: center;
-}
-
-.video-checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.video-date {
-  width: 180px;
-}
-
-.selection-controls {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-  gap: 10px;
-}
-
-.selection-counter {
-  margin-left: auto;
-  font-size: 14px;
-  color: #5f6368;
-}
-
-/* Selected files display */
-#selectedFiles {
-  margin: 20px 0;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  border-left: 4px solid #4285f4;
-}
-
-#selectedFilesList {
-  margin-top: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-}
-
-.selected-file-item {
-  padding: 8px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.selected-file-item:last-child {
-  border-bottom: none;
-}
-
-.selected-file-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.remove-selected {
-  background-color: #ea4335;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  padding: 3px 8px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-/* Progress bar and status styles */
-.abort-button {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #ea4335;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2; /* Ensure button stays above other elements */
+/* --- Progress Indicators --- */
+.multi-progress {
+  margin-top: 15px; /* Consistent spacing */
 }
 
 .multi-progress-item {
@@ -1012,23 +384,60 @@ footer {
   border: 1px solid #ddd;
   border-radius: 5px;
 }
+.multi-progress-item:last-child {
+  margin-bottom: 0;
+}
 
 .multi-progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  padding-right: 40px; /* Increased padding to prevent text from going under the abort button */
+  padding-right: 40px; /* Space for abort button */
+}
+
+.multi-progress-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .multi-progress-percent {
   margin-left: 10px;
-  /* Give some space between label and percentage */
   min-width: 45px;
-  /* Ensure the percentage has enough width */
   text-align: right;
-  /* Right align the text */
-  font-weight: bold; /* Make percentage more visible */
+  font-weight: bold;
+}
+
+.multi-progress-bar-container {
+  width: 100%;
+  height: 10px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.multi-progress-bar {
+  height: 100%;
+  background-color: #4285f4;
+  width: 0%;
+  border-radius: 5px;
+  transition: width 0.3s;
+}
+
+.multi-progress-error,
+.multi-progress-status { /* General status/error message */
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.multi-progress-error {
+  color: #ea4335;
+}
+
+.multi-progress-status.aborted {
+  color: #856404; /* Warning color for aborted */
 }
 
 .multi-progress-download {
@@ -1042,38 +451,64 @@ footer {
   font-size: 14px;
 }
 
-/* Button pulse animation for immediate feedback */
-@keyframes button-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
-  }
-
-  70% {
-    box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
-  }
+.multi-progress-item.complete .multi-progress-bar {
+  background-color: #34a853; /* Green for complete */
 }
 
-.button-pulse {
-  animation: button-pulse 1.5s infinite;
-  background-color: #3367d6;
-  /* Slightly darker blue while processing */
+.multi-progress-item.error .multi-progress-bar,
+.multi-progress-item.aborted .multi-progress-bar {
+  background-color: #ea4335; /* Red for error/aborted */
 }
 
-/* Disabled button styles */
-button:disabled,
-.btn:disabled {
-  background-color: #cccccc;
-  color: #666666;
-  cursor: not-allowed;
-  opacity: 0.7;
-  box-shadow: none;
+/* --- Video List Specific --- */
+.selection-controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 10px;
 }
 
-button:disabled:hover,
-.btn:disabled:hover {
-  background-color: #cccccc;
+.selection-counter {
+  margin-left: auto;
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.video-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* --- File List Specific --- */
+.files-section {
+  overflow-x: auto; /* Add horizontal scrolling for small screens */
+}
+
+.file-list-container {
+  margin-top: 15px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* --- Footer --- */
+footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
+  font-size: 14px;
+  color: #5f6368;
+}
+
+/* --- Utility --- */
+.hidden {
+  display: none;
+}
+
+.empty-message {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+  font-style: italic;
 }
