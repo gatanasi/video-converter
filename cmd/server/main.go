@@ -31,11 +31,14 @@ func main() {
 
 	middleware.InitCORS(conf.AllowedOrigins)
 
-	converter := conversion.NewVideoConverter(conf.WorkerCount)
+	// Create conversion store for tracking active conversions
+	store := conversion.NewStore()
+	
+	converter := conversion.NewVideoConverter(conf.WorkerCount, store)
 	converter.Start()
 	defer converter.Stop()
 
-	handler := api.NewHandler(conf, converter)
+	handler := api.NewHandler(conf, converter, store)
 
 	mux := http.NewServeMux()
 	handler.SetupRoutes(mux)
