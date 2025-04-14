@@ -45,7 +45,7 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/status/", h.StatusHandler) // Expects /api/status/{id}
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
 	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler) // Expects /api/delete-file/{filename}
-	mux.HandleFunc("/api/abort/", h.AbortConversionHandler) // Expects /api/abort/{id}
+	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)  // Expects /api/abort/{id}
 	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
 	mux.HandleFunc("/api/config", h.ConfigHandler)
 	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
@@ -259,9 +259,12 @@ func (h *Handler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	contentType := "application/octet-stream"
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
-	case ".mov": contentType = "video/quicktime"
-	case ".mp4": contentType = "video/mp4"
-	case ".avi": contentType = "video/x-msvideo"
+	case ".mov":
+		contentType = "video/quicktime"
+	case ".mp4":
+		contentType = "video/mp4"
+	case ".avi":
+		contentType = "video/x-msvideo"
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))

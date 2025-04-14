@@ -53,8 +53,8 @@ type ConversionJob struct {
 	FileID           string // Original Google Drive File ID (for reference)
 	FileName         string // Original filename (for reference)
 	TargetFormat     string
-	UploadedFilePath string // Path to the file downloaded from Drive
-	OutputFilePath   string // Path where the converted file should be saved
+	UploadedFilePath string            // Path to the file downloaded from Drive
+	OutputFilePath   string            // Path where the converted file should be saved
 	Status           *ConversionStatus // Pointer to the shared status object
 	ReverseVideo     bool
 	RemoveSound      bool
