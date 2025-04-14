@@ -19,11 +19,15 @@
             <button data-tab="files" class="tab-button">Previous Conversions</button>
         </div>
 
-        <!-- Active Conversions Section - Visible across all tabs -->
-        <div id="active-conversions" class="active-conversions-section hidden"></div>
+        <!-- Active Conversions Section - Always visible below tabs -->
+        <div id="active-conversions" class="active-conversions-section">
+            <!-- Content managed by ActiveConversionsComponent -->
+        </div>
 
         <!-- Messages Area - Shared between tabs -->
-        <div id="message-area" class="messages hidden"></div>
+        <div id="message-area" class="messages hidden">
+            <!-- Content managed by showMessage/clearMessages -->
+        </div>
 
         <!-- Convert Tab Content -->
         <div id="convert-panel" class="tab-panel">
@@ -35,16 +39,16 @@
                         <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
                         <button id="load-videos-btn" class="btn">Load Videos</button>
                     </div>
-                    <p class="note">Enter the ID of a Google Drive folder with "Anyone with the link can view" access.</p>
+                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".</p>
                 </div>
             </div>
 
             <div id="video-list" class="video-list-section">
-                <!-- Videos will be displayed here by VideoListComponent -->
+                <!-- Content managed by VideoListComponent -->
             </div>
 
-            <div id="conversion-form" class="conversion-form-section">
-                <!-- Conversion form will be displayed here by ConversionFormComponent -->
+            <div id="conversion-form" class="conversion-form-section hidden">
+                <!-- Content managed by ConversionFormComponent, initially hidden -->
             </div>
         </div>
 
@@ -53,17 +57,17 @@
             <div class="files-section">
                 <h2>Previously Converted Files</h2>
                 <div id="file-list" class="file-list-container">
-                    <!-- Files will be displayed here by FileListComponent -->
+                    <!-- Content managed by FileListComponent -->
                 </div>
             </div>
         </div>
 
         <footer>
-            <p>&copy; 2025 Video Converter - Open Source Project</p>
+            <p>&copy; 2025 Video Converter</p>
         </footer>
     </div>
 
-    <!-- Import main app using type="module" to enable ES modules -->
+    <!-- Main application script -->
     <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
