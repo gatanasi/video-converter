@@ -214,9 +214,19 @@ h2, h3 { /* Apply to both h2 and h3 */
   background-color: #f8ae00;
 }
 
+/* Add secondary button style */
+.btn.secondary {
+  background-color: #6c757d; /* Grey background */
+  color: white;
+}
+
+.btn.secondary:hover {
+  background-color: #5a6268; /* Darker grey on hover */
+}
+
 .btn.small {
-  padding: 5px 10px;
-  font-size: 14px;
+  padding: 5px 10px; /* Keep small padding */
+  font-size: 14px; /* Keep smaller font */
   min-width: 32px; /* Ensure small buttons have minimum size */
 }
 
