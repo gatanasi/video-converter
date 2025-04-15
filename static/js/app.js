@@ -213,8 +213,7 @@ class App {
 
         // Save the extracted ID back to config and potentially update input field
         if (folderId !== folderInputValue) {
-             // Optionally update the input field to show just the ID?
-             // this.folderIdInput.value = folderId;
+            this.folderIdInput.value = folderId;
         }
         configManager.set('googleDriveFolderId', folderId);
 

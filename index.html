@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="icon" href="/static/img/favicon.ico" type="image/x-icon">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -53,10 +55,10 @@
                         <input type="file" id="file-upload" accept="video/*">
                         <button id="upload-convert-btn" class="btn primary" disabled>Upload & Convert</button>
                     </div>
-                     <p class="note">Select a video file from your computer to convert.</p>
-                     <div id="upload-file-info" class="upload-file-info">
+                    <p class="note">Select a video file from your computer to convert.</p>
+                    <div id="upload-file-info" class="upload-file-info hidden">
                         Selected: <span id="upload-file-name"></span> (<span id="upload-file-size"></span>)
-                     </div>
+                    </div>
                 </div>
             </div>
 
@@ -68,7 +70,8 @@
                         <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
                         <button id="load-videos-btn" class="btn">Load Videos</button>
                     </div>
-                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".</p>
+                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".
+                    </p>
                 </div>
             </div>
 
@@ -78,7 +81,7 @@
             </div>
 
             <div id="drive-video-list-section" class="video-list-section">
-                 <!-- Renamed h2 to h3 and added step number -->
+                <!-- Renamed h2 to h3 and added step number -->
                 <h3>4. Select Drive Videos (if applicable)</h3>
                 <!-- Add the container for the video list component back -->
                 <div id="video-list">
@@ -107,4 +110,5 @@
     <!-- Main application script -->
     <script type="module" src="/static/js/app.js"></script>
 </body>
+
 </html>
