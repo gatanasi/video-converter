@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io" // Import io package
 	"log"
 	"net/http"
 	"os"
@@ -42,7 +43,8 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
 	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/status/", h.StatusHandler) // Expects /api/status/{id}
+	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler) // New route
+	mux.HandleFunc("/api/status/", h.StatusHandler)               // Expects /api/status/{id}
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
 	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler) // Expects /api/delete-file/{filename}
 	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)  // Expects /api/abort/{id}
@@ -187,6 +189,172 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	response := models.ConversionResponse{
 		Success:      true,
 		Message:      "Conversion job queued successfully",
+		ConversionID: conversionID,
+	}
+	h.sendJSONResponse(w, response, http.StatusAccepted)
+}
+
+// UploadConvertHandler handles requests to upload a video file and convert it.
+func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Set max upload size using MaxFileSize from config (ensure it's reasonable for uploads)
+	// Add a buffer for other form fields
+	maxUploadSize := h.Config.MaxFileSize + (1 * 1024 * 1024) // Add 1MB buffer
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
+
+	// Parse the multipart form data
+	// Use a reasonable limit for memory usage during parsing (e.g., 32MB)
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		if errors.Is(err, http.ErrMissingBoundary) {
+			h.sendErrorResponse(w, "Invalid request: Missing multipart boundary", http.StatusBadRequest)
+		} else if errors.Is(err, http.ErrNotMultipart) {
+			h.sendErrorResponse(w, "Invalid request: Not a multipart request", http.StatusBadRequest)
+		} else if strings.Contains(err.Error(), "request body too large") {
+			h.sendErrorResponse(w, fmt.Sprintf("Upload failed: File exceeds maximum allowed size (%d MB)", h.Config.MaxFileSize/(1024*1024)), http.StatusRequestEntityTooLarge)
+		} else {
+			errMsg := fmt.Sprintf("Failed to parse multipart form: %v", err)
+			log.Printf("WARN: %s", errMsg)
+			h.sendErrorResponse(w, errMsg, http.StatusBadRequest)
+		}
+		return
+	}
+	defer func() {
+		if err := r.MultipartForm.RemoveAll(); err != nil {
+			log.Printf("WARN: Error removing multipart temp files: %v", err)
+		}
+	}()
+
+	// Get the file from the form
+	file, handler, err := r.FormFile("videoFile")
+	if err != nil {
+		if errors.Is(err, http.ErrMissingFile) {
+			h.sendErrorResponse(w, "Missing 'videoFile' part in form data", http.StatusBadRequest)
+		} else {
+			errMsg := fmt.Sprintf("Failed to get file from form: %v", err)
+			log.Printf("WARN: %s", errMsg)
+			h.sendErrorResponse(w, errMsg, http.StatusBadRequest)
+		}
+		return
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			log.Printf("WARN: Error closing uploaded file handle: %v", closeErr)
+		}
+	}()
+
+	// Get conversion options from form values
+	targetFormat := r.FormValue("targetFormat")
+	reverseVideoStr := r.FormValue("reverseVideo")
+	removeSoundStr := r.FormValue("removeSound")
+
+	if targetFormat == "" {
+		h.sendErrorResponse(w, "Missing required field: targetFormat", http.StatusBadRequest)
+		return
+	}
+	validFormats := map[string]bool{"mov": true, "mp4": true, "avi": true}
+	if !validFormats[targetFormat] {
+		h.sendErrorResponse(w, "Invalid target format specified", http.StatusBadRequest)
+		return
+	}
+
+	reverseVideo := reverseVideoStr == "true"
+	removeSound := removeSoundStr == "true"
+
+	// --- Prepare file paths and job details ---
+	originalFileName := handler.Filename
+	sanitizedBaseName := filestore.SanitizeFilename(originalFileName)
+	if sanitizedBaseName == "" {
+		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().UnixNano()) // Fallback
+	}
+	fileNameWithoutExt := strings.TrimSuffix(sanitizedBaseName, filepath.Ext(sanitizedBaseName))
+	timestamp := time.Now().UnixNano()
+	conversionID := strconv.FormatInt(timestamp, 10)
+
+	uploadedFileName := fmt.Sprintf("%d-%s", timestamp, sanitizedBaseName)
+	uploadedFilePath := filepath.Join(h.Config.UploadsDir, uploadedFileName)
+	outputFileName := fmt.Sprintf("%s-%d.%s", fileNameWithoutExt, timestamp, targetFormat)
+	outputFilePath := filepath.Join(h.Config.ConvertedDir, outputFileName)
+
+	// --- Save the uploaded file ---
+	log.Printf("Saving uploaded file for job %s: %s -> %s", conversionID, originalFileName, uploadedFilePath)
+	outFile, err := os.Create(uploadedFilePath)
+	if err != nil {
+		errMsg := fmt.Sprintf("Failed to create file for saving upload: %v", err)
+		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
+		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if closeErr := outFile.Close(); closeErr != nil {
+			log.Printf("WARN [job %s]: Error closing saved upload file %s: %v", conversionID, uploadedFilePath, closeErr)
+		}
+	}()
+
+	// Copy the file content, respecting MaxFileSize again just in case
+	limitedReader := &io.LimitedReader{R: file, N: h.Config.MaxFileSize + 1}
+	written, err := io.Copy(outFile, limitedReader)
+	if err != nil {
+		// Clean up partially written file
+		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Printf("WARN [job %s]: Failed to remove partially written upload file %s: %v", conversionID, uploadedFilePath, removeErr)
+		}
+		errMsg := fmt.Sprintf("Failed to save uploaded file: %v", err)
+		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
+		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the limit was hit during copy
+	if limitedReader.N <= 0 {
+		// Clean up oversized file
+		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Printf("WARN [job %s]: Failed to remove oversized upload file %s: %v", conversionID, uploadedFilePath, removeErr)
+		}
+		h.sendErrorResponse(w, fmt.Sprintf("Upload failed: File exceeds maximum allowed size (%d MB)", h.Config.MaxFileSize/(1024*1024)), http.StatusRequestEntityTooLarge)
+		return
+	}
+	log.Printf("Successfully saved %d bytes for job %s from upload %s", written, conversionID, originalFileName)
+
+	// --- Queue the conversion job ---
+	status := &models.ConversionStatus{
+		InputPath:  uploadedFilePath,
+		OutputPath: outputFilePath,
+		Format:     targetFormat,
+		Progress:   0,
+		Complete:   false,
+	}
+	h.Store.SetStatus(conversionID, status)
+
+	job := models.ConversionJob{
+		ConversionID:     conversionID,
+		FileID:           "",               // No Drive File ID for uploads
+		FileName:         originalFileName, // Store original uploaded name
+		TargetFormat:     targetFormat,
+		UploadedFilePath: uploadedFilePath,
+		OutputFilePath:   outputFilePath,
+		Status:           status,
+		ReverseVideo:     reverseVideo,
+		RemoveSound:      removeSound,
+	}
+
+	if err := h.Converter.QueueJob(job); err != nil {
+		log.Printf("ERROR [job %s]: Failed to queue upload job: %v", conversionID, err)
+		h.Store.DeleteStatus(conversionID)
+		// Attempt to remove the saved uploaded file
+		if removeErr := os.Remove(uploadedFilePath); removeErr != nil {
+			log.Printf("WARN [job %s]: Failed to remove saved upload file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
+		}
+		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
+		return
+	}
+
+	response := models.ConversionResponse{
+		Success:      true,
+		Message:      "Upload successful, conversion job queued",
 		ConversionID: conversionID,
 	}
 	h.sendJSONResponse(w, response, http.StatusAccepted)

@@ -31,7 +31,7 @@ type ConversionResponse struct {
 type DriveConversionRequest struct {
 	FileID       string `json:"fileId"`
 	FileName     string `json:"fileName"`
-	MimeType     string `json:"mimeType"` // Optional, for context
+	MimeType     string `json:"mimeType"`
 	TargetFormat string `json:"targetFormat"`
 	ReverseVideo bool   `json:"reverseVideo"`
 	RemoveSound  bool   `json:"removeSound"`

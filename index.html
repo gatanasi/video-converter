@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="icon" href="/static/img/favicon.ico" type="image/x-icon">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -31,25 +33,64 @@
 
         <!-- Convert Tab Content -->
         <div id="convert-panel" class="tab-panel">
-            <div class="folder-input-section">
-                <h2>Google Drive Video Source</h2>
+            <div class="source-selection-section">
+                <h2>1. Choose Video Source</h2>
+                <div class="source-options">
+                    <label class="radio-container">
+                        <input type="radio" name="videoSource" value="upload" id="source-upload" checked>
+                        Upload File
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="videoSource" value="drive" id="source-drive">
+                        Google Drive Folder
+                    </label>
+                </div>
+            </div>
+
+            <div id="upload-source-section" class="upload-section">
+                <h2>2. Upload Video File</h2>
+                <div class="upload-input">
+                    <label for="file-upload">Select Video File:</label>
+                    <div class="input-group">
+                        <input type="file" id="file-upload" accept="video/*">
+                        <button id="upload-convert-btn" class="btn primary" disabled>Upload & Convert</button>
+                    </div>
+                    <p class="note">Select a video file from your computer to convert.</p>
+                    <div id="upload-file-info" class="upload-file-info hidden">
+                        Selected: <span id="upload-file-name"></span> (<span id="upload-file-size"></span>)
+                    </div>
+                </div>
+            </div>
+
+            <div id="drive-source-section" class="folder-input-section hidden">
+                <h2>2. Google Drive Video Source</h2>
                 <div class="folder-input">
                     <label for="folder-id">Google Drive Folder ID or URL:</label>
                     <div class="input-group">
                         <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
                         <button id="load-videos-btn" class="btn">Load Videos</button>
+                        <button id="reset-folder-id-btn" class="btn secondary small" title="Clear stored folder ID and input">Reset</button> <!-- Added small class -->
                     </div>
-                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".</p>
+                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".
+                    </p>
                 </div>
             </div>
 
-            <div id="video-list" class="video-list-section">
-                <!-- Content managed by VideoListComponent -->
+            <div id="conversion-options-section" class="conversion-form-section">
+                <h3>3. Conversion Options</h3>
+                <!-- Content managed by ConversionFormComponent -->
             </div>
 
-            <div id="conversion-form" class="conversion-form-section hidden">
-                <!-- Content managed by ConversionFormComponent, initially hidden -->
+            <div id="drive-video-list-section" class="video-list-section">
+                <!-- Renamed h2 to h3 and added step number -->
+                <h3>4. Select Drive Videos (if applicable)</h3>
+                <!-- Add the container for the video list component back -->
+                <div id="video-list">
+                    <!-- Content managed by VideoListComponent -->
+                </div>
+                <!-- The dynamically added button will appear after this div -->
             </div>
+
         </div>
 
         <!-- Files Tab Content -->
@@ -70,4 +111,5 @@
     <!-- Main application script -->
     <script type="module" src="/static/js/app.js"></script>
 </body>
+
 </html>

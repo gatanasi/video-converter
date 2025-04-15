@@ -1,60 +1,13 @@
 /**
- * Configuration Manager - Handles application configuration stored in localStorage.
+ * Configuration Manager - Provides utility functions related to configuration, like parsing IDs.
  */
 class ConfigManager {
     constructor() {
-        this.CONFIG_KEY = 'videoConverterConfig_v3';
-        this.config = {
-            googleDriveFolderId: '',
-        };
+        // No persistent config needed anymore
     }
 
-    /**
-     * Load configuration from local storage.
-     * @returns {Object} The loaded configuration.
-     */
-    loadConfig() {
-        const savedConfig = localStorage.getItem(this.CONFIG_KEY);
-        if (savedConfig) {
-            try {
-                const parsedConfig = JSON.parse(savedConfig);
-                // Only load known keys to prevent unexpected data
-                this.config.googleDriveFolderId = parsedConfig.googleDriveFolderId || '';
-                console.log('Configuration loaded from localStorage');
-                return this.config;
-            } catch (error) {
-                console.error('Error loading saved configuration:', error);
-                localStorage.removeItem(this.CONFIG_KEY); // Clear invalid data
-                // Return default config
-                this.config = { googleDriveFolderId: '' };
-                return this.config;
-            }
-        }
-        return this.config; // Return default if nothing saved
-    }
-
-    /**
-     * Save configuration to local storage.
-     * @param {Object} newConfig - Configuration object to merge and save.
-     * @returns {Boolean} True if saved successfully.
-     */
-    saveConfig(newConfig) {
-        try {
-            // Merge new config with existing, ensuring only known keys are saved
-            const configToSave = {
-                googleDriveFolderId: newConfig.googleDriveFolderId !== undefined
-                    ? newConfig.googleDriveFolderId
-                    : this.config.googleDriveFolderId,
-            };
-            this.config = configToSave; // Update internal state
-            localStorage.setItem(this.CONFIG_KEY, JSON.stringify(this.config));
-            console.log('Configuration saved to localStorage');
-            return true;
-        } catch (error) {
-            console.error('Error saving configuration:', error);
-            return false;
-        }
-    }
+    // Removed loadConfig method
+    // Removed saveConfig method
 
     /**
      * Extract Google Drive folder ID from a URL or ID string.
@@ -78,29 +31,6 @@ class ConfigManager {
         }
 
         return ''; // Invalid input
-    }
-
-    /**
-     * Get a specific configuration value.
-     * @param {String} key - Configuration key.
-     * @returns {Any} Configuration value or undefined.
-     */
-    get(key) {
-        return this.config[key];
-    }
-
-    /**
-     * Set a specific configuration value and save.
-     * @param {String} key - Configuration key.
-     * @param {Any} value - Configuration value.
-     */
-    set(key, value) {
-        if (key in this.config) { // Only allow setting known keys
-            this.config[key] = value;
-            this.saveConfig(this.config);
-        } else {
-            console.warn(`Attempted to set unknown config key: ${key}`);
-        }
     }
 }
 
