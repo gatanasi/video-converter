@@ -44,7 +44,7 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
 	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
 	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler) // New route
-	mux.HandleFunc("/api/status/", h.StatusHandler) // Expects /api/status/{id}
+	mux.HandleFunc("/api/status/", h.StatusHandler)               // Expects /api/status/{id}
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
 	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler) // Expects /api/delete-file/{filename}
 	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)  // Expects /api/abort/{id}
@@ -331,7 +331,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 
 	job := models.ConversionJob{
 		ConversionID:     conversionID,
-		FileID:           "", // No Drive File ID for uploads
+		FileID:           "",               // No Drive File ID for uploads
 		FileName:         originalFileName, // Store original uploaded name
 		TargetFormat:     targetFormat,
 		UploadedFilePath: uploadedFilePath,
