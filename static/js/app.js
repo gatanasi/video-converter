@@ -182,23 +182,16 @@ class App {
 
     async loadConfigAndInitialData() {
         try {
-            // Load local config (folder ID)
-            const localConfig = configManager.loadConfig();
-            let folderIdToUse = localConfig.googleDriveFolderId || ''; // Start with local or empty
-
-            // Load server config (e.g., default folder ID)
+            // Load server config to potentially get a default folder ID.
             const serverConfig = await apiService.getServerConfig();
-            // Use server default only if local config is empty and server provides one
-            if (serverConfig.defaultDriveFolderId && !folderIdToUse) {
-                folderIdToUse = serverConfig.defaultDriveFolderId;
+            // Set the input field value only if a server default is provided.
+            if (serverConfig.defaultDriveFolderId) {
+                this.folderIdInput.value = serverConfig.defaultDriveFolderId;
             }
 
-            // Set the input field value based on the determined ID
-            this.folderIdInput.value = folderIdToUse;
-
         } catch (error) {
-            console.error('Error loading configuration:', error);
-            showMessage(this.messageArea, error.message || 'Failed to load configuration.', 'error');
+            console.error('Error loading server configuration:', error);
+            showMessage(this.messageArea, error.message || 'Failed to load server configuration.', 'error');
         }
     }
 
@@ -207,6 +200,7 @@ class App {
         if (this.currentVideoSource !== 'drive') return;
 
         const folderInputValue = this.folderIdInput.value;
+        // Use the utility function to extract a valid ID
         const folderId = configManager.extractFolderId(folderInputValue);
 
         if (!folderId) {
@@ -215,11 +209,10 @@ class App {
             return;
         }
 
-        // Save the extracted ID back to config and potentially update input field
+        // If extraction changed the value (e.g., from URL to ID), update the input field for clarity.
         if (folderId !== folderInputValue) {
             this.folderIdInput.value = folderId;
         }
-        configManager.set('googleDriveFolderId', folderId);
 
         // Show loading state
         this.loadVideosBtn.disabled = true;
@@ -406,10 +399,9 @@ class App {
     // Handle resetting the folder ID
     async handleResetFolderId() {
         clearMessages(this.messageArea);
-        console.log('Resetting Google Drive Folder ID');
+        console.log('Resetting Google Drive Folder ID input');
 
-        // Clear local storage and input field
-        configManager.set('googleDriveFolderId', '');
+        // Clear input field
         this.folderIdInput.value = '';
 
         // Clear the video list and selection
@@ -417,18 +409,18 @@ class App {
         this.selectedDriveVideos = [];
         this.updateDriveConvertButtonState();
 
-        // Attempt to reload default from server config
+        // Attempt to reload default from server config into the input field
         try {
             const serverConfig = await apiService.getServerConfig();
             if (serverConfig.defaultDriveFolderId) {
                 this.folderIdInput.value = serverConfig.defaultDriveFolderId;
-                showMessage(this.messageArea, 'Folder ID reset. Default loaded.', 'info');
+                showMessage(this.messageArea, 'Folder ID input cleared. Server default loaded.', 'info');
             } else {
-                showMessage(this.messageArea, 'Folder ID reset.', 'info');
+                showMessage(this.messageArea, 'Folder ID input cleared.', 'info');
             }
         } catch (error) {
             console.error('Error loading server config after reset:', error);
-            showMessage(this.messageArea, 'Folder ID reset, but failed to load server default.', 'warning');
+            showMessage(this.messageArea, 'Folder ID input cleared, but failed to load server default.', 'warning');
         }
     }
 
