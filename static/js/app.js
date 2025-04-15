@@ -24,6 +24,7 @@ class App {
         // Drive elements
         this.folderIdInput = document.getElementById('folder-id');
         this.loadVideosBtn = document.getElementById('load-videos-btn');
+        this.resetFolderIdBtn = document.getElementById('reset-folder-id-btn'); // Added reset button reference
         this.videoListContainer = document.getElementById('video-list'); // The actual list inside the section
 
         // Upload elements
@@ -98,6 +99,7 @@ class App {
 
     setupEventListeners() {
         this.loadVideosBtn.addEventListener('click', () => this.loadVideosFromDrive());
+        this.resetFolderIdBtn.addEventListener('click', () => this.handleResetFolderId()); // Added listener for reset button
 
         this.folderIdInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -182,16 +184,18 @@ class App {
         try {
             // Load local config (folder ID)
             const localConfig = configManager.loadConfig();
-            if (localConfig.googleDriveFolderId) {
-                this.folderIdInput.value = localConfig.googleDriveFolderId;
-            }
+            let folderIdToUse = localConfig.googleDriveFolderId || ''; // Start with local or empty
 
             // Load server config (e.g., default folder ID)
             const serverConfig = await apiService.getServerConfig();
             // Use server default only if local config is empty and server provides one
-            if (serverConfig.defaultDriveFolderId && !this.folderIdInput.value) {
-                this.folderIdInput.value = serverConfig.defaultDriveFolderId;
+            if (serverConfig.defaultDriveFolderId && !folderIdToUse) {
+                folderIdToUse = serverConfig.defaultDriveFolderId;
             }
+
+            // Set the input field value based on the determined ID
+            this.folderIdInput.value = folderIdToUse;
+
         } catch (error) {
             console.error('Error loading configuration:', error);
             showMessage(this.messageArea, error.message || 'Failed to load configuration.', 'error');
@@ -396,6 +400,35 @@ class App {
             // Button disable state is handled by handleFileSelection
             this.uploadConvertBtn.disabled = !this.selectedUploadFile;
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    // Handle resetting the folder ID
+    async handleResetFolderId() {
+        clearMessages(this.messageArea);
+        console.log('Resetting Google Drive Folder ID');
+
+        // Clear local storage and input field
+        configManager.set('googleDriveFolderId', '');
+        this.folderIdInput.value = '';
+
+        // Clear the video list and selection
+        this.videoListComponent.displayVideos([]);
+        this.selectedDriveVideos = [];
+        this.updateDriveConvertButtonState();
+
+        // Attempt to reload default from server config
+        try {
+            const serverConfig = await apiService.getServerConfig();
+            if (serverConfig.defaultDriveFolderId) {
+                this.folderIdInput.value = serverConfig.defaultDriveFolderId;
+                showMessage(this.messageArea, 'Folder ID reset. Default loaded.', 'info');
+            } else {
+                showMessage(this.messageArea, 'Folder ID reset.', 'info');
+            }
+        } catch (error) {
+            console.error('Error loading server config after reset:', error);
+            showMessage(this.messageArea, 'Folder ID reset, but failed to load server default.', 'warning');
         }
     }
 
