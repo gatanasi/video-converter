@@ -15,15 +15,24 @@
             <h1>Video Converter</h1>
         </header>
 
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="loading-indicator hidden">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+        </div>
+
         <!-- Tab Navigation -->
         <div class="tabs">
             <button data-tab="convert" class="tab-button active">Convert Videos</button>
-            <button data-tab="files" class="tab-button">Previous Conversions</button>
+            <!-- Removed Previous Conversions tab button -->
         </div>
 
-        <!-- Active Conversions Section - Always visible below tabs -->
+        <!-- Active Conversions Section - Renamed container inside -->
         <div id="active-conversions" class="active-conversions-section">
-            <!-- Content managed by ActiveConversionsComponent -->
+            <h2>Active Conversions</h2>
+            <div id="conversion-progress-list">
+                <!-- Content managed by ConversionProgressComponent -->
+            </div>
         </div>
 
         <!-- Messages Area - Shared between tabs -->
@@ -33,75 +42,76 @@
 
         <!-- Convert Tab Content -->
         <div id="convert-panel" class="tab-panel">
+            <!-- Source Selection (using buttons now, managed by app.js) -->
             <div class="source-selection-section">
                 <h2>1. Choose Video Source</h2>
-                <div class="source-options">
-                    <label class="radio-container">
-                        <input type="radio" name="videoSource" value="upload" id="source-upload" checked>
-                        Upload File
-                    </label>
-                    <label class="radio-container">
-                        <input type="radio" name="videoSource" value="drive" id="source-drive">
-                        Google Drive Folder
-                    </label>
+                <div class="source-options button-group">
+                    <button id="drive-source-btn" class="btn">Google Drive</button>
+                    <button id="upload-source-btn" class="btn">Upload File</button>
                 </div>
             </div>
 
-            <div id="upload-source-section" class="upload-section">
-                <h2>2. Upload Video File</h2>
-                <div class="upload-input">
-                    <label for="file-upload">Select Video File:</label>
-                    <div class="input-group">
-                        <input type="file" id="file-upload" accept="video/*">
-                        <button id="upload-convert-btn" class="btn primary" disabled>Upload & Convert</button>
+            <!-- Upload Section -->
+            <div id="upload-source-section" class="upload-section hidden">
+                <h2>2. Upload & Convert</h2>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label for="file-input">Select video file:</label>
+                        <input type="file" id="file-input" accept="video/*" required>
+                        <span id="file-name" class="file-name-display">No file selected</span>
                     </div>
-                    <p class="note">Select a video file from your computer to convert.</p>
-                    <div id="upload-file-info" class="upload-file-info hidden">
-                        Selected: <span id="upload-file-name"></span> (<span id="upload-file-size"></span>)
+                    <div class="form-group">
+                        <label for="upload-target-format">Target format:</label>
+                        <select id="upload-target-format" name="targetFormat" class="form-control" required>
+                            <option value="" disabled selected>Select format...</option>
+                            <!-- Options populated by UploadComponent -->
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" id="upload-button" class="btn primary" disabled>Upload & Convert</button>
+                    </div>
+                    <p class="note">Select a video file from your computer and the desired format.</p>
+                </form>
+            </div>
+
+            <!-- Drive Section -->
+            <div id="drive-source-section" class="drive-section hidden">
+                <h2>2. Select Drive Videos & Convert</h2>
+                <div class="drive-controls">
+                    <div class="form-group">
+                        <label for="drive-search">Search videos in Drive:</label>
+                        <input type="text" id="drive-search" placeholder="Search by name..." class="form-control">
                     </div>
                 </div>
-            </div>
 
-            <div id="drive-source-section" class="folder-input-section hidden">
-                <h2>2. Google Drive Video Source</h2>
-                <div class="folder-input">
-                    <label for="folder-id">Google Drive Folder ID or URL:</label>
-                    <div class="input-group">
-                        <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
-                        <button id="load-videos-btn" class="btn">Load Videos</button>
-                        <button id="reset-folder-id-btn" class="btn secondary small" title="Clear stored folder ID and input">Reset</button> <!-- Added small class -->
-                    </div>
-                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".
-                    </p>
-                </div>
-            </div>
-
-            <div id="conversion-options-section" class="conversion-form-section">
-                <h3>3. Conversion Options</h3>
-                <!-- Content managed by ConversionFormComponent -->
-            </div>
-
-            <div id="drive-video-list-section" class="video-list-section">
-                <!-- Renamed h2 to h3 and added step number -->
-                <h3>4. Select Drive Videos (if applicable)</h3>
-                <!-- Add the container for the video list component back -->
-                <div id="video-list">
+                <!-- Drive Video List -->
+                <div id="drive-video-list" class="video-list-container">
                     <!-- Content managed by VideoListComponent -->
+                    <div class="empty-message">Loading videos...</div> <!-- Initial placeholder -->
                 </div>
-                <!-- The dynamically added button will appear after this div -->
+
+                <!-- Drive Conversion Options & Submit -->
+                <div class="drive-conversion-options">
+                    <div id="conversion-form">
+                        <!-- Content managed by ConversionFormComponent -->
+                        <h3>Conversion Options</h3>
+                        <div class="form-group">
+                            <label for="target-format">Target format:</label>
+                            <select id="target-format" name="targetFormat" class="form-control" required>
+                                <option value="" disabled selected>Select format...</option>
+                                <!-- Options populated by ConversionFormComponent -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="drive-convert-button" class="btn primary" disabled>Convert selected videos</button>
+                    </div>
+                </div>
             </div>
 
-        </div>
+        </div> <!-- End Convert Panel -->
 
-        <!-- Files Tab Content -->
-        <div id="files-panel" class="tab-panel hidden">
-            <div class="files-section">
-                <h2>Previously Converted Files</h2>
-                <div id="file-list" class="file-list-container">
-                    <!-- Content managed by FileListComponent -->
-                </div>
-            </div>
-        </div>
+        <!-- Removed Files Tab Content -->
 
         <footer>
             <p>&copy; 2025 Video Converter</p>

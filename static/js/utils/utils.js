@@ -46,21 +46,31 @@ export function formatDuration(totalSeconds) {
 
 /**
  * Show a message in the specified container, clearing previous messages.
- * @param {HTMLElement} container - The container element for messages.
  * @param {String} text - The message text.
  * @param {String} [type='info'] - Message type ('info', 'success', 'warning', 'error').
+ * @param {HTMLElement} container - The container element for messages.
  * @param {Number} [timeout=5000] - Auto-hide delay in ms for 'info' and 'success'. 0 to disable.
  */
-export function showMessage(container, text, type = 'info', timeout = 5000) {
+export function showMessage(text, type = 'info', container, timeout = 5000) { // Changed order to match app.js usage
+    if (!container) {
+        console.warn("showMessage: Container element not provided or found.");
+        return;
+    }
     clearMessages(container);
 
+    if (!text) { // If text is empty, just ensure container is hidden
+        container.classList.add('hidden');
+        return;
+    }
+
     const message = document.createElement('div');
-    message.className = `message ${type}`;
+    // Use specific class names matching CSS
+    message.className = `message ${type}`; // Removed 'messages' class from individual message
     message.textContent = text;
     message.setAttribute('role', 'alert'); // Accessibility
 
     container.appendChild(message);
-    container.classList.remove('hidden');
+    container.classList.remove('hidden'); // Show the container
 
     // Auto-hide non-error messages
     if ((type === 'success' || type === 'info') && timeout > 0) {
@@ -122,4 +132,107 @@ export function createProgressItem(label) {
     item.appendChild(barContainer);
 
     return item;
+}
+
+/**
+ * Populates a <select> element with options.
+ * @param {HTMLSelectElement} selectElement - The select element to populate.
+ * @param {Array<string|object>} options - An array of option values (strings) or objects.
+ * @param {object} [config={}] - Configuration options.
+ * @param {string} [config.valueField] - If options are objects, the property to use for the option value.
+ * @param {string} [config.textField] - If options are objects, the property to use for the option text. If not provided, uses valueField.
+ * @param {string} [config.previouslySelected] - The value to try and re-select.
+ * @param {string} [config.emptyText='No options available'] - Text to display if options array is empty.
+ * @param {string} [config.placeholderText] - Optional placeholder text (value="").
+ * @param {function(string): string} [config.textTransform] - Function to transform the text displayed for each option.
+ * @returns {string|null} The value that was ultimately selected (either re-selected or the first option).
+ */
+export function populateSelectWithOptions(selectElement, options = [], config = {}) {
+    if (!selectElement) return null;
+
+    const {
+        valueField,
+        textField,
+        previouslySelected,
+        emptyText = 'No options available',
+        placeholderText,
+        textTransform = (text) => text, // Default: no transformation
+    } = config;
+
+    selectElement.innerHTML = ''; // Clear existing options
+
+    if (placeholderText) {
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholderText;
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true; // Select by default if no other selection happens
+        selectElement.appendChild(placeholderOption);
+    }
+
+    if (options.length === 0) {
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = emptyText;
+        emptyOption.disabled = true;
+        selectElement.appendChild(emptyOption);
+        selectElement.disabled = true;
+        return null;
+    }
+
+    selectElement.disabled = false;
+    let valueToSelect = previouslySelected;
+    let firstOptionValue = null;
+
+    options.forEach((optionData, index) => {
+        const value = typeof optionData === 'object' ? optionData[valueField] : optionData;
+        const text = typeof optionData === 'object' ? (optionData[textField] || value) : optionData;
+
+        if (index === 0) {
+            firstOptionValue = value; // Store the first actual option value
+        }
+
+        const optionElement = document.createElement('option');
+        optionElement.value = value;
+        optionElement.textContent = textTransform(text); // Apply transformation
+        selectElement.appendChild(optionElement);
+    });
+
+    // Determine which value should be selected
+    if (valueToSelect && options.some(opt => (typeof opt === 'object' ? opt[valueField] : opt) === valueToSelect)) {
+        // Previously selected value exists in the new options
+        selectElement.value = valueToSelect;
+    } else if (firstOptionValue !== null) {
+        // Default to the first option if previous selection is invalid or not set
+        selectElement.value = firstOptionValue;
+        valueToSelect = firstOptionValue; // Update the value that is now selected
+    } else if (placeholderText) {
+        // If only a placeholder exists, ensure it's selected
+        selectElement.value = '';
+        valueToSelect = null;
+    } else {
+        // Should not happen if options.length > 0, but as a fallback
+        valueToSelect = null;
+    }
+
+    return valueToSelect; // Return the value that ended up being selected
+}
+
+/**
+ * Sets the selected value of a <select> element if the option exists.
+ * @param {HTMLSelectElement} selectElement - The select element.
+ * @param {string} value - The value to select.
+ * @returns {boolean} True if the value was successfully selected, false otherwise.
+ */
+export function setSelectedOption(selectElement, value) {
+    if (!selectElement || value === null || value === undefined) return false;
+
+    const optionExists = Array.from(selectElement.options).some(opt => opt.value === value);
+    if (optionExists) {
+        selectElement.value = value;
+        return true;
+    } else {
+        console.warn(`Value "${value}" not found in select options.`);
+        return false;
+    }
 }
