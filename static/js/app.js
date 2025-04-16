@@ -11,7 +11,7 @@ class App {
     constructor() {
         this.configManager = configManager; // Use the imported instance directly
         // Pass empty string or let the default handle it in ApiService
-        this.apiService = new ApiService(); 
+        this.apiService = new ApiService();
 
         // Define initial state
         const initialState = {
@@ -91,17 +91,17 @@ class App {
             });
 
             if (!config.defaultDriveFolderId) {
-                 console.warn("No default Google Drive Folder ID configured on the backend.");
-                 if (this.stateManager.getState().currentVideoSource === 'drive') {
-                     this.stateManager.setState({ infoMessage: "No default Google Drive folder is configured. Please switch to Upload or configure the backend." });
-                 }
+                console.warn("No default Google Drive Folder ID configured on the backend.");
+                if (this.stateManager.getState().currentVideoSource === 'drive') {
+                    this.stateManager.setState({ infoMessage: "No default Google Drive folder is configured. Please switch to Upload or configure the backend." });
+                }
             }
 
         } catch (error) {
             console.error("Failed during initial data fetch:", error);
             this.stateManager.setState({ errorMessage: 'Failed to load initial configuration or formats. Please try refreshing.' });
         } finally {
-             this.stateManager.setState({ isLoading: false });
+            this.stateManager.setState({ isLoading: false });
         }
 
 
@@ -134,11 +134,11 @@ class App {
         this.stateManager.subscribe('isLoadingUploadChanged', this.updateLoadingIndicator.bind(this));
         this.stateManager.subscribe('isStartingConversionChanged', this.updateLoadingIndicator.bind(this));
         this.stateManager.subscribe('abortingConversionIdChanged', (id) => { // Added subscription
-             // Pass the aborting ID to the progress component for UI updates
-             this.conversionProgressComponent.displayProgress(
-                 this.stateManager.getState().activeConversions,
-                 id // Pass the aborting ID
-             );
+            // Pass the aborting ID to the progress component for UI updates
+            this.conversionProgressComponent.displayProgress(
+                this.stateManager.getState().activeConversions,
+                id // Pass the aborting ID
+            );
         });
 
 
@@ -339,7 +339,7 @@ class App {
             this.fetchActiveConversions(); // Immediately refresh progress list
         } catch (error) {
             console.error("Upload/Conversion failed:", error);
-             // Use error.message which apiRequest now standardizes
+            // Use error.message which apiRequest now standardizes
             this.stateManager.setState({ errorMessage: `Upload failed: ${error.message}` });
         } finally {
             this.stateManager.setState({ isLoadingUpload: false });
@@ -349,10 +349,10 @@ class App {
     /** Handles abort request from ConversionProgressComponent */
     async handleAbortConversion(conversionId) {
         this.stateManager.setState({
-             errorMessage: null,
-             infoMessage: null,
-             successMessage: null,
-             abortingConversionId: conversionId // Set aborting state
+            errorMessage: null,
+            infoMessage: null,
+            successMessage: null,
+            abortingConversionId: conversionId // Set aborting state
         });
         try {
             // Use the updated ApiService method
@@ -363,10 +363,10 @@ class App {
             this.fetchActiveConversions(); // Fetch immediately for faster UI update
         } catch (error) {
             console.error("Failed to send abort request:", error);
-             // Use error.message which apiRequest now standardizes
+            // Use error.message which apiRequest now standardizes
             this.stateManager.setState({ errorMessage: `Failed to abort conversion: ${error.message}` });
         } finally {
-             this.stateManager.setState({ abortingConversionId: null }); // Clear aborting state
+            this.stateManager.setState({ abortingConversionId: null }); // Clear aborting state
         }
     }
 
@@ -386,12 +386,12 @@ class App {
             } else {
                 console.warn("Cannot load Drive videos: Default folder ID not available.");
                 // Clear list and potentially show message (already handled in initialize)
-                 this.stateManager.setState({ videosList: [], isLoadingDriveVideos: false });
+                this.stateManager.setState({ videosList: [], isLoadingDriveVideos: false });
             }
         } else {
             // Clear Drive list if switching away
             if (this.stateManager.getState().videosList.length > 0) {
-                 this.stateManager.setState({ videosList: [] });
+                this.stateManager.setState({ videosList: [] });
             }
         }
     }
@@ -403,11 +403,11 @@ class App {
         // Prevent loading if folder ID is missing
         if (!defaultDriveFolderId) {
             console.warn("Attempted to load Drive videos, but defaultDriveFolderId is missing.");
-             this.stateManager.setState({
+            this.stateManager.setState({
                 videosList: [],
                 isLoadingDriveVideos: false,
                 // Keep any existing error/info message from initialization
-             });
+            });
             return;
         }
 
@@ -439,12 +439,12 @@ class App {
                     pollingFailureCount: 0, // Reset failure count on success
                     // Clear potential previous polling error message if needed
                     // infoMessage: currentState.infoMessage === 'Failed to update conversion status.' ? null : currentState.infoMessage
-                 });
+                });
             } else {
-                 // Reset failure count even if data hasn't changed, as the poll succeeded
-                 if (currentState.pollingFailureCount > 0) {
-                     this.stateManager.setState({ pollingFailureCount: 0 });
-                 }
+                // Reset failure count even if data hasn't changed, as the poll succeeded
+                if (currentState.pollingFailureCount > 0) {
+                    this.stateManager.setState({ pollingFailureCount: 0 });
+                }
             }
         } catch (error) {
             console.error("Failed to poll active conversions:", error);
@@ -455,7 +455,7 @@ class App {
             // Avoid setting a persistent error message for polling failures unless needed
             // Consider showing a temporary warning if polling fails repeatedly
             if (newFailCount >= POLLING_FAILURE_THRESHOLD) {
-                 this.stateManager.setState({ infoMessage: "Having trouble updating conversion status. Will keep trying." });
+                this.stateManager.setState({ infoMessage: "Having trouble updating conversion status. Will keep trying." });
             }
             // this.stateManager.setState({ infoMessage: "Could not update conversion status." });
         }
@@ -543,8 +543,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Critical error during app initialization:", error);
         const messageArea = document.getElementById('message-area');
         const loadingIndicator = document.getElementById('loading-indicator');
-        if(loadingIndicator) loadingIndicator.classList.add('hidden'); // Hide loading on error
-        if(messageArea) {
+        if (loadingIndicator) loadingIndicator.classList.add('hidden'); // Hide loading on error
+        if (messageArea) {
             showMessage('Critical error during application startup. Please refresh the page.', 'error', messageArea);
         }
     });

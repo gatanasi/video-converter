@@ -154,7 +154,7 @@ export class VideoListComponent {
     // Called when user clicks "Deselect All" button or header checkbox (unchecked)
     handleDeselectAll() {
         const allVisibleIds = this.videoList.map(v => v.id);
-         if (this.onVideoSelectionChange) {
+        if (this.onVideoSelectionChange) {
             // Notify App.js to deselect all *these* specific videos
             this.onVideoSelectionChange(allVisibleIds, false);
         }
@@ -194,7 +194,7 @@ export class VideoListComponent {
         if (this.deselectAllBtn) {
             this.deselectAllBtn.disabled = visibleSelectedCount === 0;
         }
-         if (this.selectAllBtn) {
+        if (this.selectAllBtn) {
             this.selectAllBtn.disabled = visibleSelectedCount === totalVisible; // Disable if all are already selected
         }
         if (this.headerCheckbox) {

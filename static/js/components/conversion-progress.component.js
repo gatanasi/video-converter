@@ -7,7 +7,7 @@ export class ConversionProgressComponent {
     // constructor(selector, onAbortConversion) { // New signature
     constructor(selector, onAbortConversion, onDownloadReady) { // Added onDownloadReady
         const container = document.querySelector(selector);
-         if (!container) {
+        if (!container) {
             throw new Error(`ConversionProgressComponent container not found: ${selector}`);
         }
         this.container = container;
@@ -94,23 +94,23 @@ export class ConversionProgressComponent {
             this.scheduleRemoval(conversion.id, 5000); // Shorter delay for aborted
         } else if (conversion.error) {
             element.classList.add('error');
-             if (abortButton) abortButton.remove();
+            if (abortButton) abortButton.remove();
             this.appendErrorMessage(element, conversion.error);
             this.scheduleRemoval(conversion.id, 10000); // Longer delay for errors
         } else if (conversion.complete) {
             element.classList.add('complete');
-             if (abortButton) abortButton.remove();
+            if (abortButton) abortButton.remove();
             this.appendDownloadLink(element, conversion.downloadUrl, conversion.fileName); // Use appropriate filename
-             if (this.onDownloadReady) {
-                 this.onDownloadReady(conversion); // Notify app
-             }
+            if (this.onDownloadReady) {
+                this.onDownloadReady(conversion); // Notify app
+            }
             this.scheduleRemoval(conversion.id, 30000); // Longer delay for completed items
         } else {
             // Still in progress - ensure abort button exists if needed and update its state
             if (!abortButton) {
-                 const newAbortButton = this.createAbortButton(conversion.id, isAborting); // Pass isAborting
-                 element.appendChild(newAbortButton);
-                 abortButton = newAbortButton; // Update reference
+                const newAbortButton = this.createAbortButton(conversion.id, isAborting); // Pass isAborting
+                element.appendChild(newAbortButton);
+                abortButton = newAbortButton; // Update reference
             }
             // Ensure button disabled state matches isAborting, even if button already existed
             if (abortButton) abortButton.disabled = isAborting;
@@ -139,7 +139,7 @@ export class ConversionProgressComponent {
         return abortButton;
     }
 
-     updateProgressBar(element, progress) {
+    updateProgressBar(element, progress) {
         const progressBar = element.querySelector('.multi-progress-bar');
         const percentText = element.querySelector('.multi-progress-percent');
         if (progressBar && percentText) {
@@ -150,7 +150,7 @@ export class ConversionProgressComponent {
     }
 
     appendStatusMessage(element, message, className) {
-         if (!element.querySelector('.multi-progress-status')) { // Append only once
+        if (!element.querySelector('.multi-progress-status')) { // Append only once
             const msgDiv = document.createElement('div');
             msgDiv.className = `multi-progress-status ${className}`;
             msgDiv.textContent = message;
@@ -158,8 +158,8 @@ export class ConversionProgressComponent {
         }
     }
 
-     appendErrorMessage(element, errorMsg) {
-         if (!element.querySelector('.multi-progress-error')) { // Append only once
+    appendErrorMessage(element, errorMsg) {
+        if (!element.querySelector('.multi-progress-error')) { // Append only once
             const errorDiv = document.createElement('div');
             errorDiv.className = 'multi-progress-error';
             errorDiv.textContent = `Error: ${errorMsg}`;
@@ -168,7 +168,7 @@ export class ConversionProgressComponent {
     }
 
     appendDownloadLink(element, downloadUrl, originalFileName) {
-         if (!element.querySelector('.multi-progress-download')) { // Append only once
+        if (!element.querySelector('.multi-progress-download')) { // Append only once
             const downloadLink = document.createElement('a');
             downloadLink.className = 'multi-progress-download btn small success'; // Style as button
             downloadLink.href = downloadUrl;
@@ -191,7 +191,7 @@ export class ConversionProgressComponent {
 
         item.timeoutId = setTimeout(() => {
             this.removeRenderedItem(conversionId);
-             // Check empty state after removal
+            // Check empty state after removal
             if (this.renderedConversions.size === 0) {
                 this.showEmptyStateMessage();
             }

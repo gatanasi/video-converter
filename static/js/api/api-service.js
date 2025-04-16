@@ -99,7 +99,7 @@ export class ApiService { // Export class directly
                     targetFormat,
                     reverseVideo: options.reverseVideo || false,
                     removeSound: options.removeSound || false
-                 })
+                })
             },
             'requestConversion'
         );

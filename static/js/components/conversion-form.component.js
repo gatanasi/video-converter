@@ -7,7 +7,7 @@ import { populateSelectWithOptions, setSelectedOption } from '../utils/utils.js'
 export class ConversionFormComponent {
     constructor(selector, onFormatChange) {
         const container = document.querySelector(selector);
-         if (!container) {
+        if (!container) {
             throw new Error(`ConversionFormComponent container not found: ${selector}`);
         }
         this.container = container;
@@ -86,10 +86,10 @@ export class ConversionFormComponent {
         }
     }
 
-     /**
-     * Sets the selected value of the format dropdown using the utility function.
-     * @param {string} format - The format string to select.
-     */
+    /**
+    * Sets the selected value of the format dropdown using the utility function.
+    * @param {string} format - The format string to select.
+    */
     setSelectedFormat(format) {
         setSelectedOption(this.formatSelect, format);
     }

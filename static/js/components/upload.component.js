@@ -7,7 +7,7 @@ export class UploadComponent {
     // constructor(selector, onFileSelect, onUploadSubmit) { // Original signature
     constructor(selector, onFileSelect, onUploadSubmit, onFormatChange) { // Added onFormatChange
         const container = document.querySelector(selector);
-         if (!container) {
+        if (!container) {
             throw new Error(`UploadComponent container not found: ${selector}`);
         }
         this.container = container;
@@ -28,8 +28,8 @@ export class UploadComponent {
             console.error("UploadComponent is missing required elements within:", selector);
             // Optionally throw an error or handle gracefully
         } else {
-             // Initialize format dropdown
-             this.populateFormatOptions([]);
+            // Initialize format dropdown
+            this.populateFormatOptions([]);
         }
         // Add null checks for new checkboxes if they might not exist in the HTML yet
         if (!this.reverseCheckbox) console.warn("UploadComponent: #reverse-video-upload checkbox not found.");
@@ -61,7 +61,7 @@ export class UploadComponent {
         }
 
         if (this.formatSelect) {
-             this.formatSelect.addEventListener('change', (e) => {
+            this.formatSelect.addEventListener('change', (e) => {
                 if (this.onFormatChange) {
                     this.onFormatChange(e.target.value); // Notify App.js of format change
                 }
@@ -86,10 +86,10 @@ export class UploadComponent {
         }
     }
 
-     /**
-     * Populates the target format dropdown for uploads using the utility function.
-     * @param {string[]} formats - Array of available format strings.
-     */
+    /**
+    * Populates the target format dropdown for uploads using the utility function.
+    * @param {string[]} formats - Array of available format strings.
+    */
     populateFormatOptions(formats = []) {
         if (!this.formatSelect) return;
 
@@ -107,10 +107,10 @@ export class UploadComponent {
         }
     }
 
-     /**
-     * Sets the selected value of the format dropdown for uploads using the utility function.
-     * @param {string} format - The format string to select.
-     */
+    /**
+    * Sets the selected value of the format dropdown for uploads using the utility function.
+    * @param {string} format - The format string to select.
+    */
     setSelectedFormat(format) {
         setSelectedOption(this.formatSelect, format);
     }

@@ -157,7 +157,7 @@ export class VideoListComponent {
     // Called when user clicks "Deselect All" button or header checkbox (unchecked)
     handleDeselectAll() {
         const allVisibleIds = this.videoList.map(v => v.id);
-         if (this.onVideoSelectionChange) {
+        if (this.onVideoSelectionChange) {
             // Notify App.js to deselect all *these* specific videos
             this.onVideoSelectionChange(allVisibleIds, false);
         }
@@ -197,7 +197,7 @@ export class VideoListComponent {
         if (this.deselectAllBtn) {
             this.deselectAllBtn.disabled = visibleSelectedCount === 0;
         }
-         if (this.selectAllBtn) {
+        if (this.selectAllBtn) {
             this.selectAllBtn.disabled = visibleSelectedCount === totalVisible; // Disable if all are already selected
         }
         if (this.headerCheckbox) {
@@ -216,7 +216,7 @@ export class VideoListComponent {
 export class ConversionFormComponent {
     constructor(selector, onFormatChange) {
         const container = document.querySelector(selector);
-         if (!container) {
+        if (!container) {
             throw new Error(`ConversionFormComponent container not found: ${selector}`);
         }
         this.container = container;
@@ -289,19 +289,19 @@ export class ConversionFormComponent {
         if (formats.includes(previouslySelected)) {
             this.formatSelect.value = previouslySelected;
         } else {
-             this.formatSelect.value = formats[0]; // Default to first format
-             // Trigger change event if default selection is made and callback exists
-             if (this.onFormatChange && this.formatSelect.value) {
-                 this.onFormatChange(this.formatSelect.value);
-             }
+            this.formatSelect.value = formats[0]; // Default to first format
+            // Trigger change event if default selection is made and callback exists
+            if (this.onFormatChange && this.formatSelect.value) {
+                this.onFormatChange(this.formatSelect.value);
+            }
         }
     }
 
-     /**
-     * Sets the selected value of the format dropdown.
-     * Called by App.js if the selected format state changes externally.
-     * @param {string} format - The format string to select.
-     */
+    /**
+    * Sets the selected value of the format dropdown.
+    * Called by App.js if the selected format state changes externally.
+    * @param {string} format - The format string to select.
+    */
     setSelectedFormat(format) {
         if (this.formatSelect && format) {
             // Check if the format exists as an option
@@ -333,7 +333,7 @@ export class UploadComponent {
     // constructor(selector, onFileSelect, onUploadSubmit) { // Original signature
     constructor(selector, onFileSelect, onUploadSubmit, onFormatChange) { // Added onFormatChange
         const container = document.querySelector(selector);
-         if (!container) {
+        if (!container) {
             throw new Error(`UploadComponent container not found: ${selector}`);
         }
         this.container = container;
@@ -379,7 +379,7 @@ export class UploadComponent {
         }
 
         if (this.formatSelect) {
-             this.formatSelect.addEventListener('change', (e) => {
+            this.formatSelect.addEventListener('change', (e) => {
                 if (this.onFormatChange) {
                     this.onFormatChange(e.target.value); // Notify App.js of format change
                 }
@@ -404,10 +404,10 @@ export class UploadComponent {
         }
     }
 
-     /**
-     * Populates the target format dropdown for uploads.
-     * @param {string[]} formats - Array of available format strings.
-     */
+    /**
+    * Populates the target format dropdown for uploads.
+    * @param {string[]} formats - Array of available format strings.
+    */
     populateFormatOptions(formats = []) {
         if (!this.formatSelect) return;
 
@@ -431,21 +431,21 @@ export class UploadComponent {
         if (formats.includes(previouslySelected)) {
             this.formatSelect.value = previouslySelected;
         } else {
-             this.formatSelect.value = formats[0]; // Default to first
-             // Trigger change if default selected and callback exists
-             if (this.onFormatChange && this.formatSelect.value) {
-                 this.onFormatChange(this.formatSelect.value);
-             }
+            this.formatSelect.value = formats[0]; // Default to first
+            // Trigger change if default selected and callback exists
+            if (this.onFormatChange && this.formatSelect.value) {
+                this.onFormatChange(this.formatSelect.value);
+            }
         }
     }
 
-     /**
-     * Sets the selected value of the format dropdown for uploads.
-     * @param {string} format - The format string to select.
-     */
+    /**
+    * Sets the selected value of the format dropdown for uploads.
+    * @param {string} format - The format string to select.
+    */
     setSelectedFormat(format) {
         if (this.formatSelect && format) {
-             const optionExists = Array.from(this.formatSelect.options).some(opt => opt.value === format);
+            const optionExists = Array.from(this.formatSelect.options).some(opt => opt.value === format);
             if (optionExists) {
                 this.formatSelect.value = format;
             }
@@ -477,7 +477,7 @@ export class ConversionProgressComponent {
     // constructor(selector, onAbortConversion) { // New signature
     constructor(selector, onAbortConversion, onDownloadReady) { // Added onDownloadReady
         const container = document.querySelector(selector);
-         if (!container) {
+        if (!container) {
             throw new Error(`ConversionProgressComponent container not found: ${selector}`);
         }
         this.container = container;
@@ -557,22 +557,22 @@ export class ConversionProgressComponent {
             this.scheduleRemoval(conversion.id, 5000); // Shorter delay for aborted
         } else if (conversion.error) {
             element.classList.add('error');
-             if (abortButton) abortButton.remove();
+            if (abortButton) abortButton.remove();
             this.appendErrorMessage(element, conversion.error);
             this.scheduleRemoval(conversion.id, 10000); // Longer delay for errors
         } else if (conversion.complete) {
             element.classList.add('complete');
-             if (abortButton) abortButton.remove();
+            if (abortButton) abortButton.remove();
             this.appendDownloadLink(element, conversion.downloadUrl, conversion.fileName); // Use appropriate filename
-             if (this.onDownloadReady) {
-                 this.onDownloadReady(conversion); // Notify app
-             }
+            if (this.onDownloadReady) {
+                this.onDownloadReady(conversion); // Notify app
+            }
             this.scheduleRemoval(conversion.id, 30000); // Longer delay for completed items
         } else {
             // Still in progress - ensure abort button exists if needed
             if (!abortButton) {
-                 const newAbortButton = this.createAbortButton(conversion.id);
-                 element.appendChild(newAbortButton);
+                const newAbortButton = this.createAbortButton(conversion.id);
+                element.appendChild(newAbortButton);
             }
             // Clear any removal timeout if it somehow became active again
             if (item.timeoutId) {
@@ -597,7 +597,7 @@ export class ConversionProgressComponent {
         return abortButton;
     }
 
-     updateProgressBar(element, progress) {
+    updateProgressBar(element, progress) {
         const progressBar = element.querySelector('.multi-progress-bar');
         const percentText = element.querySelector('.multi-progress-percent');
         if (progressBar && percentText) {
@@ -608,7 +608,7 @@ export class ConversionProgressComponent {
     }
 
     appendStatusMessage(element, message, className) {
-         if (!element.querySelector('.multi-progress-status')) { // Append only once
+        if (!element.querySelector('.multi-progress-status')) { // Append only once
             const msgDiv = document.createElement('div');
             msgDiv.className = `multi-progress-status ${className}`;
             msgDiv.textContent = message;
@@ -616,8 +616,8 @@ export class ConversionProgressComponent {
         }
     }
 
-     appendErrorMessage(element, errorMsg) {
-         if (!element.querySelector('.multi-progress-error')) { // Append only once
+    appendErrorMessage(element, errorMsg) {
+        if (!element.querySelector('.multi-progress-error')) { // Append only once
             const errorDiv = document.createElement('div');
             errorDiv.className = 'multi-progress-error';
             errorDiv.textContent = `Error: ${errorMsg}`;
@@ -626,7 +626,7 @@ export class ConversionProgressComponent {
     }
 
     appendDownloadLink(element, downloadUrl, originalFileName) {
-         if (!element.querySelector('.multi-progress-download')) { // Append only once
+        if (!element.querySelector('.multi-progress-download')) { // Append only once
             const downloadLink = document.createElement('a');
             downloadLink.className = 'multi-progress-download btn small success'; // Style as button
             downloadLink.href = downloadUrl;
@@ -649,7 +649,7 @@ export class ConversionProgressComponent {
 
         item.timeoutId = setTimeout(() => {
             this.removeRenderedItem(conversionId);
-             // Check empty state after removal
+            // Check empty state after removal
             if (this.renderedConversions.size === 0) {
                 this.showEmptyStateMessage();
             }
