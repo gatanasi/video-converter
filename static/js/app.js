@@ -1,15 +1,17 @@
 import { ApiService } from './api/api-service.js';
-import { ConfigManager } from './config/config-manager.js';
+import configManager from './config/config-manager.js';
 import { VideoListComponent, ConversionFormComponent, UploadComponent, ConversionProgressComponent } from './components/ui-components.js';
-import { showMessage, debounce, clearMessages } from './utils/utils.js';
+// Removed debounce import as it's no longer needed
+import { showMessage, clearMessages } from './utils/utils.js';
 import { StateManager } from './state/state-manager.js';
 
 const CONVERSION_POLLING_INTERVAL = 5000; // ms
 
 class App {
     constructor() {
-        this.configManager = new ConfigManager();
-        this.apiService = new ApiService(this.configManager.getApiBaseUrl());
+        this.configManager = configManager; // Use the imported instance directly
+        // Pass empty string or let the default handle it in ApiService
+        this.apiService = new ApiService(); 
 
         // Define initial state
         const initialState = {
@@ -21,12 +23,14 @@ class App {
             isLoadingDriveVideos: false,
             isLoadingUpload: false,
             isStartingConversion: false,
+            abortingConversionId: null, // Added for abort loading state
             errorMessage: null,
             infoMessage: null,
             successMessage: null,
             availableFormats: [],
-            selectedFormat: '', // Shared selected format
-            driveSearchTerm: '',
+            selectedFormat: '',
+            defaultDriveFolderId: null, // Added default folder ID
+            pollingFailureCount: 0, // Added for polling failure warning
         };
         this.stateManager = new StateManager(initialState);
 
@@ -59,14 +63,10 @@ class App {
         this.uploadSourceSection = document.getElementById('upload-source-section');
         this.messageArea = document.getElementById('message-area');
         this.loadingIndicator = document.getElementById('loading-indicator');
-        this.driveSearchInput = document.getElementById('drive-search');
         this.driveConvertButton = document.getElementById('drive-convert-button'); // Specific button for Drive
         // Tab buttons
         this.convertTabButton = document.querySelector('button[data-tab="convert"]');
         this.convertPanel = document.getElementById('convert-panel');
-
-        // Debounced search
-        this.debouncedDriveSearch = debounce(this.setDriveSearchTerm.bind(this), 500);
 
         this.conversionPollingTimer = null;
 
@@ -78,23 +78,46 @@ class App {
         this.setupEventListeners();
         this.setupStateSubscriptions(); // Setup listeners for state changes
 
+        // Fetch config and formats concurrently
+        this.stateManager.setState({ isLoading: true }); // Use a general loading state
         try {
-            this.stateManager.setState({ isLoading: true });
-            const formats = await this.apiService.fetchAvailableFormats();
-            // Set formats and default selected format
+            const [config, formats] = await Promise.all([
+                this.apiService.fetchConfig(),
+                this.apiService.fetchAvailableFormats()
+            ]);
+
+            console.log("Fetched config:", config);
             const initialFormat = formats.length > 0 ? formats[0] : '';
-            this.stateManager.setState({ availableFormats: formats, selectedFormat: initialFormat });
+            this.stateManager.setState({
+                availableFormats: formats,
+                selectedFormat: initialFormat,
+                defaultDriveFolderId: config.defaultDriveFolderId || null
+            });
+
+            if (!config.defaultDriveFolderId) {
+                 console.warn("No default Google Drive Folder ID configured on the backend.");
+                 if (this.stateManager.getState().currentVideoSource === 'drive') {
+                     this.stateManager.setState({ infoMessage: "No default Google Drive folder is configured. Please switch to Upload or configure the backend." });
+                 }
+            }
+
         } catch (error) {
-            console.error("Failed to fetch available formats:", error);
-            this.stateManager.setState({ errorMessage: 'Failed to load conversion options. Please try refreshing.' });
+            console.error("Failed during initial data fetch:", error);
+            this.stateManager.setState({ errorMessage: 'Failed to load initial configuration or formats. Please try refreshing.' });
         } finally {
              this.stateManager.setState({ isLoading: false });
         }
 
+
         // Initial UI setup based on default state
         this.updateSourceView(this.stateManager.getState().currentVideoSource);
         this.updateActiveTab(this.getActiveTab()); // Set initial tab view
-        this.loadDataForCurrentSource(); // Load initial data (Drive videos)
+        // Load data only if the folder ID is available for the current source
+        if (this.stateManager.getState().currentVideoSource === 'drive' && this.stateManager.getState().defaultDriveFolderId) {
+            this.loadDataForCurrentSource();
+        } else if (this.stateManager.getState().currentVideoSource !== 'drive') {
+             this.loadDataForCurrentSource(); // Load if not drive source
+        }
         this.startConversionPolling(); // Start polling for active conversions
 
         console.log("App initialization complete.");
@@ -105,11 +128,6 @@ class App {
         this.driveSourceButton.addEventListener('click', () => this.handleSourceChange('drive'));
         this.uploadSourceButton.addEventListener('click', () => this.handleSourceChange('upload'));
 
-        if (this.driveSearchInput) {
-            this.driveSearchInput.addEventListener('input', (event) => {
-                this.debouncedDriveSearch(event.target.value);
-            });
-        }
 
         // Listener for the Drive conversion button (outside the component)
         if (this.driveConvertButton) {
@@ -129,16 +147,27 @@ class App {
         this.stateManager.subscribe('isLoadingDriveVideosChanged', this.updateLoadingIndicator.bind(this));
         this.stateManager.subscribe('isLoadingUploadChanged', this.updateLoadingIndicator.bind(this));
         this.stateManager.subscribe('isStartingConversionChanged', this.updateLoadingIndicator.bind(this));
+        this.stateManager.subscribe('abortingConversionIdChanged', (id) => { // Added subscription
+             // Pass the aborting ID to the progress component for UI updates
+             this.conversionProgressComponent.displayProgress(
+                 this.stateManager.getState().activeConversions,
+                 id // Pass the aborting ID
+             );
+        });
+
 
         // --- Data Loading & Display ---
-        this.stateManager.subscribe('driveSearchTermChanged', this.loadDriveVideos.bind(this));
         this.stateManager.subscribe('videosListChanged', (videos) => {
             this.videoListComponent.displayVideos(videos, this.stateManager.getState().currentVideoSource);
             // Ensure selection UI is updated after list redraws
             this.videoListComponent.updateSelection(this.stateManager.getState().selectedDriveVideoIds);
         });
         this.stateManager.subscribe('activeConversionsChanged', (conversions) => {
-            this.conversionProgressComponent.displayProgress(conversions);
+            // Pass aborting ID when conversions change as well
+            this.conversionProgressComponent.displayProgress(
+                conversions,
+                this.stateManager.getState().abortingConversionId // Pass current aborting ID
+            );
         });
 
         // --- Selections & Form State ---
@@ -185,7 +214,6 @@ class App {
                 selectedDriveVideoIds: [], // Reset Drive selection
                 selectedUploadFile: null, // Reset Upload selection
                 videosList: [], // Clear Drive video list
-                driveSearchTerm: '', // Reset search term
                 errorMessage: null, // Clear errors
                 infoMessage: null,
                 successMessage: null
@@ -226,6 +254,7 @@ class App {
     async handleDriveConversionSubmit() {
         console.log("Handling Drive conversion submit...");
         const { selectedDriveVideoIds, selectedFormat } = this.stateManager.getState();
+        const conversionOptions = this.conversionFormComponent.getConversionOptions(); // Get all options
 
         if (selectedDriveVideoIds.length === 0 || !selectedFormat) {
             this.stateManager.setState({ errorMessage: "Please select at least one video and a target format." });
@@ -241,8 +270,15 @@ class App {
         });
 
         try {
-            // Use the updated ApiService method
-            const result = await this.apiService.requestConversion(selectedDriveVideoIds, selectedFormat);
+            // Use the updated ApiService method, passing options
+            const result = await this.apiService.requestConversion(
+                selectedDriveVideoIds,
+                selectedFormat,
+                { // Pass options object
+                    reverseVideo: conversionOptions.reverseVideo,
+                    removeSound: conversionOptions.removeSound
+                }
+            );
             this.stateManager.setState({
                 successMessage: result.message || "Conversion started successfully!",
                 selectedDriveVideoIds: [] // Clear selection on success
@@ -261,6 +297,7 @@ class App {
     async handleUploadSubmit() {
         console.log("Handling upload submit...");
         const { selectedUploadFile, selectedFormat } = this.stateManager.getState();
+        const conversionOptions = this.uploadComponent.getConversionOptions(); // Get all options
 
         if (!selectedUploadFile || !selectedFormat) {
             this.stateManager.setState({ errorMessage: "Please select a file and a target format." });
@@ -276,8 +313,15 @@ class App {
         });
 
         try {
-            // Use the updated ApiService method
-            const result = await this.apiService.uploadAndConvert(selectedUploadFile, selectedFormat);
+            // Use the updated ApiService method, passing options
+            const result = await this.apiService.uploadAndConvert(
+                selectedUploadFile,
+                selectedFormat,
+                { // Pass options object
+                    reverseVideo: conversionOptions.reverseVideo,
+                    removeSound: conversionOptions.removeSound
+                }
+            );
             this.stateManager.setState({
                 successMessage: result.message || "Upload and conversion started successfully!",
                 selectedUploadFile: null // Clear selection on success
@@ -298,17 +342,25 @@ class App {
         console.log(`Handling abort request for conversion: ${conversionId}`);
         // Optionally add a specific loading state for aborting
         // Clear messages before attempting
-        this.stateManager.setState({ errorMessage: null, infoMessage: null, successMessage: null });
+        this.stateManager.setState({
+             errorMessage: null,
+             infoMessage: null,
+             successMessage: null,
+             abortingConversionId: conversionId // Set aborting state
+        });
         try {
             // Use the updated ApiService method
             await this.apiService.abortConversion(conversionId);
-            this.stateManager.setState({ infoMessage: "Abort request sent." });
+            // Don't set info message here, let the poller update the status visually
+            // this.stateManager.setState({ infoMessage: "Abort request sent." });
             // The poller will eventually update the status to aborted
             this.fetchActiveConversions(); // Fetch immediately for faster UI update
         } catch (error) {
             console.error("Failed to send abort request:", error);
              // Use error.message which apiRequest now standardizes
             this.stateManager.setState({ errorMessage: `Failed to abort conversion: ${error.message}` });
+        } finally {
+             this.stateManager.setState({ abortingConversionId: null }); // Clear aborting state
         }
     }
 
@@ -316,37 +368,55 @@ class App {
     handleDownloadReady(conversion) {
         console.log(`Download ready for: ${conversion.fileName}`);
         // Could show a temporary success message or trigger another action
-        // this.stateManager.setState({ successMessage: `"${conversion.fileName}" is ready for download.` });
+        this.stateManager.setState({ successMessage: `"${conversion.fileName}" is ready for download.` }); // Uncommented
     }
 
     // --- Data Loading Methods ---
 
-    setDriveSearchTerm(term) {
-        this.stateManager.setState({ driveSearchTerm: term });
-    }
+    // Removed setDriveSearchTerm method
 
     loadDataForCurrentSource() {
-        const { currentVideoSource } = this.stateManager.getState();
+        const { currentVideoSource, defaultDriveFolderId } = this.stateManager.getState();
         console.log(`Loading data for source: ${currentVideoSource}`);
         if (currentVideoSource === 'drive') {
-            this.loadDriveVideos(); // Will use current searchTerm from state
+            // Only load if folder ID is available
+            if (defaultDriveFolderId) {
+                this.loadDriveVideos(); // Will load all videos now
+            } else {
+                console.warn("Cannot load Drive videos: Default folder ID not available.");
+                // Clear list and potentially show message (already handled in initialize)
+                 this.stateManager.setState({ videosList: [], isLoadingDriveVideos: false });
+            }
         } else {
             // Clear Drive list if switching away
             if (this.stateManager.getState().videosList.length > 0) {
                  this.stateManager.setState({ videosList: [] });
             }
+            // Handle loading for other sources if any
         }
     }
 
     async loadDriveVideos() {
-        // This is triggered by searchTerm change or initial load for 'drive' source
-        const { driveSearchTerm } = this.stateManager.getState();
-        console.log(`Loading Drive videos (search: "${driveSearchTerm}")...`);
+        // This is triggered by source change or initial load for 'drive' source
+        const { defaultDriveFolderId } = this.stateManager.getState(); // Removed driveSearchTerm
+
+        // Prevent loading if folder ID is missing
+        if (!defaultDriveFolderId) {
+            console.warn("Attempted to load Drive videos, but defaultDriveFolderId is missing.");
+             this.stateManager.setState({
+                videosList: [],
+                isLoadingDriveVideos: false,
+                // Keep any existing error/info message from initialization
+             });
+            return;
+        }
+
+        console.log(`Loading Drive videos (folder: ${defaultDriveFolderId})...`); // Removed search term from log
         // Consolidate state updates
         this.stateManager.setState({ isLoadingDriveVideos: true, errorMessage: null, infoMessage: null, successMessage: null });
         try {
             // Use the updated ApiService method
-            const videos = await this.apiService.fetchVideos(driveSearchTerm);
+            const videos = await this.apiService.fetchVideos(defaultDriveFolderId);
             this.stateManager.setState({ videosList: videos });
         } catch (error) {
             console.error("Failed to load Drive videos:", error);
@@ -359,6 +429,7 @@ class App {
 
     async fetchActiveConversions() {
         // console.log("Polling for active conversions..."); // Reduce log noise
+        const POLLING_FAILURE_THRESHOLD = 3; // Number of consecutive failures before showing warning
         try {
             // Use the updated ApiService method
             const conversions = await this.apiService.fetchActiveConversions();
@@ -366,12 +437,29 @@ class App {
             // Only update state if the data has actually changed to avoid unnecessary re-renders
             if (JSON.stringify(conversions) !== JSON.stringify(currentState.activeConversions)) {
                  console.log("Active conversions updated:", conversions);
-                this.stateManager.setState({ activeConversions: conversions });
+                this.stateManager.setState({
+                    activeConversions: conversions,
+                    pollingFailureCount: 0, // Reset failure count on success
+                    // Clear potential previous polling error message if needed
+                    // infoMessage: currentState.infoMessage === 'Failed to update conversion status.' ? null : currentState.infoMessage
+                 });
+            } else {
+                 // Reset failure count even if data hasn't changed, as the poll succeeded
+                 if (currentState.pollingFailureCount > 0) {
+                     this.stateManager.setState({ pollingFailureCount: 0 });
+                 }
             }
         } catch (error) {
             console.error("Failed to poll active conversions:", error);
+            const currentFailCount = this.stateManager.getState().pollingFailureCount;
+            const newFailCount = currentFailCount + 1;
+            this.stateManager.setState({ pollingFailureCount: newFailCount });
+
             // Avoid setting a persistent error message for polling failures unless needed
             // Consider showing a temporary warning if polling fails repeatedly
+            if (newFailCount >= POLLING_FAILURE_THRESHOLD) {
+                 this.stateManager.setState({ infoMessage: "Having trouble updating conversion status. Will keep trying." });
+            }
             // this.stateManager.setState({ infoMessage: "Could not update conversion status." });
         }
     }
@@ -387,6 +475,15 @@ class App {
             () => this.fetchActiveConversions(),
             CONVERSION_POLLING_INTERVAL
         );
+    }
+
+    // Add method to stop polling
+    stopConversionPolling() {
+        if (this.conversionPollingTimer) {
+            console.log("Stopping conversion polling.");
+            clearInterval(this.conversionPollingTimer);
+            this.conversionPollingTimer = null;
+        }
     }
 
     // --- UI Update Methods (Driven by State) ---
@@ -447,7 +544,12 @@ class App {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM fully loaded and parsed");
     const app = new App();
-    app.initialize().catch(error => {
+    app.initialize().then(() => {
+        // Add cleanup listener *after* successful initialization
+        window.addEventListener('beforeunload', () => {
+            app.stopConversionPolling(); // Call the instance method
+        });
+    }).catch(error => {
         console.error("Critical error during app initialization:", error);
         const messageArea = document.getElementById('message-area');
         const loadingIndicator = document.getElementById('loading-indicator');
@@ -457,10 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Optional: Clean up polling on page unload
-    window.addEventListener('beforeunload', () => {
-        // Accessing app instance might be tricky here if not global
+    // Optional: Clean up polling on page unload - MOVED INSIDE INITIALIZE SUCCESS
+    // window.addEventListener('beforeunload', () => {
+        // Accessing app instance might be tricky here if not global.
         // Consider a static method or alternative cleanup approach if needed.
-        // app.stopConversionPolling();
-    });
+        // app.stopConversionPolling(); // Now called correctly above
+    // });
 });

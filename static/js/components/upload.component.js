@@ -21,6 +21,8 @@ export class UploadComponent {
         this.fileNameDisplay = this.container.querySelector('#file-name');
         this.uploadButton = this.container.querySelector('#upload-button');
         this.formatSelect = this.container.querySelector('#upload-target-format'); // Assuming a format select exists here
+        this.reverseCheckbox = this.container.querySelector('#reverse-video-upload'); // Added
+        this.removeSoundCheckbox = this.container.querySelector('#remove-sound-upload'); // Added
 
         if (!this.form || !this.fileInput || !this.fileNameDisplay || !this.uploadButton || !this.formatSelect) {
             console.error("UploadComponent is missing required elements within:", selector);
@@ -29,6 +31,9 @@ export class UploadComponent {
              // Initialize format dropdown
              this.populateFormatOptions([]);
         }
+        // Add null checks for new checkboxes if they might not exist in the HTML yet
+        if (!this.reverseCheckbox) console.warn("UploadComponent: #reverse-video-upload checkbox not found.");
+        if (!this.removeSoundCheckbox) console.warn("UploadComponent: #remove-sound-upload checkbox not found.");
 
         this.setupEventListeners();
         this.updateUploadButton(false); // Initially disabled
@@ -113,8 +118,10 @@ export class UploadComponent {
     /** Helper method for App.js to get current options */
     getConversionOptions() {
         const targetFormat = this.formatSelect ? this.formatSelect.value : '';
+        const reverseVideo = this.reverseCheckbox ? this.reverseCheckbox.checked : false; // Added
+        const removeSound = this.removeSoundCheckbox ? this.removeSoundCheckbox.checked : false; // Added
         // Add other upload-specific options if needed
-        return { targetFormat };
+        return { targetFormat, reverseVideo, removeSound }; // Updated
     }
 
     /** Resets the file input and display. Called by App.js after successful upload. */

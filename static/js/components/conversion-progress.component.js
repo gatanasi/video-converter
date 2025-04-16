@@ -22,9 +22,10 @@ export class ConversionProgressComponent {
     /**
      * Displays the progress of active conversions based on data from the state manager.
      * @param {Array<object>} conversions - Array of conversion objects from the state.
+     * @param {string|null} [abortingId=null] - The ID of the conversion currently being aborted (optional).
      * Expected object structure: { id, fileName, format, progress, complete, error, downloadUrl, aborted }
      */
-    displayProgress(conversions = []) {
+    displayProgress(conversions = [], abortingId = null) { // Added abortingId parameter
         const currentIds = new Set(conversions.map(c => c.id));
         const renderedIds = new Set(this.renderedConversions.keys());
 
@@ -37,7 +38,7 @@ export class ConversionProgressComponent {
 
         // Add or update items
         conversions.forEach(conv => {
-            this.addOrUpdateItem(conv);
+            this.addOrUpdateItem(conv, abortingId); // Pass abortingId
         });
 
         // Update empty state message
@@ -48,9 +49,10 @@ export class ConversionProgressComponent {
         }
     }
 
-    addOrUpdateItem(conversion) {
+    addOrUpdateItem(conversion, abortingId) { // Added abortingId parameter
         let item = this.renderedConversions.get(conversion.id);
         let element = item ? item.element : null;
+        const isAborting = conversion.id === abortingId; // Check if this item is being aborted
 
         // --- Create Element if it doesn't exist ---
         if (!element) {
@@ -60,7 +62,7 @@ export class ConversionProgressComponent {
 
             // Add abort button (conditionally)
             if (!conversion.complete && !conversion.error && !conversion.aborted) {
-                const abortButton = this.createAbortButton(conversion.id);
+                const abortButton = this.createAbortButton(conversion.id, isAborting); // Pass isAborting
                 element.appendChild(abortButton);
             }
 
@@ -73,11 +75,16 @@ export class ConversionProgressComponent {
         this.updateProgressBar(element, conversion.progress);
 
         // Clear previous status classes/elements
-        element.classList.remove('complete', 'error', 'aborted');
+        element.classList.remove('complete', 'error', 'aborted', 'aborting'); // Added 'aborting'
         const existingStatus = element.querySelector('.multi-progress-status, .multi-progress-download, .multi-progress-error');
         if (existingStatus) existingStatus.remove();
-        const abortButton = element.querySelector('.abort-button');
+        let abortButton = element.querySelector('.abort-button');
 
+        // Add aborting class if applicable
+        if (isAborting) {
+            element.classList.add('aborting');
+            if (abortButton) abortButton.disabled = true; // Ensure button is disabled
+        }
 
         // Handle different states
         if (conversion.aborted) {
@@ -99,11 +106,15 @@ export class ConversionProgressComponent {
              }
             this.scheduleRemoval(conversion.id, 30000); // Longer delay for completed items
         } else {
-            // Still in progress - ensure abort button exists if needed
+            // Still in progress - ensure abort button exists if needed and update its state
             if (!abortButton) {
-                 const newAbortButton = this.createAbortButton(conversion.id);
+                 const newAbortButton = this.createAbortButton(conversion.id, isAborting); // Pass isAborting
                  element.appendChild(newAbortButton);
+                 abortButton = newAbortButton; // Update reference
             }
+            // Ensure button disabled state matches isAborting, even if button already existed
+            if (abortButton) abortButton.disabled = isAborting;
+
             // Clear any removal timeout if it somehow became active again
             if (item.timeoutId) {
                 clearTimeout(item.timeoutId);
@@ -112,14 +123,15 @@ export class ConversionProgressComponent {
         }
     }
 
-    createAbortButton(conversionId) {
+    createAbortButton(conversionId, isDisabled = false) { // Added isDisabled parameter
         const abortButton = document.createElement('button');
         abortButton.className = 'abort-button';
         abortButton.innerHTML = '&times;'; // Use HTML entity
         abortButton.title = 'Abort conversion';
+        abortButton.disabled = isDisabled; // Set initial disabled state
         abortButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            abortButton.disabled = true; // Disable immediately
+            abortButton.disabled = true; // Disable immediately on click
             if (this.onAbortConversion) {
                 this.onAbortConversion(conversionId); // Notify App.js
             }
@@ -187,10 +199,10 @@ export class ConversionProgressComponent {
     }
 
     removeRenderedItem(conversionId) {
-        const item = this.renderedConversions.get(conversionId);
+        const item = this.renderedConversions.get(conversionId); // Added semicolon
         if (item) {
             if (item.timeoutId) {
-                clearTimeout(item.timeoutId); // Clear timeout if removed manually/early
+                clearTimeout(item.timeoutId); // Added semicolon
             }
             if (item.element) {
                 item.element.remove(); // Remove from DOM

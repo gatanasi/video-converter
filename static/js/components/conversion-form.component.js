@@ -15,6 +15,8 @@ export class ConversionFormComponent {
 
         // References to form elements within this component's container
         this.formatSelect = null;
+        this.reverseCheckbox = null; // Added
+        this.removeSoundCheckbox = null; // Added
         // Remove reference to the external submit button
         // this.submitButton = null;
 
@@ -33,9 +35,19 @@ export class ConversionFormComponent {
                     <option value="" disabled>Loading formats...</option>
                 </select>
             </div>
+            <div class="form-group checkbox-group">
+                 <input type="checkbox" id="reverse-video-drive" name="reverseVideo">
+                 <label for="reverse-video-drive">Reverse Video</label>
+            </div>
+             <div class="form-group checkbox-group">
+                 <input type="checkbox" id="remove-sound-drive" name="removeSound">
+                 <label for="remove-sound-drive">Remove Sound</label>
+            </div>
             <!-- Add other options like reverse, remove sound if needed -->
         `;
         this.formatSelect = this.container.querySelector('#target-format');
+        this.reverseCheckbox = this.container.querySelector('#reverse-video-drive'); // Added
+        this.removeSoundCheckbox = this.container.querySelector('#remove-sound-drive'); // Added
         // Initialize with placeholder
         this.populateFormatOptions([]);
         // Remove finding the external submit button
@@ -86,9 +98,9 @@ export class ConversionFormComponent {
     getConversionOptions() {
         const targetFormat = this.formatSelect ? this.formatSelect.value : '';
         // Add logic to get other options if they exist
-        // const reverseVideo = this.reverseCheckbox ? this.reverseCheckbox.checked : false;
-        // const removeSound = this.soundCheckbox ? this.soundCheckbox.checked : false;
-        // return { targetFormat, reverseVideo, removeSound };
-        return { targetFormat }; // Simplified example
+        const reverseVideo = this.reverseCheckbox ? this.reverseCheckbox.checked : false; // Added
+        const removeSound = this.removeSoundCheckbox ? this.removeSoundCheckbox.checked : false; // Added
+        return { targetFormat, reverseVideo, removeSound }; // Updated
+        // return { targetFormat }; // Simplified example
     }
 }
