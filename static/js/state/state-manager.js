@@ -1,8 +1,7 @@
 export class StateManager {
     constructor(initialState = {}) {
         this.state = { ...initialState };
-        this.listeners = {}; // eventName: [callback, callback, ...]
-        console.log("StateManager initialized with state:", this.state);
+        this.listeners = {};
     }
 
     getState() {
@@ -19,8 +18,6 @@ export class StateManager {
         }
 
         if (changedKeys.length > 0) {
-            console.log("State changed:", changedKeys.join(', '), "New state:", this.state);
-            // Notify listeners for each changed key
             changedKeys.forEach(key => {
                 const eventName = `${key}Changed`; // e.g., 'videosListChanged'
                 if (this.listeners[eventName]) {
@@ -52,7 +49,6 @@ export class StateManager {
         }
         if (!this.listeners[eventName].includes(callback)) {
             this.listeners[eventName].push(callback);
-            console.log(`Listener subscribed to ${eventName}`);
         }
     }
 
@@ -61,7 +57,6 @@ export class StateManager {
             this.listeners[eventName] = this.listeners[eventName].filter(
                 listener => listener !== callback
             );
-            console.log(`Listener unsubscribed from ${eventName}`);
         }
     }
 }

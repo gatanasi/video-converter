@@ -69,12 +69,9 @@ class App {
         this.convertPanel = document.getElementById('convert-panel');
 
         this.conversionPollingTimer = null;
-
-        console.log("App constructed");
     }
 
     async initialize() {
-        console.log("App initializing...");
         this.setupEventListeners();
         this.setupStateSubscriptions(); // Setup listeners for state changes
 
@@ -86,7 +83,6 @@ class App {
                 this.apiService.fetchAvailableFormats()
             ]);
 
-            console.log("Fetched config:", config);
             const initialFormat = formats.length > 0 ? formats[0] : '';
             this.stateManager.setState({
                 availableFormats: formats,
@@ -114,12 +110,9 @@ class App {
         this.updateActiveTab(this.getActiveTab());
         this.loadDataForCurrentSource();
         this.startConversionPolling(); // Start polling for active conversions
-
-        console.log("App initialization complete.");
     }
 
     setupEventListeners() {
-        console.log("Setting up event listeners...");
         this.driveSourceButton.addEventListener('click', () => this.handleSourceChange('drive'));
         this.uploadSourceButton.addEventListener('click', () => this.handleSourceChange('upload'));
 
@@ -135,8 +128,6 @@ class App {
 
     // Centralized place to react to state changes
     setupStateSubscriptions() {
-        console.log("Setting up state subscriptions...");
-
         // --- UI Visibility & Loading --- 
         this.stateManager.subscribe('currentVideoSourceChanged', this.updateSourceView.bind(this));
         this.stateManager.subscribe('isLoadingDriveVideosChanged', this.updateLoadingIndicator.bind(this));
@@ -202,7 +193,6 @@ class App {
     // --- Handlers for User Actions & Component Callbacks ---
 
     handleSourceChange(newSource) {
-        console.log(`Handling source change to: ${newSource}`);
         if (newSource !== this.stateManager.getState().currentVideoSource) {
             this.stateManager.setState({
                 currentVideoSource: newSource,
@@ -235,19 +225,16 @@ class App {
 
     /** Handles file selection from UploadComponent */
     handleFileSelect(file) {
-        console.log(`Handling file select: ${file ? file.name : 'null'}`);
         this.stateManager.setState({ selectedUploadFile: file, errorMessage: null, successMessage: null }); // Clear messages on new selection
     }
 
     /** Handles format selection change from either component */
     handleFormatChange(newFormat) {
-        console.log(`Handling format change: ${newFormat}`);
         this.stateManager.setState({ selectedFormat: newFormat });
     }
 
     /** Handles submission from the Drive conversion section */
     async handleDriveConversionSubmit() {
-        console.log("Handling Drive conversion submit...");
         const { selectedDriveVideoIds, selectedFormat, videosList } = this.stateManager.getState(); // Get videosList
         const conversionOptions = this.conversionFormComponent.getConversionOptions(); // Get all options
 
@@ -292,7 +279,6 @@ class App {
                         removeSound: conversionOptions.removeSound
                     }
                 );
-                console.log(`Conversion started for ${video.name}:`, result);
                 successCount++;
             } catch (error) {
                 console.error(`Drive conversion request failed for ${video.name}:`, error);
@@ -319,7 +305,6 @@ class App {
 
     /** Handles submission from the UploadComponent form */
     async handleUploadSubmit() {
-        console.log("Handling upload submit...");
         const { selectedUploadFile, selectedFormat } = this.stateManager.getState();
         const conversionOptions = this.uploadComponent.getConversionOptions(); // Get all options
 
@@ -363,9 +348,6 @@ class App {
 
     /** Handles abort request from ConversionProgressComponent */
     async handleAbortConversion(conversionId) {
-        console.log(`Handling abort request for conversion: ${conversionId}`);
-        // Optionally add a specific loading state for aborting
-        // Clear messages before attempting
         this.stateManager.setState({
              errorMessage: null,
              infoMessage: null,
@@ -390,7 +372,6 @@ class App {
 
     /** Handles notification that a download is ready (optional) */
     handleDownloadReady(conversion) {
-        console.log(`Download ready for: ${conversion.fileName}`);
         // Could show a temporary success message or trigger another action
         this.stateManager.setState({ successMessage: `"${conversion.fileName}" is ready for download.` }); // Uncommented
     }
@@ -398,7 +379,6 @@ class App {
     // --- Data Loading Methods ---
     loadDataForCurrentSource() {
         const { currentVideoSource, defaultDriveFolderId } = this.stateManager.getState();
-        console.log(`Loading data for source: ${currentVideoSource}`);
         if (currentVideoSource === 'drive') {
             // Only load if folder ID is available
             if (defaultDriveFolderId) {
@@ -431,7 +411,6 @@ class App {
             return;
         }
 
-        console.log(`Loading Drive videos (folder: ${defaultDriveFolderId})...`); // Removed search term from log
         // Consolidate state updates
         this.stateManager.setState({ isLoadingDriveVideos: true, errorMessage: null, infoMessage: null, successMessage: null });
         try {
@@ -448,7 +427,6 @@ class App {
     }
 
     async fetchActiveConversions() {
-        // console.log("Polling for active conversions..."); // Reduce log noise
         const POLLING_FAILURE_THRESHOLD = 3; // Number of consecutive failures before showing warning
         try {
             // Use the updated ApiService method
@@ -456,7 +434,6 @@ class App {
             const currentState = this.stateManager.getState();
             // Only update state if the data has actually changed to avoid unnecessary re-renders
             if (JSON.stringify(conversions) !== JSON.stringify(currentState.activeConversions)) {
-                 console.log("Active conversions updated:", conversions);
                 this.stateManager.setState({
                     activeConversions: conversions,
                     pollingFailureCount: 0, // Reset failure count on success
@@ -488,7 +465,6 @@ class App {
         if (this.conversionPollingTimer) {
             clearInterval(this.conversionPollingTimer);
         }
-        console.log(`Starting conversion polling every ${CONVERSION_POLLING_INTERVAL}ms`);
         // Poll immediately first
         this.fetchActiveConversions();
         this.conversionPollingTimer = setInterval(
@@ -500,7 +476,6 @@ class App {
     // Add method to stop polling
     stopConversionPolling() {
         if (this.conversionPollingTimer) {
-            console.log("Stopping conversion polling.");
             clearInterval(this.conversionPollingTimer);
             this.conversionPollingTimer = null;
         }
@@ -509,8 +484,6 @@ class App {
     // --- UI Update Methods (Driven by State) ---
 
     updateSourceView(currentSource) {
-        // const { currentVideoSource } = this.stateManager.getState(); // Get from argument
-        console.log(`Updating source view to: ${currentSource}`);
         const isDrive = currentSource === 'drive';
         this.driveSourceSection.classList.toggle('hidden', !isDrive);
         this.uploadSourceSection.classList.toggle('hidden', isDrive);
@@ -525,7 +498,6 @@ class App {
     updateLoadingIndicator() {
         const { isLoadingDriveVideos, isLoadingUpload, isStartingConversion } = this.stateManager.getState();
         const isLoading = isLoadingDriveVideos || isLoadingUpload || isStartingConversion;
-        // console.log(`Updating loading indicator: ${isLoading}`); // Reduce noise
         if (this.loadingIndicator) {
             this.loadingIndicator.classList.toggle('hidden', !isLoading);
         }
@@ -538,7 +510,6 @@ class App {
     }
 
     setActiveTab(tabId) {
-        console.log(`Setting active tab: ${tabId}`);
         const isConvert = tabId === 'convert';
 
         this.convertPanel.classList.toggle('hidden', !isConvert);
@@ -562,7 +533,6 @@ class App {
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM fully loaded and parsed");
     const app = new App();
     app.initialize().then(() => {
         // Add cleanup listener *after* successful initialization

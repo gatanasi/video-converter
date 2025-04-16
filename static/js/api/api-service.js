@@ -4,7 +4,6 @@
 export class ApiService { // Export class directly
     constructor(baseUrl = '') { // Accept baseUrl in constructor
         this.baseUrl = baseUrl;
-        console.log(`ApiService initialized with base URL: ${this.baseUrl}`);
     }
 
     /**
@@ -17,7 +16,6 @@ export class ApiService { // Export class directly
      */
     async apiRequest(endpoint, options = {}, errorContext = 'API call') {
         const url = `${this.baseUrl}${endpoint}`;
-        console.log(`API Request: ${options.method || 'GET'} ${url}`); // Log request
         try {
             const response = await fetch(url, options);
 
