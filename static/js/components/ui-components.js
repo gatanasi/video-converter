@@ -670,6 +670,21 @@ export class FileListComponent {
             </td>
         `;
 
+        const fileNameCell = row.querySelector('.file-name');
+        // Make the filename cell clickable and add copy functionality
+        fileNameCell.style.cursor = 'pointer';
+        fileNameCell.title = 'Click to copy download link'; // Update tooltip
+        fileNameCell.addEventListener('click', async () => {
+            try {
+                const absoluteUrl = `${window.location.origin}${file.url}`;
+                await navigator.clipboard.writeText(absoluteUrl);
+                showMessage(this.messageContainer, `Copied download link for "${file.name}" to clipboard.`, 'info', 3000); // Show short confirmation
+            } catch (err) {
+                console.error('Failed to copy link: ', err);
+                showMessage(this.messageContainer, 'Failed to copy download link.', 'error');
+            }
+        });
+
         const deleteButton = row.querySelector('button.delete');
         deleteButton.addEventListener('click', () => this.deleteFile(file.name, row)); // Pass row for potential UI feedback
 
