@@ -15,7 +15,7 @@ class App {
 
         // Define initial state
         const initialState = {
-            currentVideoSource: 'drive', // 'drive' or 'upload'
+            currentVideoSource: 'upload', // 'drive' or 'upload'
             videosList: [], // Drive videos list
             selectedDriveVideoIds: [], // IDs of selected Drive videos
             selectedUploadFile: null,
@@ -111,13 +111,8 @@ class App {
 
         // Initial UI setup based on default state
         this.updateSourceView(this.stateManager.getState().currentVideoSource);
-        this.updateActiveTab(this.getActiveTab()); // Set initial tab view
-        // Load data only if the folder ID is available for the current source
-        if (this.stateManager.getState().currentVideoSource === 'drive' && this.stateManager.getState().defaultDriveFolderId) {
-            this.loadDataForCurrentSource();
-        } else if (this.stateManager.getState().currentVideoSource !== 'drive') {
-             this.loadDataForCurrentSource(); // Load if not drive source
-        }
+        this.updateActiveTab(this.getActiveTab());
+        this.loadDataForCurrentSource();
         this.startConversionPolling(); // Start polling for active conversions
 
         console.log("App initialization complete.");
@@ -401,9 +396,6 @@ class App {
     }
 
     // --- Data Loading Methods ---
-
-    // Removed setDriveSearchTerm method
-
     loadDataForCurrentSource() {
         const { currentVideoSource, defaultDriveFolderId } = this.stateManager.getState();
         console.log(`Loading data for source: ${currentVideoSource}`);
@@ -421,7 +413,6 @@ class App {
             if (this.stateManager.getState().videosList.length > 0) {
                  this.stateManager.setState({ videosList: [] });
             }
-            // Handle loading for other sources if any
         }
     }
 
@@ -588,10 +579,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Optional: Clean up polling on page unload - MOVED INSIDE INITIALIZE SUCCESS
-    // window.addEventListener('beforeunload', () => {
-        // Accessing app instance might be tricky here if not global.
-        // Consider a static method or alternative cleanup approach if needed.
-        // app.stopConversionPolling(); // Now called correctly above
-    // });
 });
