@@ -41,16 +41,18 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 
 // SetupRoutes configures the HTTP routes.
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
-	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler) // New route
+	mux.HandleFunc("/api/videos", h.ListDriveVideosHandler)
+	mux.HandleFunc("/api/convert/drive", h.ConvertFromDriveHandler)
+	mux.HandleFunc("/api/convert/upload", h.UploadConvertHandler) // New route
 	mux.HandleFunc("/api/status/", h.StatusHandler)               // Expects /api/status/{id}
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
 	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler) // Expects /api/delete-file/{filename}
-	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)  // Expects /api/abort/{id}
-	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
+	// Change the abort route to match the frontend request path
+	mux.HandleFunc("/api/conversions/", h.AbortConversionHandler) // Expects /api/conversions/{id}/abort
+	mux.HandleFunc("/api/conversions/active", h.ActiveConversionsHandler)
 	mux.HandleFunc("/api/config", h.ConfigHandler)
-	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
+	mux.HandleFunc("/api/formats", h.AvailableFormatsHandler) // Add route for available formats
+	mux.HandleFunc("/download/", h.DownloadHandler)           // Expects /download/{filename}
 
 	// Serve static files (CSS, JS, images) from the 'static' directory
 	// Use http.Dir with a relative path. Assumes 'static' is relative to the executable.
@@ -68,6 +70,19 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 		// Explicitly serve the index.html file.
 		http.ServeFile(w, r, filepath.Join("index.html"))
 	})
+}
+
+// AvailableFormatsHandler returns the list of supported conversion formats.
+func (h *Handler) AvailableFormatsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Define the supported formats (could be moved to config later)
+	supportedFormats := []string{"mov", "mp4", "avi"} // Example formats
+
+	h.sendJSONResponse(w, supportedFormats, http.StatusOK)
 }
 
 // ListDriveVideosHandler lists videos from a Google Drive folder.
@@ -521,14 +536,16 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // AbortConversionHandler handles requests to abort a conversion job.
 func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/abort/")
-	if r.Method != http.MethodPost {
-		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
+	// Extract ID from the new path format: /api/conversions/{id}/abort
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) != 4 || pathParts[0] != "api" || pathParts[1] != "conversions" || pathParts[3] != "abort" {
+		h.sendErrorResponse(w, "Invalid abort URL format. Expected /api/conversions/{id}/abort", http.StatusBadRequest)
 		return
 	}
+	id := pathParts[2]
 
-	if id == "" {
-		h.sendErrorResponse(w, "Missing conversion ID", http.StatusBadRequest)
+	if r.Method != http.MethodPost {
+		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 

@@ -1,9 +1,9 @@
 /**
  * API Service - Handles all communication with the backend API.
  */
-class ApiService {
-    constructor() {
-        this.baseUrl = ''; // Assumes API is served from the same origin
+export class ApiService { // Export class directly
+    constructor(baseUrl = '') { // Accept baseUrl in constructor
+        this.baseUrl = baseUrl;
     }
 
     /**
@@ -15,18 +15,20 @@ class ApiService {
      * @throws {Error} - Throws an error if the request fails or response is not ok.
      */
     async apiRequest(endpoint, options = {}, errorContext = 'API call') {
+        const url = `${this.baseUrl}${endpoint}`;
         try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`, options);
+            const response = await fetch(url, options);
 
             if (!response.ok) {
                 let errorData;
                 try {
+                    // Try to parse error response, default to status text
                     errorData = await response.json();
                 } catch (e) {
-                    // If response is not JSON, use status text
-                    errorData = { error: response.statusText || `HTTP error ${response.status}` };
+                    errorData = { message: response.statusText || `HTTP error ${response.status}` };
                 }
-                throw new Error(errorData.error || `HTTP error ${response.status}`);
+                // Use 'message' field if available, otherwise construct one
+                throw new Error(errorData.message || errorData.error || `HTTP error ${response.status}`);
             }
 
             // Handle cases where response might be empty (e.g., 204 No Content)
@@ -36,112 +38,103 @@ class ApiService {
 
             return await response.json();
         } catch (error) {
-            console.error(`API error in ${errorContext}:`, error.message);
-            throw error; // Re-throw the error for the caller to handle
+            console.error(`API error in ${errorContext} (${url}):`, error.message);
+            // Ensure the error thrown has a meaningful message
+            throw new Error(error.message || `Request failed: ${errorContext}`);
         }
     }
 
     /**
-     * Fetch videos from a Google Drive folder.
-     * @param {String} folderId - Google Drive folder ID.
-     * @returns {Promise<Array>} - Array of video file objects.
+     * Fetch application configuration from the backend.
+     * @returns {Promise<Object>} - The configuration object.
      */
-    async listVideos(folderId) {
-        return this.apiRequest(
-            `/api/list-videos?folderId=${encodeURIComponent(folderId)}`,
-            {},
-            'listVideos'
-        );
+    async fetchConfig() {
+        return this.apiRequest('/api/config', {}, 'fetchConfig');
     }
 
     /**
-     * Start video conversion for a file from Google Drive.
-     * @param {Object} conversionData - Data required for conversion (fileId, fileName, etc.).
+     * Fetch available conversion formats.
+     * @returns {Promise<Array<string>>}
+     */
+    async fetchAvailableFormats() {
+        // Assuming the backend endpoint is /api/formats
+        return this.apiRequest('/api/formats', {}, 'fetchAvailableFormats');
+    }
+
+    /**
+     * Fetch videos from Google Drive.
+     * @param {string} folderId - The Google Drive folder ID.
+     * @returns {Promise<Array>} - Array of video file objects.
+     */
+    async fetchVideos(folderId) {
+        if (!folderId) {
+            console.error("fetchVideos called without a folderId.");
+            // Or throw an error, or return an empty array, depending on desired handling
+            return Promise.reject(new Error("Google Drive Folder ID is required to fetch videos."));
+        }
+        const params = new URLSearchParams({ folderId });
+        const endpoint = `/api/videos?${params.toString()}`;
+        return this.apiRequest(endpoint, {}, 'fetchVideos');
+    }
+
+    /**
+     * Request conversion for selected Drive video IDs.
+     * @param {string} videoId - Google Drive file ID.
+     * @param {string} fileName - Original filename.
+     * @param {string} mimeType - Original file mime type.
+     * @param {string} targetFormat - The desired output format.
+     * @param {object} options - Additional conversion options (e.g., { reverseVideo: boolean, removeSound: boolean }).
      * @returns {Promise<Object>} - Conversion initiation response.
      */
-    async convertFromDrive(conversionData) {
+    async requestConversion(videoId, fileName, mimeType, targetFormat, options = {}) { // Updated parameters
         return this.apiRequest(
-            `/api/convert-from-drive`,
+            `/api/convert/drive`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(conversionData)
+                body: JSON.stringify({
+                    fileId: videoId, // Changed from videoIds array
+                    fileName: fileName, // Added fileName
+                    mimeType: mimeType, // Added mimeType
+                    targetFormat,
+                    reverseVideo: options.reverseVideo || false,
+                    removeSound: options.removeSound || false
+                })
             },
-            'convertFromDrive'
+            'requestConversion'
         );
     }
 
     /**
      * Upload a video file and start conversion.
      * @param {File} file - The video file to upload.
-     * @param {Object} options - Conversion options (targetFormat, reverseVideo, removeSound).
+     * @param {string} targetFormat - The desired output format.
+     * @param {object} options - Additional conversion options (e.g., { reverseVideo: boolean, removeSound: boolean }).
      * @returns {Promise<Object>} - Conversion initiation response.
      */
-    async uploadAndConvert(file, options) {
+    async uploadAndConvert(file, targetFormat, options = {}) { // Added options parameter
         const formData = new FormData();
         formData.append('videoFile', file);
-        formData.append('targetFormat', options.targetFormat);
-        formData.append('reverseVideo', options.reverseVideo);
-        formData.append('removeSound', options.removeSound);
-
-        // Note: We don't set Content-Type header when using FormData with fetch,
-        // the browser sets it correctly including the boundary.
+        formData.append('targetFormat', targetFormat);
+        // Add other options if the backend supports them (e.g., reverse, sound)
+        formData.append('reverseVideo', options.reverseVideo || false); // Send new options
+        formData.append('removeSound', options.removeSound || false); // Send new options
         return this.apiRequest(
-            `/api/upload-convert`,
+            `/api/convert/upload`,
             {
                 method: 'POST',
                 body: formData
-                // No 'Content-Type' header needed here
             },
             'uploadAndConvert'
         );
     }
 
     /**
-     * Get the status of a specific conversion.
-     * @param {String} conversionId - ID of the conversion.
-     * @returns {Promise<Object>} - Conversion status object.
+     * Fetch all currently active (running or queued) conversions.
+     * @returns {Promise<Array>} - Array of active conversion info objects.
      */
-    async getConversionStatus(conversionId) {
-        return this.apiRequest(
-            `/api/status/${encodeURIComponent(conversionId)}`,
-            {},
-            'getConversionStatus'
-        );
-    }
-
-    /**
-     * Get server configuration relevant to the frontend.
-     * @returns {Promise<Object>} - Server configuration object.
-     */
-    async getServerConfig() {
-        try {
-            return await this.apiRequest('/api/config', {}, 'getServerConfig');
-        } catch (error) {
-            // Provide a more user-friendly error for this specific case
-            throw new Error('Failed to load server configuration. Please check the connection or server status.');
-        }
-    }
-
-    /**
-     * List previously converted files available for download.
-     * @returns {Promise<Array>} - Array of converted file objects.
-     */
-    async listFiles() {
-        return this.apiRequest('/api/files', {}, 'listFiles');
-    }
-
-    /**
-     * Delete a converted file from the server.
-     * @param {String} fileName - Name of the file to delete.
-     * @returns {Promise<Object>} - Deletion confirmation response.
-     */
-    async deleteFile(fileName) {
-        return this.apiRequest(
-            `/api/delete-file/${encodeURIComponent(fileName)}`,
-            { method: 'DELETE' },
-            'deleteFile'
-        );
+    async fetchActiveConversions() {
+        return this.apiRequest('/api/conversions/active', {}, 'fetchActiveConversions');
     }
 
     /**
@@ -151,20 +144,9 @@ class ApiService {
      */
     async abortConversion(conversionId) {
         return this.apiRequest(
-            `/api/abort/${encodeURIComponent(conversionId)}`,
-            { method: 'POST' }, // Using POST as it changes server state
+            `/api/conversions/${encodeURIComponent(conversionId)}/abort`,
+            { method: 'POST' },
             'abortConversion'
         );
     }
-
-    /**
-     * List all currently active (running or queued) conversions.
-     * @returns {Promise<Array>} - Array of active conversion info objects.
-     */
-    async listActiveConversions() {
-        return this.apiRequest('/api/active-conversions', {}, 'listActiveConversions');
-    }
 }
-
-// Export a single instance (singleton pattern)
-export default new ApiService();
