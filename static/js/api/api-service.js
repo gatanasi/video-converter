@@ -81,22 +81,26 @@ export class ApiService { // Export class directly
 
     /**
      * Request conversion for selected Drive video IDs.
-     * @param {string[]} videoIds - Array of Google Drive file IDs.
+     * @param {string} videoId - Google Drive file ID.
+     * @param {string} fileName - Original filename.
+     * @param {string} mimeType - Original file mime type.
      * @param {string} targetFormat - The desired output format.
      * @param {object} options - Additional conversion options (e.g., { reverseVideo: boolean, removeSound: boolean }).
      * @returns {Promise<Object>} - Conversion initiation response.
      */
-    async requestConversion(videoIds, targetFormat, options = {}) { // Added options parameter
+    async requestConversion(videoId, fileName, mimeType, targetFormat, options = {}) { // Updated parameters
         return this.apiRequest(
             `/api/convert/drive`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    videoIds,
+                    fileId: videoId, // Changed from videoIds array
+                    fileName: fileName, // Added fileName
+                    mimeType: mimeType, // Added mimeType
                     targetFormat,
-                    reverseVideo: options.reverseVideo || false, // Send new options
-                    removeSound: options.removeSound || false   // Send new options
+                    reverseVideo: options.reverseVideo || false,
+                    removeSound: options.removeSound || false
                  })
             },
             'requestConversion'

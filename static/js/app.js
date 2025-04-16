@@ -253,7 +253,7 @@ class App {
     /** Handles submission from the Drive conversion section */
     async handleDriveConversionSubmit() {
         console.log("Handling Drive conversion submit...");
-        const { selectedDriveVideoIds, selectedFormat } = this.stateManager.getState();
+        const { selectedDriveVideoIds, selectedFormat, videosList } = this.stateManager.getState(); // Get videosList
         const conversionOptions = this.conversionFormComponent.getConversionOptions(); // Get all options
 
         if (selectedDriveVideoIds.length === 0 || !selectedFormat) {
@@ -269,28 +269,57 @@ class App {
             infoMessage: null // Clear info messages too
         });
 
-        try {
-            // Use the updated ApiService method, passing options
-            const result = await this.apiService.requestConversion(
-                selectedDriveVideoIds,
-                selectedFormat,
-                { // Pass options object
-                    reverseVideo: conversionOptions.reverseVideo,
-                    removeSound: conversionOptions.removeSound
-                }
-            );
-            this.stateManager.setState({
-                successMessage: result.message || "Conversion started successfully!",
-                selectedDriveVideoIds: [] // Clear selection on success
-            });
-            this.fetchActiveConversions(); // Immediately refresh progress list
-        } catch (error) {
-            console.error("Drive conversion request failed:", error);
-            // Use error.message which apiRequest now standardizes
-            this.stateManager.setState({ errorMessage: `Conversion failed: ${error.message}` });
-        } finally {
-            this.stateManager.setState({ isStartingConversion: false });
+        let successCount = 0;
+        let errorCount = 0;
+        const totalRequests = selectedDriveVideoIds.length;
+        const errorMessages = [];
+
+        // Iterate over selected videos and send individual requests
+        for (const videoId of selectedDriveVideoIds) {
+            // Find the video details from the videosList
+            const video = videosList.find(v => v.id === videoId);
+            if (!video) {
+                console.warn(`Video details not found for ID: ${videoId}. Skipping.`);
+                errorCount++;
+                errorMessages.push(`Details not found for a selected video.`);
+                continue; // Skip if video details aren't available
+            }
+
+            try {
+                // Use the updated ApiService method, passing individual details and options
+                const result = await this.apiService.requestConversion(
+                    videoId,
+                    video.name, // Pass fileName
+                    video.mimeType, // Pass mimeType
+                    selectedFormat,
+                    { // Pass options object
+                        reverseVideo: conversionOptions.reverseVideo,
+                        removeSound: conversionOptions.removeSound
+                    }
+                );
+                console.log(`Conversion started for ${video.name}:`, result);
+                successCount++;
+            } catch (error) {
+                console.error(`Drive conversion request failed for ${video.name}:`, error);
+                errorCount++;
+                // Use error.message which apiRequest now standardizes
+                errorMessages.push(`Conversion failed for \"${video.name}\": ${error.message}`);
+            }
+        } // End loop
+
+        // Update state after all requests are attempted
+        const finalState = { isStartingConversion: false };
+        if (successCount > 0) {
+            finalState.successMessage = `${successCount} of ${totalRequests} conversion(s) started successfully.`;
+            finalState.selectedDriveVideoIds = []; // Clear selection only if at least one succeeded
+            this.fetchActiveConversions(); // Refresh progress list if any started
         }
+        if (errorCount > 0) {
+            // Combine error messages or show a general one
+            finalState.errorMessage = `Failed to start ${errorCount} of ${totalRequests} conversion(s). ${errorMessages.slice(0, 2).join(' ')}`; // Show first few errors
+        }
+
+        this.stateManager.setState(finalState);
     }
 
     /** Handles submission from the UploadComponent form */
