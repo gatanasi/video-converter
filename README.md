@@ -75,7 +75,6 @@ This application is configured primarily via environment variables for security 
         # Make sure you are in the frontend/ directory
         npx serve dist -l 8080
         ```
-        (Or use `python -m http.server 8080 --directory dist`, etc.)
     *   Open your browser to `http://localhost:8080`.
 
 ## Building for Production
@@ -90,9 +89,9 @@ This application is configured primarily via environment variables for security 
     *   Navigate to the `backend` directory: `cd ../backend`
     *   Build the Go executable:
         ```bash
-        go build -ldflags="-s -w" -o video-converter-app ./cmd/server/main.go
+        go build -ldflags="-s -w" -o ../video-converter-app ./cmd/server/main.go
         ```
-        This creates an optimized executable named `video-converter-app` in the `backend` directory.
+        This creates an optimized executable named `video-converter-app` in the `root` directory.
 
 ## Deploying to Production
 
@@ -126,7 +125,7 @@ Deploying involves placing the built backend executable and the static frontend 
 
         [Service]
         Type=simple
-        # Replace 'converteruser' with the actual user running the service
+        # Replace 'converter' with the actual user running the service
         User=converter
         Group=converter
         # Path to the executable and its directory
