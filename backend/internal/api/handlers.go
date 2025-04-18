@@ -41,62 +41,88 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 
 // SetupRoutes configures the HTTP routes.
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
+	// API Routes (keep these first)
 	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
 	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler) // New route
-	mux.HandleFunc("/api/status/", h.StatusHandler)               // Expects /api/status/{id}
+	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler)
+	mux.HandleFunc("/api/status/", h.StatusHandler)
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
-	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler) // Expects /api/delete-file/{filename}
-	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)  // Expects /api/abort/{id}
+	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler)
+	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)
 	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
 	mux.HandleFunc("/api/config", h.ConfigHandler)
-	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
+	mux.HandleFunc("/download/", h.DownloadHandler)
 
 	// --- Static File Serving ---
-	// Define the directory containing the built frontend assets.
-	// Assumes the backend executable is run from the project root or 'backend' directory.
-	// Adjust the path if the execution context is different.
 	staticDir := "frontend/dist"
-
-	// Check if the directory exists to provide a helpful log message.
 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
 		log.Printf("WARN: Static file directory '%s' not found. Frontend assets will not be served.", staticDir)
+		// Handle root path minimally if static dir is missing
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// Only handle exact root path if static dir is missing and it's not an API call
+			if r.URL.Path == "/" {
+				http.NotFound(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})
+		return
 	} else {
-		log.Printf("Serving static files from: %s", staticDir)
+		log.Printf("Serving static files and index.html from: %s", staticDir)
 	}
 
-	// Serve static files (CSS, JS, images, favicon) directly from the root.
-	// Handle specific file types or use a more general approach.
-	// This example serves known files directly; adjust as needed.
-	mux.HandleFunc("/styles.css", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		http.ServeFile(w, r, filepath.Join(staticDir, "styles.css"))
-	})
-	mux.HandleFunc("/bundle.js", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/javascript")
-		http.ServeFile(w, r, filepath.Join(staticDir, "bundle.js"))
-	})
-	mux.HandleFunc("/bundle.js.map", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json") // Sourcemaps are often JSON
-		http.ServeFile(w, r, filepath.Join(staticDir, "bundle.js.map"))
-	})
-	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/x-icon")
-		http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
-	})
-
-	// Serve the main index.html file for the root path ONLY.
+	// Serve static files and the main index.html using a single handler for non-API routes
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Ensure only the root path "/" serves index.html
-		if r.URL.Path != "/" {
-			// Fallback for potential client-side routing or unmatched static assets
-			// Serve index.html to allow client-side router to handle the path.
-			// If you don't have client-side routing, you might return http.NotFound here.
-			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		// Basic check to prevent serving API/download routes via this handler
+		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/download/") {
+			http.NotFound(w, r) // Let the more specific handlers deal with these
 			return
 		}
-		// Explicitly serve the index.html file for the root.
-		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+
+		// Prevent path traversal
+		if strings.Contains(r.URL.Path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
+
+		// Determine the target file path relative to staticDir
+		requestedPath := r.URL.Path
+		if requestedPath == "/" {
+			requestedPath = "index.html" // Serve index.html for the root
+		} else {
+			// Remove leading slash for joining with staticDir
+			requestedPath = strings.TrimPrefix(requestedPath, "/")
+		}
+		filePath := filepath.Join(staticDir, requestedPath)
+
+		// Check if the file exists
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// File doesn't exist, assume client-side routing and serve index.html
+				// Avoid logging for every potential client-side route
+				// log.Printf("Static file %s not found, serving index.html for client-side routing", filePath)
+				indexPath := filepath.Join(staticDir, "index.html")
+				http.ServeFile(w, r, indexPath)
+			} else {
+				// Other error (e.g., permission denied)
+				log.Printf("ERROR: Error accessing static file %s: %v", filePath, err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+			return
+		}
+
+		// Check if it's a directory
+		if fileInfo.IsDir() {
+			// Don't serve directories, serve index.html instead (or 404/403 if preferred)
+			indexPath := filepath.Join(staticDir, "index.html")
+			http.ServeFile(w, r, indexPath)
+			return
+		}
+
+		// File exists and is not a directory, serve it
+		// http.ServeFile automatically sets Content-Type based on extension
+		http.ServeFile(w, r, filePath)
 	})
 }
 
