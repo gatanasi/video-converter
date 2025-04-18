@@ -1,0 +1,19 @@
+{
+  "name": "video-converter-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rm -rf dist && mkdir dist && cp public/index.html dist/index.html && cp public/favicon.ico dist/favicon.ico && esbuild src/app.ts --bundle --outfile=dist/bundle.js --sourcemap"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.8.1",
+  "devDependencies": {
+    "@types/node": "^20.17.30",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.8.3"
+  }
+}

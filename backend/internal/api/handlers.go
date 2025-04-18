@@ -41,32 +41,88 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 
 // SetupRoutes configures the HTTP routes.
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
+	// API Routes (keep these first)
 	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
 	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler) // New route
-	mux.HandleFunc("/api/status/", h.StatusHandler)               // Expects /api/status/{id}
+	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler)
+	mux.HandleFunc("/api/status/", h.StatusHandler)
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
-	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler) // Expects /api/delete-file/{filename}
-	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)  // Expects /api/abort/{id}
+	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler)
+	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)
 	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
 	mux.HandleFunc("/api/config", h.ConfigHandler)
-	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
+	mux.HandleFunc("/download/", h.DownloadHandler)
 
-	// Serve static files (CSS, JS, images) from the 'static' directory
-	// Use http.Dir with a relative path. Assumes 'static' is relative to the executable.
-	staticFileServer := http.FileServer(http.Dir("static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", staticFileServer))
+	// --- Static File Serving ---
+	staticDir := "frontend/dist"
+	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
+		log.Printf("WARN: Static file directory '%s' not found. Frontend assets will not be served.", staticDir)
+		// Handle root path minimally if static dir is missing
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// Only handle exact root path if static dir is missing and it's not an API call
+			if r.URL.Path == "/" {
+				http.NotFound(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})
+		return
+	} else {
+		log.Printf("Serving static files and index.html from: %s", staticDir)
+	}
 
-	// Serve the main index.html file for the root path ONLY.
-	// Prevents serving other files or directory listings from the root.
+	// Serve static files and the main index.html using a single handler for non-API routes
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Ensure only the root path "/" serves index.html
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
+		// Basic check to prevent serving API/download routes via this handler
+		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/download/") {
+			http.NotFound(w, r) // Let the more specific handlers deal with these
 			return
 		}
-		// Explicitly serve the index.html file.
-		http.ServeFile(w, r, filepath.Join("index.html"))
+
+		// Prevent path traversal
+		if strings.Contains(r.URL.Path, "..") {
+			http.Error(w, "Invalid path", http.StatusBadRequest)
+			return
+		}
+
+		// Determine the target file path relative to staticDir
+		requestedPath := r.URL.Path
+		if requestedPath == "/" {
+			requestedPath = "index.html" // Serve index.html for the root
+		} else {
+			// Remove leading slash for joining with staticDir
+			requestedPath = strings.TrimPrefix(requestedPath, "/")
+		}
+		filePath := filepath.Join(staticDir, requestedPath)
+
+		// Check if the file exists
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// File doesn't exist, assume client-side routing and serve index.html
+				// Avoid logging for every potential client-side route
+				// log.Printf("Static file %s not found, serving index.html for client-side routing", filePath)
+				indexPath := filepath.Join(staticDir, "index.html")
+				http.ServeFile(w, r, indexPath)
+			} else {
+				// Other error (e.g., permission denied)
+				log.Printf("ERROR: Error accessing static file %s: %v", filePath, err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+			return
+		}
+
+		// Check if it's a directory
+		if fileInfo.IsDir() {
+			// Don't serve directories, serve index.html instead (or 404/403 if preferred)
+			indexPath := filepath.Join(staticDir, "index.html")
+			http.ServeFile(w, r, indexPath)
+			return
+		}
+
+		// File exists and is not a directory, serve it
+		// http.ServeFile automatically sets Content-Type based on extension
+		http.ServeFile(w, r, filePath)
 	})
 }
 

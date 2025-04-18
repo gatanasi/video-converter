@@ -1,6 +1,22 @@
+# Environment variables
 .env.mine
-.vscode
+
+# Editor/OS specific
+.vscode/
+.DS_Store
+
+# Go build artifact
 video-converter-app
-uploads
-converted
+
+# Runtime data/logs
+uploads/
+converted/
 nohup.out
+*.log
+
+# Node / pnpm dependencies
+node_modules/
+
+# TypeScript build output
+dist/
+*.tsbuildinfo

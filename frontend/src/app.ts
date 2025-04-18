@@ -1,41 +1,91 @@
 /**
  * Google Drive Video Converter - Main Application Entry Point
  */
-import configManager from './config/config-manager.js';
-import apiService from './api/api-service.js';
-import { VideoListComponent, ConversionFormComponent, FileListComponent, ActiveConversionsComponent } from './components/ui-components.js';
-import { showMessage, clearMessages, formatBytes } from './utils/utils.js'; // Combined imports
+import './styles/styles.css';
+// Removed configManager import as it's unused
+import apiService from './api/apiService.js';
+// Import components from their individual files
+import { ActiveConversionsComponent } from './components/activeConversionsComponent.js';
+import { ConversionFormComponent } from './components/conversionFormComponent.js';
+import { FileListComponent } from './components/fileListComponent.js';
+import { VideoListComponent } from './components/videoListComponent.js';
+import { showMessage, clearMessages, formatBytes } from './utils/utils.js';
+import { InputEvent, Video, ConversionOptions } from './types';
 
 class App {
+    // DOM Element References
+    private messageArea: HTMLElement;
+    private activeConversionsContainer: HTMLElement;
+    private tabButtons: NodeListOf<HTMLButtonElement>;
+    private tabPanels: NodeListOf<HTMLElement>;
+    private fileListContainer: HTMLElement;
+
+    // Source Selection
+    private sourceRadioButtons: NodeListOf<HTMLInputElement>;
+    private driveSourceSection: HTMLElement;
+    private uploadSourceSection: HTMLElement;
+    private driveVideoListSection: HTMLElement;
+
+    // Drive elements
+    private folderIdInput: HTMLInputElement;
+    private loadVideosBtn: HTMLButtonElement;
+    private resetFolderIdBtn: HTMLButtonElement;
+    private videoListContainer: HTMLElement;
+
+    // Upload elements
+    private fileUploadInput: HTMLInputElement;
+    private uploadConvertBtn: HTMLButtonElement;
+    private uploadFileInfo: HTMLElement;
+    private uploadFileName: HTMLElement;
+    private uploadFileSize: HTMLElement;
+
+    // Conversion Options
+    private conversionFormContainer: HTMLElement;
+
+    // Drive conversion button (created dynamically)
+    private driveConvertBtn: HTMLButtonElement | null;
+
+    // Component Instances
+    private activeConversionsComponent!: ActiveConversionsComponent;
+    private fileListComponent!: FileListComponent;
+    private conversionFormComponent!: ConversionFormComponent;
+    private videoListComponent!: VideoListComponent;
+
+    // State
+    private selectedDriveVideos: Video[];
+    private selectedUploadFile: File | null;
+    private currentVideoSource: 'drive' | 'upload';
+    private currentTab: string | null = null;
+
     constructor() {
-        // DOM Element References
-        this.messageArea = document.getElementById('message-area');
-        this.activeConversionsContainer = document.getElementById('active-conversions');
+        // DOM Element References - Use type assertions for non-null elements
+        this.messageArea = document.getElementById('message-area')!;
+        this.activeConversionsContainer = document.getElementById('active-conversions')!;
         this.tabButtons = document.querySelectorAll('.tab-button');
         this.tabPanels = document.querySelectorAll('.tab-panel');
-        this.fileListContainer = document.getElementById('file-list');
+        this.fileListContainer = document.getElementById('file-list')!;
 
         // Source Selection
         this.sourceRadioButtons = document.querySelectorAll('input[name="videoSource"]');
-        this.driveSourceSection = document.getElementById('drive-source-section');
-        this.uploadSourceSection = document.getElementById('upload-source-section');
-        this.driveVideoListSection = document.getElementById('drive-video-list-section'); // Includes the list and button
+        this.driveSourceSection = document.getElementById('drive-source-section')!;
+        this.uploadSourceSection = document.getElementById('upload-source-section')!;
+        this.driveVideoListSection = document.getElementById('drive-video-list-section')!; // Includes the list and button
 
         // Drive elements
-        this.folderIdInput = document.getElementById('folder-id');
-        this.loadVideosBtn = document.getElementById('load-videos-btn');
-        this.resetFolderIdBtn = document.getElementById('reset-folder-id-btn'); // Added reset button reference
-        this.videoListContainer = document.getElementById('video-list'); // The actual list inside the section
+        this.folderIdInput = document.getElementById('folder-id') as HTMLInputElement;
+        this.loadVideosBtn = document.getElementById('load-videos-btn') as HTMLButtonElement;
+        this.resetFolderIdBtn = document.getElementById('reset-folder-id-btn') as HTMLButtonElement;
+        this.videoListContainer = document.getElementById('video-list')!; // The actual list inside the section
 
         // Upload elements
-        this.fileUploadInput = document.getElementById('file-upload');
-        this.uploadConvertBtn = document.getElementById('upload-convert-btn');
-        this.uploadFileInfo = document.getElementById('upload-file-info');
-        this.uploadFileName = document.getElementById('upload-file-name');
-        this.uploadFileSize = document.getElementById('upload-file-size');
+        this.fileUploadInput = document.getElementById('file-upload') as HTMLInputElement;
+        this.uploadConvertBtn = document.getElementById('upload-convert-btn') as HTMLButtonElement;
+        this.uploadFileInfo = document.getElementById('upload-file-info')!;
+        this.uploadFileName = document.getElementById('upload-file-name')!;
+        this.uploadFileSize = document.getElementById('upload-file-size')!;
 
         // Conversion Options
-        this.conversionFormContainer = document.getElementById('conversion-options-section'); // Use section ID
+        this.conversionFormContainer = document.getElementById('conversion-options-section')!; // Use section ID
 
         // Drive conversion button (created dynamically)
         this.driveConvertBtn = null;
@@ -51,7 +101,7 @@ class App {
         this.updateSourceVisibility(); // Set initial visibility based on default source
     }
 
-    initComponents() {
+    initComponents(): void {
         // Active conversions component (visible across tabs)
         this.activeConversionsComponent = new ActiveConversionsComponent({
             container: this.activeConversionsContainer,
@@ -79,10 +129,11 @@ class App {
         // Video list component (for 'convert' tab)
         this.videoListComponent = new VideoListComponent({
             container: this.videoListContainer, // Pass the inner list container
-            // Pass selected videos array to the app
-            onSelectVideo: (selectedVideos) => {
+            messageContainer: this.messageArea, // Add missing messageContainer
+            // Pass selected videos array to the app using the correct property name
+            onSelectVideos: (selectedVideos: Video[]) => { // Renamed from onSelectVideo
                 this.selectedDriveVideos = selectedVideos;
-                this.updateDriveConvertButtonState(); // Update the Drive convert button
+                this.updateDriveConvertButtonState();
             }
         });
 
@@ -97,11 +148,11 @@ class App {
         this.driveVideoListSection.appendChild(this.driveConvertBtn);
     }
 
-    setupEventListeners() {
+    setupEventListeners(): void {
         this.loadVideosBtn.addEventListener('click', () => this.loadVideosFromDrive());
         this.resetFolderIdBtn.addEventListener('click', () => this.handleResetFolderId()); // Added listener for reset button
 
-        this.folderIdInput.addEventListener('keypress', (e) => {
+        this.folderIdInput.addEventListener('keypress', (e: KeyboardEvent) => {
             if (e.key === 'Enter') {
                 e.preventDefault(); // Prevent form submission if inside a form
                 this.loadVideosFromDrive();
@@ -111,33 +162,39 @@ class App {
         this.tabButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const tabId = button.dataset.tab;
-                this.activateTab(tabId);
+                if (tabId) {
+                    this.activateTab(tabId);
+                }
             });
         });
 
         // Source selection listener
         this.sourceRadioButtons.forEach(radio => {
-            radio.addEventListener('change', (e) => this.handleSourceChange(e));
+            radio.addEventListener('change', (e: Event) => this.handleSourceChange(e)); // Use Event type directly
         });
 
         // Upload listeners
-        this.fileUploadInput.addEventListener('change', (e) => this.handleFileSelection(e));
+        this.fileUploadInput.addEventListener('change', (e: Event) => this.handleFileSelection(e)); // Use Event type directly
         this.uploadConvertBtn.addEventListener('click', () => this.submitUploadConversion());
 
         // Drive conversion listener
-        this.driveConvertBtn.addEventListener('click', () => this.submitDriveConversion());
+        this.driveConvertBtn?.addEventListener('click', () => this.submitDriveConversion());
     }
 
     // Handle change in video source selection
-    handleSourceChange(event) {
-        this.currentVideoSource = event.target.value;
+    handleSourceChange(event: Event): void { // Use Event type directly
+        const target = event.target as HTMLInputElement; // Cast here is okay
+        this.currentVideoSource = target.value as 'drive' | 'upload';
         this.updateSourceVisibility();
         // Optionally clear messages or reset states when switching sources
         clearMessages(this.messageArea);
         if (this.currentVideoSource === 'drive') {
             // Reset upload state if switching to drive
             this.fileUploadInput.value = '';
-            this.handleFileSelection({ target: { files: [] } });
+            // Simulate empty event for handleFileSelection
+            // Create a simple object mimicking the necessary structure
+            const emptyFileEvent = { target: this.fileUploadInput } as unknown as Event;
+            this.handleFileSelection(emptyFileEvent);
         } else {
             // Reset drive state if switching to upload
             this.videoListComponent.displayVideos([]); // Clear video list
@@ -147,7 +204,7 @@ class App {
     }
 
     // Show/hide sections based on the selected source
-    updateSourceVisibility() {
+    updateSourceVisibility(): void {
         const isDrive = this.currentVideoSource === 'drive';
         this.driveSourceSection.classList.toggle('hidden', !isDrive);
         this.driveVideoListSection.classList.toggle('hidden', !isDrive); // Hide list+button section
@@ -158,15 +215,17 @@ class App {
     }
 
     // Update Drive Convert Button based on selection
-    updateDriveConvertButtonState() {
+    updateDriveConvertButtonState(): void {
+        if (!this.driveConvertBtn) return;
         const count = this.selectedDriveVideos.length;
         this.driveConvertBtn.disabled = count === 0;
         this.driveConvertBtn.textContent = count > 1 ? `Convert ${count} Selected Drive Videos` : 'Convert Selected Drive Video';
     }
 
     // Handle file selection for upload
-    handleFileSelection(event) {
-        const file = event.target.files[0];
+    handleFileSelection(event: Event): void { // Use Event type directly
+        const target = event.target as HTMLInputElement; // Cast here is okay
+        const file = target.files?.[0];
         if (file) {
             this.selectedUploadFile = file;
             this.uploadFileName.textContent = file.name;
@@ -180,7 +239,7 @@ class App {
         }
     }
 
-    async loadConfigAndInitialData() {
+    async loadConfigAndInitialData(): Promise<void> {
         try {
             // Load server config to potentially get a default folder ID.
             const serverConfig = await apiService.getServerConfig();
@@ -189,30 +248,29 @@ class App {
                 this.folderIdInput.value = serverConfig.defaultDriveFolderId;
             }
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error loading server configuration:', error);
-            showMessage(this.messageArea, error.message || 'Failed to load server configuration.', 'error');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to load server configuration.';
+            showMessage(this.messageArea, errorMessage, 'error');
         }
     }
 
-    async loadVideosFromDrive() {
+    async loadVideosFromDrive(): Promise<void> {
         // Only proceed if Drive is the selected source
         if (this.currentVideoSource !== 'drive') return;
 
         const folderInputValue = this.folderIdInput.value;
         // Use the utility function to extract a valid ID
-        const folderId = configManager.extractFolderId(folderInputValue);
+        // Directly use folderInputValue, assuming backend handles URL/ID extraction or validation
+        const folderId = folderInputValue.trim(); // Simple trim for basic cleaning
 
         if (!folderId) {
-            showMessage(this.messageArea, 'Please enter a valid Google Drive folder ID or URL.', 'error');
+            showMessage(this.messageArea, 'Please enter a Google Drive folder ID or URL.', 'error');
             this.folderIdInput.focus(); // Focus input for correction
             return;
         }
 
-        // If extraction changed the value (e.g., from URL to ID), update the input field for clarity.
-        if (folderId !== folderInputValue) {
-            this.folderIdInput.value = folderId;
-        }
+        // Removed logic related to configManager.extractFolderId
 
         // Show loading state
         this.loadVideosBtn.disabled = true;
@@ -220,14 +278,15 @@ class App {
         showMessage(this.messageArea, 'Loading videos from Google Drive...', 'info', 0); // Don't auto-hide
 
         try {
-            const videos = await apiService.listVideos(folderId);
+            const videos: Video[] = await apiService.listVideos(folderId);
             this.videoListComponent.displayVideos(videos); // Display videos
             this.selectedDriveVideos = []; // Reset selection when loading new videos
             this.updateDriveConvertButtonState(); // Update button state
             clearMessages(this.messageArea); // Clear loading message on success
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error loading videos:', error);
-            showMessage(this.messageArea, `Failed to load videos: ${error.message}`, 'error');
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            showMessage(this.messageArea, `Failed to load videos: ${errorMessage}`, 'error');
         } finally {
             // Restore button state
             this.loadVideosBtn.disabled = false;
@@ -236,7 +295,7 @@ class App {
     }
 
     // Renamed from submitConversion in ConversionFormComponent
-    async submitDriveConversion() {
+    async submitDriveConversion(): Promise<void> {
         // Only proceed if Drive is the selected source
         if (this.currentVideoSource !== 'drive') return;
 
@@ -245,12 +304,13 @@ class App {
             return;
         }
 
-        const options = this.conversionFormComponent.getConversionOptions();
+        const options: ConversionOptions = this.conversionFormComponent.getConversionOptions();
 
         // Disable button and show processing state
+        if (!this.driveConvertBtn) return;
         this.driveConvertBtn.disabled = true;
         this.driveConvertBtn.classList.add('button-pulse');
-        const originalButtonText = this.driveConvertBtn.textContent;
+        // Store original text if needed, but updateDriveConvertButtonState handles restore
         this.driveConvertBtn.textContent = 'Processing...';
 
         const videoCount = this.selectedDriveVideos.length;
@@ -267,7 +327,7 @@ class App {
             const conversionData = {
                 fileId: video.id,
                 fileName: video.name,
-                mimeType: video.mimeType,
+                mimeType: video.mimeType || '', // Provide default empty string
                 targetFormat: options.targetFormat,
                 reverseVideo: options.reverseVideo,
                 removeSound: options.removeSound
@@ -285,11 +345,12 @@ class App {
                         );
                     }
                 })
-                .catch(error => {
+                .catch((error: unknown) => {
                     failCount++;
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                     showMessage(
                         this.messageArea,
-                        `Error starting Drive conversion for ${video.name}: ${error.message}`,
+                        `Error starting Drive conversion for ${video.name}: ${errorMessage}`,
                         'error'
                     );
                     console.error(`Drive conversion start error for ${video.name}:`, error);
@@ -300,9 +361,11 @@ class App {
         await Promise.all(conversionPromises);
 
         // Restore button state
-        this.driveConvertBtn.classList.remove('button-pulse');
-        // Re-enable based on selection after completion
-        this.updateDriveConvertButtonState();
+        if (this.driveConvertBtn) {
+            this.driveConvertBtn.classList.remove('button-pulse');
+            // Re-enable based on selection after completion
+            this.updateDriveConvertButtonState(); // This sets text and disabled state correctly
+        }
 
         // Show summary message
         if (failCount === 0 && successCount > 0) {
@@ -312,9 +375,11 @@ class App {
                 'success'
             );
         } else if (successCount > 0) {
+            // Assign template literal to a variable first to potentially avoid parser issues
+            const warningMessage = `Started ${successCount} Drive conversion${successCount > 1 ? 's' : ''}, but ${failCount} failed to start. See progress/errors above.`;
             showMessage(
                 this.messageArea,
-                `Started ${successCount} Drive conversion${successCount > 1 ? 's' : ''}, but ${failCount} failed to start. See progress/errors above.`,
+                warningMessage,
                 'warning'
             );
         } else {
@@ -334,7 +399,7 @@ class App {
     }
 
     // New method for handling upload conversion submission
-    async submitUploadConversion() {
+    async submitUploadConversion(): Promise<void> {
         // Only proceed if Upload is the selected source
         if (this.currentVideoSource !== 'upload') return;
 
@@ -343,8 +408,9 @@ class App {
             return;
         }
 
-        const options = this.conversionFormComponent.getConversionOptions();
+        const options: ConversionOptions = this.conversionFormComponent.getConversionOptions();
         const file = this.selectedUploadFile;
+        // No need for !file check here due to the check above
 
         // Disable button and show processing state
         this.uploadConvertBtn.disabled = true;
@@ -371,7 +437,10 @@ class App {
                 this.activeConversionsComponent.loadActiveConversions();
                 // Clear file input after successful start
                 this.fileUploadInput.value = ''; // Reset file input
-                this.handleFileSelection({ target: { files: [] } }); // Update UI state
+                // Simulate empty event for handleFileSelection to update UI state
+                // Create a simple object mimicking the necessary structure
+                const emptyFileEvent = { target: this.fileUploadInput } as unknown as Event;
+                this.handleFileSelection(emptyFileEvent);
             } else {
                 showMessage(
                     this.messageArea,
@@ -379,10 +448,11 @@ class App {
                     'error'
                 );
             }
-        } catch (error) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             showMessage(
                 this.messageArea,
-                `Error starting upload/conversion for ${file.name}: ${error.message}`,
+                `Error starting upload/conversion for ${file.name}: ${errorMessage}`,
                 'error'
             );
             console.error(`Upload/conversion start error for ${file.name}:`, error);
@@ -397,7 +467,7 @@ class App {
     }
 
     // Handle resetting the folder ID
-    async handleResetFolderId() {
+    async handleResetFolderId(): Promise<void> {
         clearMessages(this.messageArea);
         console.log('Resetting Google Drive Folder ID input');
 
@@ -418,13 +488,13 @@ class App {
             } else {
                 showMessage(this.messageArea, 'Folder ID input cleared.', 'info');
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error loading server config after reset:', error);
             showMessage(this.messageArea, 'Folder ID input cleared, but failed to load server default.', 'warning');
         }
     }
 
-    activateTab(tabId) {
+    activateTab(tabId: string): void {
         this.currentTab = tabId; // Store current tab
 
         this.tabButtons.forEach(button => {
