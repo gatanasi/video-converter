@@ -2,7 +2,7 @@
  * Defines shared TypeScript types and interfaces for the frontend application.
  */
 
-interface InputEvent extends Event {
+export interface InputEvent extends Event {
     target: HTMLInputElement & EventTarget;
 }
 
@@ -52,7 +52,7 @@ export interface ActiveConversionsContainer extends Container {
 }
 
 export interface VideoListContainer extends Container {
-    onSelectVideo?: (selectedVideos: Video[]) => void;
+    onSelectVideos?: (selectedVideos: Video[]) => void;
 }
 
 export interface ServerConfig {

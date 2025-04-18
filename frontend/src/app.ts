@@ -1,6 +1,7 @@
 /**
  * Google Drive Video Converter - Main Application Entry Point
  */
+import './styles/styles.css';
 // Removed configManager import as it's unused
 import apiService from './api/apiService.js';
 // Import components from their individual files
@@ -9,7 +10,7 @@ import { ConversionFormComponent } from './components/conversionFormComponent.js
 import { FileListComponent } from './components/fileListComponent.js';
 import { VideoListComponent } from './components/videoListComponent.js';
 import { showMessage, clearMessages, formatBytes } from './utils/utils.js';
-import { InputEvent, Video, ConversionOptions } from '../types';
+import { InputEvent, Video, ConversionOptions } from './types';
 
 class App {
     // DOM Element References
@@ -128,10 +129,11 @@ class App {
         // Video list component (for 'convert' tab)
         this.videoListComponent = new VideoListComponent({
             container: this.videoListContainer, // Pass the inner list container
-            // Pass selected videos array to the app
-            onSelectVideo: (selectedVideos: Video[]) => {
+            messageContainer: this.messageArea, // Add missing messageContainer
+            // Pass selected videos array to the app using the correct property name
+            onSelectVideos: (selectedVideos: Video[]) => { // Renamed from onSelectVideo
                 this.selectedDriveVideos = selectedVideos;
-                this.updateDriveConvertButtonState(); // Update the Drive convert button
+                this.updateDriveConvertButtonState();
             }
         });
 

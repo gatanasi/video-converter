@@ -13,13 +13,13 @@ export class VideoListComponent {
     private selectionCounter: HTMLElement | null;
     private deselectAllBtn: HTMLButtonElement | null;
 
-    // Use Container interface for options, ensure onSelectVideo is provided
+    // Use Container interface for options, ensure onSelectVideos is provided
     constructor(options: VideoListContainer) {
-        if (!options.onSelectVideo) {
-            throw new Error('VideoListComponent requires an onSelectVideo callback.');
+        if (!options.onSelectVideos) {
+            throw new Error('VideoListComponent requires an onSelectVideos callback.');
         }
         this.container = options.container;
-        this.onSelectVideos = options.onSelectVideo;
+        this.onSelectVideos = options.onSelectVideos;
         this.videoList = [];
         this.selectedVideos = new Map<string, Video>();
         this.headerCheckbox = null;

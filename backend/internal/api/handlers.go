@@ -52,21 +52,51 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/config", h.ConfigHandler)
 	mux.HandleFunc("/download/", h.DownloadHandler) // Expects /download/{filename}
 
-	// Serve static files (CSS, JS, images) from the 'static' directory
-	// Use http.Dir with a relative path. Assumes 'static' is relative to the executable.
-	staticFileServer := http.FileServer(http.Dir("static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", staticFileServer))
+	// --- Static File Serving ---
+	// Define the directory containing the built frontend assets.
+	// Assumes the backend executable is run from the project root or 'backend' directory.
+	// Adjust the path if the execution context is different.
+	staticDir := "frontend/dist"
+
+	// Check if the directory exists to provide a helpful log message.
+	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
+		log.Printf("WARN: Static file directory '%s' not found. Frontend assets will not be served.", staticDir)
+	} else {
+		log.Printf("Serving static files from: %s", staticDir)
+	}
+
+	// Serve static files (CSS, JS, images, favicon) directly from the root.
+	// Handle specific file types or use a more general approach.
+	// This example serves known files directly; adjust as needed.
+	mux.HandleFunc("/styles.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		http.ServeFile(w, r, filepath.Join(staticDir, "styles.css"))
+	})
+	mux.HandleFunc("/bundle.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		http.ServeFile(w, r, filepath.Join(staticDir, "bundle.js"))
+	})
+	mux.HandleFunc("/bundle.js.map", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json") // Sourcemaps are often JSON
+		http.ServeFile(w, r, filepath.Join(staticDir, "bundle.js.map"))
+	})
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/x-icon")
+		http.ServeFile(w, r, filepath.Join(staticDir, "favicon.ico"))
+	})
 
 	// Serve the main index.html file for the root path ONLY.
-	// Prevents serving other files or directory listings from the root.
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Ensure only the root path "/" serves index.html
 		if r.URL.Path != "/" {
-			http.NotFound(w, r)
+			// Fallback for potential client-side routing or unmatched static assets
+			// Serve index.html to allow client-side router to handle the path.
+			// If you don't have client-side routing, you might return http.NotFound here.
+			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 			return
 		}
-		// Explicitly serve the index.html file.
-		http.ServeFile(w, r, filepath.Join("index.html"))
+		// Explicitly serve the index.html file for the root.
+		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
 }
 

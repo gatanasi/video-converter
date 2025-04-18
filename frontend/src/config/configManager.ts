@@ -7,7 +7,7 @@ class ConfigManager {
      * @param {String} input - Google Drive folder ID or URL.
      * @returns {String} Extracted folder ID or empty string if invalid.
      */
-    extractFolderId(input) {
+    extractFolderId(input: string): string {
         input = input ? input.trim() : '';
         if (!input) return '';
 

@@ -1,6 +1,6 @@
 import { showMessage, clearMessages, createProgressItem } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
-import { ConversionStatus, ConversionItem, ActiveConversionsContainer } from '../types'; // Import Container
+import { ConversionStatus, ConversionItem, ActiveConversionsContainer } from '../types';
 
 const REMOVAL_DELAY = 10000; // Delay before removing completed/failed items (ms)
 const ABORT_REMOVAL_DELAY = 5000; // Shorter delay for aborted items
@@ -12,7 +12,7 @@ export class ActiveConversionsComponent {
     private container: HTMLElement;
     private messageContainer: HTMLElement;
     private onConversionComplete?: () => void;
-    private activeConversions: Map<string, { // Define ConversionItem inline or import/define separately
+    private activeConversions: Map<string, {
         fileName: string;
         format: string;
         element: HTMLElement;
@@ -30,7 +30,7 @@ export class ActiveConversionsComponent {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.onConversionComplete = options.onConversionComplete;
-        this.activeConversions = new Map<string, { // Define ConversionItem inline or import/define separately
+        this.activeConversions = new Map<string, {
             fileName: string;
             format: string;
             element: HTMLElement;
@@ -112,7 +112,8 @@ export class ActiveConversionsComponent {
             // Add new conversions not tracked by the client
             serverConversions.forEach((conv: ConversionStatus) => {
                 if (!clientIds.has(conv.id)) {
-                    this.addConversionItem(conv.id, conv.fileName, conv.format, conv.progress);
+                    // Provide default for potentially undefined fileName
+                    this.addConversionItem(conv.id, conv.fileName || 'Unknown File', conv.format, conv.progress);
                 }
             });
 
@@ -348,14 +349,23 @@ export class ActiveConversionsComponent {
 
             // Fetch statuses from the API - uses imported ConversionStatus
             const statusPromises = conversionIds.map(id =>
-                apiService.getConversionStatus(id).catch(err => {
+                apiService.getConversionStatus(id).catch((err: unknown) => {
                     console.error(`Error fetching status for ${id}:`, err);
                     // Find the corresponding item to potentially mark as error locally
                     const item = this.activeConversions.get(id);
                     if (item) {
-                        this.updateProgress(item.element, 100, `Error fetching status: ${err.message}`);
-                        // Consider removing or marking as failed after a delay
-                        this.scheduleRemoval(id, item.element, true);
+                        this.updateProgressBar(item.element, 100); // Assuming 100% progress on error for visual feedback
+                        // Add error message display similar to handleCompletion
+                        item.element.classList.add('error');
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'multi-progress-error';
+                        // Safely get error message
+                        const errorMessage = err instanceof Error ? err.message : String(err);
+                        errorMsg.textContent = `Error fetching status: ${errorMessage}`;
+                        if (!item.element.querySelector('.multi-progress-error')) {
+                            item.element.appendChild(errorMsg);
+                        }
+                        this.removeConversionItem(id, REMOVAL_DELAY);
                     }
                     return null; // Return null for failed fetches
                 })
@@ -367,9 +377,12 @@ export class ActiveConversionsComponent {
                 if (status) {
                     const item = this.activeConversions.get(status.id);
                     if (item) {
-                        this.updateProgress(item.element, status.progress, status.error);
+                        // Use updateProgressBar instead of updateProgress
+                        this.updateProgressBar(item.element, status.progress);
                         if (status.complete || status.error) {
-                            this.handleCompletedOrFailedConversion(status.id, item.element, !!status.error, status.downloadUrl);
+                            // Use handleCompletion instead of handleCompletedOrFailedConversion
+                            // Pass the full status object to handleCompletion
+                            this.handleCompletion(status.id, status);
                         }
                     }
                 }
@@ -386,22 +399,23 @@ export class ActiveConversionsComponent {
                     console.warn(`Found untracked active conversion ${status.id}, adding to list.`);
                     // We might not have the original file name readily available here
                     // Using status.fileName if available, otherwise a placeholder
-                    this.addConversion(status.id, status.fileName || 'Unknown File', status.format);
+                    this.addConversionItem(status.id, status.fileName || 'Unknown File', status.format, status.progress);
                 }
             });
 
             // Remove conversions from local map if they are no longer active on the server
             // (unless already completed/failed and pending removal)
             this.activeConversions.forEach((item, id) => {
-                if (!serverConversionIds.has(id) && !item.element.dataset.removing) {
+                // Check if the item is marked for removal by checking for timeoutId or specific class/data attribute
+                const isRemoving = item.timeoutId !== undefined || item.element.classList.contains('complete') || item.element.classList.contains('error') || item.element.classList.contains('aborted');
+                if (!serverConversionIds.has(id) && !isRemoving) {
                     console.warn(`Conversion ${id} no longer active on server, removing from local list.`);
-                    this.removeConversionItem(id, item.element, false); // Remove immediately if gone from server
+                    this.removeConversionItem(id, 0); // Remove immediately if gone from server
                 }
             });
 
         } catch (error) {
             console.error('Error polling conversion statuses:', error);
-            // Optionally display a general polling error message
         } finally {
             this.isPolling = false;
             // Check if polling should continue
