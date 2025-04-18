@@ -1,53 +1,70 @@
+import { ConversionOptions, DriveConversionRequest, ConversionResponse, ConversionStatus, ServerConfig, FileInfo, DriveFile } from '../types'; // Assuming types are defined here
+
 /**
  * API Service - Handles all communication with the backend API.
  */
 class ApiService {
+    private baseUrl: string;
+
     constructor() {
         this.baseUrl = ''; // Assumes API is served from the same origin
     }
 
     /**
      * Helper method to make API requests and handle common errors.
-     * @param {String} endpoint - API endpoint path (e.g., '/api/users').
-     * @param {Object} [options={}] - Fetch options (method, headers, body, etc.).
-     * @param {String} [errorContext='API call'] - Context for error logging.
-     * @returns {Promise<Object>} - The JSON response data.
-     * @throws {Error} - Throws an error if the request fails or response is not ok.
+     * @param endpoint - API endpoint path (e.g., '/api/users').
+     * @param options - Fetch options (method, headers, body, etc.).
+     * @param errorContext - Context for error logging.
+     * @returns The JSON response data.
+     * @throws Throws an error if the request fails or response is not ok.
      */
-    async apiRequest(endpoint, options = {}, errorContext = 'API call') {
+    private async apiRequest<T = any>(endpoint: string, options: RequestInit = {}, errorContext: string = 'API call'): Promise<T> {
         try {
             const response = await fetch(`${this.baseUrl}${endpoint}`, options);
 
             if (!response.ok) {
-                let errorData;
+                let errorData: { error?: string } = {};
                 try {
+                    // Try to parse JSON error response from backend
                     errorData = await response.json();
                 } catch (e) {
-                    // If response is not JSON, use status text
+                    // If response is not JSON or parsing fails, use status text
                     errorData = { error: response.statusText || `HTTP error ${response.status}` };
                 }
+                // Use the error message from backend if available, otherwise construct one
                 throw new Error(errorData.error || `HTTP error ${response.status}`);
             }
 
             // Handle cases where response might be empty (e.g., 204 No Content)
             if (response.status === 204) {
-                return {}; // Return empty object for consistency
+                // Return an empty object or null based on expected T, casting to T
+                // For simplicity, returning {} as any might suffice if T allows it.
+                // A more robust solution might require checking T or specific handling.
+                return {} as T;
             }
 
-            return await response.json();
-        } catch (error) {
-            console.error(`API error in ${errorContext}:`, error.message);
-            throw error; // Re-throw the error for the caller to handle
+            // Assuming response is JSON for all other successful statuses
+            return await response.json() as T;
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error(`API error in ${errorContext}:`, message);
+            // Re-throw the original error or a new error with context
+            // Throwing the original error preserves stack trace if it's an Error instance
+            if (error instanceof Error) {
+                throw error;
+            } else {
+                throw new Error(`API request failed in ${errorContext}: ${message}`);
+            }
         }
     }
 
     /**
      * Fetch videos from a Google Drive folder.
-     * @param {String} folderId - Google Drive folder ID.
-     * @returns {Promise<Array>} - Array of video file objects.
+     * @param folderId - Google Drive folder ID.
+     * @returns Array of video file objects.
      */
-    async listVideos(folderId) {
-        return this.apiRequest(
+    async listVideos(folderId: string): Promise<DriveFile[]> {
+        return this.apiRequest<DriveFile[]>(
             `/api/list-videos?folderId=${encodeURIComponent(folderId)}`,
             {},
             'listVideos'
@@ -56,11 +73,11 @@ class ApiService {
 
     /**
      * Start video conversion for a file from Google Drive.
-     * @param {Object} conversionData - Data required for conversion (fileId, fileName, etc.).
-     * @returns {Promise<Object>} - Conversion initiation response.
+     * @param conversionData - Data required for conversion (fileId, fileName, etc.).
+     * @returns Conversion initiation response.
      */
-    async convertFromDrive(conversionData) {
-        return this.apiRequest(
+    async convertFromDrive(conversionData: DriveConversionRequest): Promise<ConversionResponse> {
+        return this.apiRequest<ConversionResponse>(
             `/api/convert-from-drive`,
             {
                 method: 'POST',
@@ -73,20 +90,21 @@ class ApiService {
 
     /**
      * Upload a video file and start conversion.
-     * @param {File} file - The video file to upload.
-     * @param {Object} options - Conversion options (targetFormat, reverseVideo, removeSound).
-     * @returns {Promise<Object>} - Conversion initiation response.
+     * @param file - The video file to upload.
+     * @param options - Conversion options (targetFormat, reverseVideo, removeSound).
+     * @returns Conversion initiation response.
      */
-    async uploadAndConvert(file, options) {
+    async uploadAndConvert(file: File, options: ConversionOptions): Promise<ConversionResponse> {
         const formData = new FormData();
         formData.append('videoFile', file);
         formData.append('targetFormat', options.targetFormat);
-        formData.append('reverseVideo', options.reverseVideo);
-        formData.append('removeSound', options.removeSound);
+        // FormData values are typically strings
+        formData.append('reverseVideo', String(options.reverseVideo));
+        formData.append('removeSound', String(options.removeSound));
 
         // Note: We don't set Content-Type header when using FormData with fetch,
         // the browser sets it correctly including the boundary.
-        return this.apiRequest(
+        return this.apiRequest<ConversionResponse>(
             `/api/upload-convert`,
             {
                 method: 'POST',
@@ -99,11 +117,11 @@ class ApiService {
 
     /**
      * Get the status of a specific conversion.
-     * @param {String} conversionId - ID of the conversion.
-     * @returns {Promise<Object>} - Conversion status object.
+     * @param conversionId - ID of the conversion.
+     * @returns Conversion status object.
      */
-    async getConversionStatus(conversionId) {
-        return this.apiRequest(
+    async getConversionStatus(conversionId: string): Promise<ConversionStatus> {
+        return this.apiRequest<ConversionStatus>(
             `/api/status/${encodeURIComponent(conversionId)}`,
             {},
             'getConversionStatus'
@@ -112,12 +130,12 @@ class ApiService {
 
     /**
      * Get server configuration relevant to the frontend.
-     * @returns {Promise<Object>} - Server configuration object.
+     * @returns Server configuration object.
      */
-    async getServerConfig() {
+    async getServerConfig(): Promise<ServerConfig> {
         try {
-            return await this.apiRequest('/api/config', {}, 'getServerConfig');
-        } catch (error) {
+            return await this.apiRequest<ServerConfig>('/api/config', {}, 'getServerConfig');
+        } catch (error: unknown) {
             // Provide a more user-friendly error for this specific case
             throw new Error('Failed to load server configuration. Please check the connection or server status.');
         }
@@ -125,19 +143,19 @@ class ApiService {
 
     /**
      * List previously converted files available for download.
-     * @returns {Promise<Array>} - Array of converted file objects.
+     * @returns Array of converted file objects.
      */
-    async listFiles() {
-        return this.apiRequest('/api/files', {}, 'listFiles');
+    async listFiles(): Promise<FileInfo[]> {
+        return this.apiRequest<FileInfo[]>('/api/files', {}, 'listFiles');
     }
 
     /**
      * Delete a converted file from the server.
-     * @param {String} fileName - Name of the file to delete.
-     * @returns {Promise<Object>} - Deletion confirmation response.
+     * @param fileName - Name of the file to delete.
+     * @returns Deletion confirmation response.
      */
-    async deleteFile(fileName) {
-        return this.apiRequest(
+    async deleteFile(fileName: string): Promise<{ success: boolean; message: string }> {
+        return this.apiRequest<{ success: boolean; message: string }>(
             `/api/delete-file/${encodeURIComponent(fileName)}`,
             { method: 'DELETE' },
             'deleteFile'
@@ -146,11 +164,11 @@ class ApiService {
 
     /**
      * Request to abort an active conversion.
-     * @param {String} conversionId - ID of the conversion to abort.
-     * @returns {Promise<Object>} - Abort confirmation response.
+     * @param conversionId - ID of the conversion to abort.
+     * @returns Abort confirmation response.
      */
-    async abortConversion(conversionId) {
-        return this.apiRequest(
+    async abortConversion(conversionId: string): Promise<ConversionResponse> {
+        return this.apiRequest<ConversionResponse>(
             `/api/abort/${encodeURIComponent(conversionId)}`,
             { method: 'POST' }, // Using POST as it changes server state
             'abortConversion'
@@ -159,10 +177,11 @@ class ApiService {
 
     /**
      * List all currently active (running or queued) conversions.
-     * @returns {Promise<Array>} - Array of active conversion info objects.
+     * @returns Array of active conversion info objects.
      */
-    async listActiveConversions() {
-        return this.apiRequest('/api/active-conversions', {}, 'listActiveConversions');
+    async listActiveConversions(): Promise<ConversionStatus[]> {
+        // Assuming the backend returns the same structure as ConversionStatus for active ones
+        return this.apiRequest<ConversionStatus[]>('/api/active-conversions', {}, 'listActiveConversions');
     }
 }
 

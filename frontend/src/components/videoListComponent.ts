@@ -1,18 +1,5 @@
-import { formatBytes } from '../utils/utils.js';
-
-// Define interfaces for component options and video data
-interface Video {
-    id: string;
-    name: string;
-    size?: number; // Optional as it might not always be available
-    mimeType?: string;
-    modifiedTime?: string; // Assuming ISO 8601 string format
-}
-
-interface VideoListOptions {
-    container: HTMLElement;
-    onSelectVideo: (selectedVideos: Video[]) => void;
-}
+import { VideoListContainer, Video } from '../types';
+import { formatBytes } from '../utils/utils';
 
 /**
  * Video List Component - Displays videos from Google Drive and handles selection.
@@ -26,7 +13,11 @@ export class VideoListComponent {
     private selectionCounter: HTMLElement | null;
     private deselectAllBtn: HTMLButtonElement | null;
 
-    constructor(options: VideoListOptions) {
+    // Use Container interface for options, ensure onSelectVideo is provided
+    constructor(options: VideoListContainer) {
+        if (!options.onSelectVideo) {
+            throw new Error('VideoListComponent requires an onSelectVideo callback.');
+        }
         this.container = options.container;
         this.onSelectVideos = options.onSelectVideo;
         this.videoList = [];
@@ -38,7 +29,7 @@ export class VideoListComponent {
 
     displayVideos(videos: Video[] | null): void {
         this.videoList = videos || [];
-        this.container.innerHTML = ''; // Clear previous list
+        this.container.innerHTML = '';
         this.selectedVideos.clear();
 
         if (this.videoList.length === 0) {
@@ -52,7 +43,7 @@ export class VideoListComponent {
 
         this.createControls();
         this.createTable(this.videoList);
-        this.updateSelectionUI(); // Initial UI state
+        this.updateSelectionUI();
     }
 
     createControls(): void {
@@ -152,7 +143,7 @@ export class VideoListComponent {
 
     toggleSelection(videoId: string, isSelected: boolean, rowElement: HTMLTableRowElement): void {
         const video = this.videoList.find(v => v.id === videoId);
-        if (!video) return;
+        if (!video) return; // Video not found
 
         if (isSelected) {
             this.selectedVideos.set(videoId, video);
@@ -161,8 +152,9 @@ export class VideoListComponent {
             this.selectedVideos.delete(videoId);
             rowElement.classList.remove('selected');
         }
+
         this.updateSelectionUI();
-        this.notifySelectionChange();
+        this.onSelectVideos(Array.from(this.selectedVideos.values()));
     }
 
     selectAllVideos(): void {
@@ -170,50 +162,54 @@ export class VideoListComponent {
             if (!this.selectedVideos.has(video.id)) {
                 this.selectedVideos.set(video.id, video);
                 const row = this.container.querySelector<HTMLTableRowElement>(`tr[data-id="${video.id}"]`);
-                if (row) {
-                    row.classList.add('selected');
-                    const checkbox = row.querySelector<HTMLInputElement>('.video-checkbox');
-                    if (checkbox) checkbox.checked = true;
-                }
+                const checkbox = row?.querySelector<HTMLInputElement>('.video-checkbox');
+                if (row) row.classList.add('selected');
+                if (checkbox) checkbox.checked = true;
             }
         });
         this.updateSelectionUI();
-        this.notifySelectionChange();
+        this.onSelectVideos(Array.from(this.selectedVideos.values()));
     }
 
     deselectAllVideos(): void {
-        this.selectedVideos.forEach((video, videoId) => {
-            const row = this.container.querySelector<HTMLTableRowElement>(`tr[data-id="${videoId}"]`);
-            if (row) {
-                row.classList.remove('selected');
-                const checkbox = row.querySelector<HTMLInputElement>('.video-checkbox');
-                if (checkbox) checkbox.checked = false;
-            }
-        });
         this.selectedVideos.clear();
+        this.container.querySelectorAll<HTMLTableRowElement>('tr.selected').forEach(row => {
+            row.classList.remove('selected');
+            const checkbox = row.querySelector<HTMLInputElement>('.video-checkbox');
+            if (checkbox) checkbox.checked = false;
+        });
         this.updateSelectionUI();
-        this.notifySelectionChange();
+        this.onSelectVideos([]);
     }
 
     updateSelectionUI(): void {
         const count = this.selectedVideos.size;
-        const total = this.videoList.length;
+        const allVisibleChecked = this.videoList.length > 0 && count === this.videoList.length;
 
+        if (this.headerCheckbox) {
+            this.headerCheckbox.checked = allVisibleChecked;
+            this.headerCheckbox.indeterminate = count > 0 && !allVisibleChecked;
+            this.headerCheckbox.disabled = this.videoList.length === 0;
+        }
         if (this.selectionCounter) {
             this.selectionCounter.textContent = `${count} video${count !== 1 ? 's' : ''} selected`;
+            this.selectionCounter.style.display = count > 0 ? 'block' : 'none';
         }
         if (this.deselectAllBtn) {
-            this.deselectAllBtn.disabled = count === 0;
+            this.deselectAllBtn.style.display = count > 0 ? 'inline-block' : 'none';
         }
-        if (this.headerCheckbox) {
-            this.headerCheckbox.checked = count > 0 && count === total;
-            this.headerCheckbox.indeterminate = count > 0 && count < total;
-        }
+
+        // Update row styles based on selection map
+        this.container.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach(row => {
+            const id = row.dataset.id;
+            if (id) {
+                row.classList.toggle('selected', this.selectedVideos.has(id));
+            }
+        });
     }
 
     notifySelectionChange(): void {
         if (this.onSelectVideos) {
-            // Pass an array of the selected video objects
             this.onSelectVideos([...this.selectedVideos.values()]);
         }
     }

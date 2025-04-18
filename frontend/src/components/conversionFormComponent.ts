@@ -1,16 +1,5 @@
-import { Video } from '../app'; // Import the Video interface
-
 // Define interfaces for component options and conversion options
-interface ConversionFormOptions {
-    container: HTMLElement;
-    messageContainer: HTMLElement;
-}
-
-interface ConversionOptions {
-    targetFormat: string;
-    reverseVideo: boolean;
-    removeSound: boolean;
-}
+import { ConversionOptions, Container } from '../types'; // Import ConversionOptions and Container from types.ts
 
 /**
  * Conversion Form Component - Handles conversion options and submission.
@@ -19,10 +8,9 @@ interface ConversionOptions {
 export class ConversionFormComponent {
     private container: HTMLElement;
     private messageContainer: HTMLElement;
-    // selectedVideos is not used internally anymore, but kept for potential external access if needed
-    public selectedVideos: Video[] = []; // Use the imported Video interface
+    public selectedVideos: Video[] = [];
 
-    constructor(options: ConversionFormOptions) {
+    constructor(options: Container) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.createForm();
@@ -31,8 +19,6 @@ export class ConversionFormComponent {
     createForm(): void {
         const form = document.createElement('form');
         form.className = 'conversion-form';
-        // Removed the submit button from here, it will be handled separately
-        // for Drive selection and Upload.
         form.innerHTML = `
             <h3>Conversion Options</h3>
             <div class="form-group">
@@ -56,17 +42,11 @@ export class ConversionFormComponent {
             <!-- Removed form-actions and submit button -->
         `;
 
-        // Remove form submit listener, as options are read directly
-        // form.addEventListener('submit', (e) => {
-        //     e.preventDefault();
-        //     this.submitConversion(); // This logic moves to App.js
-        // });
-
         this.container.appendChild(form);
     }
 
     /** Update based on the list of selected videos from VideoListComponent */
-    updateSelectedVideos(videos: Video[]): void { // Use the imported Video interface
+    updateSelectedVideos(videos: Video[]): void {
         this.selectedVideos = videos || [];
     }
 

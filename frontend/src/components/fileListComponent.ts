@@ -1,28 +1,14 @@
 import { formatBytes, showMessage } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
+import { FileInfo, Container } from '../types.js';
 
-// Define interfaces for component options and file data
-interface FileListOptions {
-    container: HTMLElement;
-    messageContainer: HTMLElement;
-}
-
-interface ConvertedFile {
-    name: string;
-    size?: number;
-    modTime?: string; // Assuming ISO 8601 string format
-    url: string;
-}
-
-/**
- * File List Component - Displays previously converted files.
- */
 export class FileListComponent {
     private container: HTMLElement;
     private messageContainer: HTMLElement;
-    private fileList: ConvertedFile[];
+    private fileList: FileInfo[];
 
-    constructor(options: FileListOptions) {
+    // Use Container interface for options
+    constructor(options: Container) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.fileList = [];
@@ -30,11 +16,11 @@ export class FileListComponent {
 
     async loadFiles(): Promise<void> {
         try {
-            const files: ConvertedFile[] = await apiService.listFiles();
-            // Data is now pre-sorted by the backend
+            const files: FileInfo[] = await apiService.listFiles();
+
             this.fileList = files || [];
             this.displayFiles();
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error loading files:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             // Show error in the file list container itself if it's empty
@@ -82,7 +68,7 @@ export class FileListComponent {
         this.container.appendChild(table);
     }
 
-    createFileRow(file: ConvertedFile): HTMLTableRowElement {
+    createFileRow(file: FileInfo): HTMLTableRowElement {
         const row = document.createElement('tr');
 
         let formattedDate = 'N/A';
@@ -108,13 +94,13 @@ export class FileListComponent {
         // Make the filename cell clickable and add copy functionality
         if (fileNameCell) {
             fileNameCell.style.cursor = 'pointer';
-            fileNameCell.title = 'Click to copy download link'; // Update tooltip
+            fileNameCell.title = 'Click to copy download link';
             fileNameCell.addEventListener('click', async () => {
                 try {
                     const absoluteUrl = `${window.location.origin}${file.url}`;
                     await navigator.clipboard.writeText(absoluteUrl);
                     showMessage(this.messageContainer, `Copied download link for "${file.name}" to clipboard.`, 'info', 3000); // Show short confirmation
-                } catch (err: unknown) { // Changed from any to unknown
+                } catch (err: unknown) {
                     console.error('Failed to copy link: ', err);
                     showMessage(this.messageContainer, 'Failed to copy download link.', 'error');
                 }
@@ -128,7 +114,6 @@ export class FileListComponent {
     }
 
     async deleteFile(fileName: string, rowElement: HTMLTableRowElement): Promise<void> {
-        // Optional: Add visual cue that deletion is in progress
         rowElement.style.opacity = '0.5';
         const deleteButton = rowElement.querySelector<HTMLButtonElement>('button.delete');
         if (deleteButton) deleteButton.disabled = true;
@@ -148,7 +133,7 @@ export class FileListComponent {
             setTimeout(() => {
                 this.loadFiles(); // Refresh the list after animation
             }, 300);
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error deleting file:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             showMessage(this.messageContainer, `Failed to delete file "${fileName}": ${errorMessage}`, 'error');

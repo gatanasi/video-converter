@@ -1,30 +1,6 @@
 import { showMessage, clearMessages, createProgressItem } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
-
-// Define interfaces for component options and state
-interface ActiveConversionsOptions {
-    container: HTMLElement;
-    messageContainer: HTMLElement;
-    onConversionComplete?: () => void;
-}
-
-interface ConversionItem {
-    fileName: string;
-    format: string;
-    element: HTMLElement;
-    aborted?: boolean;
-    timeoutId?: number; // Using number for NodeJS.Timeout/browser timeout ID
-}
-
-interface ConversionStatus {
-    id: string;
-    fileName: string;
-    format: string;
-    progress: number;
-    complete: boolean;
-    error?: string;
-    downloadUrl?: string;
-}
+import { ConversionStatus, ConversionItem, ActiveConversionsContainer } from '../types'; // Import Container
 
 const REMOVAL_DELAY = 10000; // Delay before removing completed/failed items (ms)
 const ABORT_REMOVAL_DELAY = 5000; // Shorter delay for aborted items
@@ -36,17 +12,32 @@ export class ActiveConversionsComponent {
     private container: HTMLElement;
     private messageContainer: HTMLElement;
     private onConversionComplete?: () => void;
-    private activeConversions: Map<string, ConversionItem>;
+    private activeConversions: Map<string, { // Define ConversionItem inline or import/define separately
+        fileName: string;
+        format: string;
+        element: HTMLElement;
+        aborted?: boolean;
+        timeoutId?: number;
+        conversionId: string; // Added conversionId to track status
+    }>;
     private progressInterval: number | null;
     private pollingInterval: number | null;
     private isPolling: boolean;
-    private progressContainer!: HTMLElement; // Definite assignment assertion
+    private progressContainer!: HTMLElement;
 
-    constructor(options: ActiveConversionsOptions) {
+    // Use Container interface for options
+    constructor(options: ActiveConversionsContainer) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
         this.onConversionComplete = options.onConversionComplete;
-        this.activeConversions = new Map<string, ConversionItem>();
+        this.activeConversions = new Map<string, { // Define ConversionItem inline or import/define separately
+            fileName: string;
+            format: string;
+            element: HTMLElement;
+            aborted?: boolean;
+            timeoutId?: number;
+            conversionId: string; // Added conversionId to track status
+        }>();
         this.progressInterval = null;
         this.pollingInterval = null;
         this.isPolling = false;
@@ -77,10 +68,10 @@ export class ActiveConversionsComponent {
     }
 
     createElements(): void {
-        this.container.innerHTML = ''; // Clear previous content
+        this.container.innerHTML = '';
 
         const header = document.createElement('h2');
-        header.className = 'section-title'; // Use class if defined in CSS
+        header.className = 'section-title';
         header.textContent = 'Running Conversions';
         this.container.appendChild(header);
 
@@ -88,16 +79,15 @@ export class ActiveConversionsComponent {
         this.progressContainer.className = 'multi-progress';
         this.container.appendChild(this.progressContainer);
 
-        this.container.classList.remove('hidden'); // Ensure section is visible
-        this.showEmptyStateMessage(); // Show initially
+        this.container.classList.remove('hidden');
+        this.showEmptyStateMessage();
     }
 
     showEmptyStateMessage(): void {
-        // Add message only if container is empty and message doesn't exist
         if (this.progressContainer.children.length === 0 && !this.progressContainer.querySelector('.empty-message')) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
-            emptyMessage.id = 'no-conversions-message'; // Keep ID for potential removal
+            emptyMessage.id = 'no-conversions-message';
             emptyMessage.textContent = 'No active conversions.';
             this.progressContainer.appendChild(emptyMessage);
         }
@@ -147,7 +137,7 @@ export class ActiveConversionsComponent {
                     this.progressInterval = null;
                 }
             }
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error loading active conversions:', error);
             // Optionally show a message in the UI
             // const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -158,14 +148,14 @@ export class ActiveConversionsComponent {
     }
 
     addConversionItem(conversionId: string, fileName: string, format: string, initialProgress: number = 0): void {
-        this.removeEmptyStateMessage(); // Ensure empty message is gone
+        this.removeEmptyStateMessage();
 
         const progressItem = createProgressItem(`${fileName} → ${format.toUpperCase()}`);
         progressItem.dataset.id = conversionId;
 
         const abortButton = document.createElement('button');
-        abortButton.className = 'abort-button'; // Use class for styling
-        abortButton.innerHTML = '×'; // Use HTML entity for cross
+        abortButton.className = 'abort-button';
+        abortButton.innerHTML = '×';
         abortButton.title = 'Abort conversion';
         abortButton.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
@@ -181,7 +171,8 @@ export class ActiveConversionsComponent {
         this.activeConversions.set(conversionId, {
             fileName,
             format,
-            element: progressItem
+            element: progressItem,
+            conversionId
         });
     }
 
@@ -190,7 +181,6 @@ export class ActiveConversionsComponent {
         const conversion = this.activeConversions.get(conversionId);
         if (!conversion) return;
 
-        // Clear any existing removal timeout
         if (conversion.timeoutId) {
             clearTimeout(conversion.timeoutId);
         }
@@ -201,7 +191,6 @@ export class ActiveConversionsComponent {
             }
             this.activeConversions.delete(conversionId);
 
-            // Check if UI should show empty state after removal
             if (this.activeConversions.size === 0) {
                 this.showEmptyStateMessage();
                 if (this.progressInterval) {
@@ -222,7 +211,7 @@ export class ActiveConversionsComponent {
         const progressBar = element.querySelector<HTMLElement>('.multi-progress-bar');
         const percentText = element.querySelector<HTMLElement>('.multi-progress-percent');
         if (progressBar && percentText) {
-            const percent = Math.max(0, Math.min(100, Math.round(progress))); // Clamp between 0-100
+            const percent = Math.max(0, Math.min(100, Math.round(progress)));
             progressBar.style.width = `${percent}%`;
             percentText.textContent = `${percent}%`;
         }
@@ -241,7 +230,7 @@ export class ActiveConversionsComponent {
 
         // Create promises for all status requests
         const statusPromises = Array.from(this.activeConversions.keys()).map(id =>
-            apiService.getConversionStatus(id).catch((error: unknown) => { // Changed from any to unknown
+            apiService.getConversionStatus(id).catch((error: unknown) => {
                 console.error(`Error fetching status for ${id}:`, error);
                 return null; // Return null on error to avoid breaking Promise.all
             })
@@ -287,11 +276,11 @@ export class ActiveConversionsComponent {
             // Handle successful completion
             conversion.element.classList.add('complete');
             const downloadLink = document.createElement('a');
-            downloadLink.className = 'multi-progress-download'; // Use specific class
-            downloadLink.href = status.downloadUrl || '#'; // Use downloadUrl from status API, provide fallback
+            downloadLink.className = 'multi-progress-download';
+            downloadLink.href = status.downloadUrl || '#';
             downloadLink.textContent = 'Download';
-            downloadLink.target = '_blank'; // Open in new tab
-            downloadLink.setAttribute('download', ''); // Suggest download
+            downloadLink.target = '_blank';
+            downloadLink.setAttribute('download', '');
             // Append download link only if not already present
             if (!conversion.element.querySelector('.multi-progress-download')) {
                 conversion.element.appendChild(downloadLink);
@@ -302,7 +291,6 @@ export class ActiveConversionsComponent {
             }
             this.removeConversionItem(conversionId, REMOVAL_DELAY);
         }
-        // If conversion.aborted is true, the abort function handles the UI update and removal.
     }
 
     async abortConversion(conversionId: string): Promise<void> {
@@ -315,7 +303,7 @@ export class ActiveConversionsComponent {
 
         try {
             await apiService.abortConversion(conversionId);
-            conversion.aborted = true; // Mark as aborted
+            conversion.aborted = true;
             conversion.element.classList.add('aborted');
 
             // Remove abort button and progress bar details, show status message
@@ -323,10 +311,10 @@ export class ActiveConversionsComponent {
             const info = conversion.element.querySelector<HTMLElement>('.multi-progress-info');
             const barContainer = conversion.element.querySelector<HTMLElement>('.multi-progress-bar-container');
             if (info) info.style.opacity = '0.5'; // Dim the info
-            if (barContainer) barContainer.remove(); // Remove progress bar
+            if (barContainer) barContainer.remove();
 
             const abortMsg = document.createElement('div');
-            abortMsg.className = 'multi-progress-status aborted'; // Use general status class
+            abortMsg.className = 'multi-progress-status aborted';
             abortMsg.textContent = 'Conversion aborted';
             // Append message only if not already present
             if (!conversion.element.querySelector('.multi-progress-status')) {
@@ -335,12 +323,93 @@ export class ActiveConversionsComponent {
 
             this.removeConversionItem(conversionId, ABORT_REMOVAL_DELAY);
 
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error aborting conversion:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             showMessage(this.messageContainer, `Failed to abort conversion: ${errorMessage}`, 'error');
             // Re-enable button if abort failed
             if (abortButton) abortButton.disabled = false;
+        }
+    }
+
+    async pollConversionStatuses(): Promise<void> {
+        if (this.isPolling || this.activeConversions.size === 0) {
+            return;
+        }
+        this.isPolling = true;
+
+        try {
+            // Fetch status for all active conversions tracked by the component
+            const conversionIds = Array.from(this.activeConversions.keys());
+            if (conversionIds.length === 0) {
+                this.isPolling = false;
+                return; // No active conversions to poll
+            }
+
+            // Fetch statuses from the API - uses imported ConversionStatus
+            const statusPromises = conversionIds.map(id =>
+                apiService.getConversionStatus(id).catch(err => {
+                    console.error(`Error fetching status for ${id}:`, err);
+                    // Find the corresponding item to potentially mark as error locally
+                    const item = this.activeConversions.get(id);
+                    if (item) {
+                        this.updateProgress(item.element, 100, `Error fetching status: ${err.message}`);
+                        // Consider removing or marking as failed after a delay
+                        this.scheduleRemoval(id, item.element, true);
+                    }
+                    return null; // Return null for failed fetches
+                })
+            );
+
+            const statuses: (ConversionStatus | null)[] = await Promise.all(statusPromises);
+
+            statuses.forEach(status => {
+                if (status) {
+                    const item = this.activeConversions.get(status.id);
+                    if (item) {
+                        this.updateProgress(item.element, status.progress, status.error);
+                        if (status.complete || status.error) {
+                            this.handleCompletedOrFailedConversion(status.id, item.element, !!status.error, status.downloadUrl);
+                        }
+                    }
+                }
+            });
+
+            // Fetch the list of all active conversions from the server
+            // to catch any conversions started elsewhere or missed
+            const serverConversions: ConversionStatus[] = await apiService.listActiveConversions();
+            const serverConversionIds = new Set(serverConversions.map(s => s.id));
+
+            // Add any new conversions from the server not tracked locally
+            serverConversions.forEach(status => {
+                if (!this.activeConversions.has(status.id)) {
+                    console.warn(`Found untracked active conversion ${status.id}, adding to list.`);
+                    // We might not have the original file name readily available here
+                    // Using status.fileName if available, otherwise a placeholder
+                    this.addConversion(status.id, status.fileName || 'Unknown File', status.format);
+                }
+            });
+
+            // Remove conversions from local map if they are no longer active on the server
+            // (unless already completed/failed and pending removal)
+            this.activeConversions.forEach((item, id) => {
+                if (!serverConversionIds.has(id) && !item.element.dataset.removing) {
+                    console.warn(`Conversion ${id} no longer active on server, removing from local list.`);
+                    this.removeConversionItem(id, item.element, false); // Remove immediately if gone from server
+                }
+            });
+
+        } catch (error) {
+            console.error('Error polling conversion statuses:', error);
+            // Optionally display a general polling error message
+        } finally {
+            this.isPolling = false;
+            // Check if polling should continue
+            if (this.activeConversions.size > 0) {
+                // Optionally adjust polling interval based on activity
+            } else {
+                this.stopPolling();
+            }
         }
     }
 }

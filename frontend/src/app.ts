@@ -9,27 +9,7 @@ import { ConversionFormComponent } from './components/conversionFormComponent.js
 import { FileListComponent } from './components/fileListComponent.js';
 import { VideoListComponent } from './components/videoListComponent.js';
 import { showMessage, clearMessages, formatBytes } from './utils/utils.js';
-
-// Define interfaces for data structures used in App
-// Export the Video interface so it can be imported elsewhere
-export interface Video {
-    id: string;
-    name: string;
-    size?: number;
-    mimeType?: string;
-    modifiedTime?: string;
-}
-
-interface ConversionOptions {
-    targetFormat: string;
-    reverseVideo: boolean;
-    removeSound: boolean;
-}
-
-// Define type for InputEvent if not globally available
-interface InputEvent extends Event {
-    target: HTMLInputElement & EventTarget;
-}
+import { InputEvent, Video, ConversionOptions } from '../types';
 
 class App {
     // DOM Element References
@@ -266,7 +246,7 @@ class App {
                 this.folderIdInput.value = serverConfig.defaultDriveFolderId;
             }
 
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error loading server configuration:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to load server configuration.';
             showMessage(this.messageArea, errorMessage, 'error');
@@ -301,7 +281,7 @@ class App {
             this.selectedDriveVideos = []; // Reset selection when loading new videos
             this.updateDriveConvertButtonState(); // Update button state
             clearMessages(this.messageArea); // Clear loading message on success
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error loading videos:', error);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             showMessage(this.messageArea, `Failed to load videos: ${errorMessage}`, 'error');
@@ -363,7 +343,7 @@ class App {
                         );
                     }
                 })
-                .catch((error: unknown) => { // Changed from any to unknown
+                .catch((error: unknown) => {
                     failCount++;
                     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                     showMessage(
@@ -466,7 +446,7 @@ class App {
                     'error'
                 );
             }
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             showMessage(
                 this.messageArea,
@@ -506,7 +486,7 @@ class App {
             } else {
                 showMessage(this.messageArea, 'Folder ID input cleared.', 'info');
             }
-        } catch (error: unknown) { // Changed from any to unknown
+        } catch (error: unknown) {
             console.error('Error loading server config after reset:', error);
             showMessage(this.messageArea, 'Folder ID input cleared, but failed to load server default.', 'warning');
         }

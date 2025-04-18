@@ -2,13 +2,6 @@
  * Configuration Manager - Provides utility functions related to configuration, like parsing IDs.
  */
 class ConfigManager {
-    constructor() {
-        // No persistent config needed anymore
-    }
-
-    // Removed loadConfig method
-    // Removed saveConfig method
-
     /**
      * Extract Google Drive folder ID from a URL or ID string.
      * @param {String} input - Google Drive folder ID or URL.
