@@ -1,4 +1,4 @@
-import { Video } from '../app.js'; // Import the Video interface
+import { Video } from '../app'; // Import the Video interface
 
 // Define interfaces for component options and conversion options
 interface ConversionFormOptions {
