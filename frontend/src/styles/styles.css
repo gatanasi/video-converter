@@ -377,23 +377,14 @@ input[type="file"]::file-selector-button:hover {
 }
 
 /* Common styles for all table cells (th, td) */
-.video-table th,
 .video-table td,
-.file-table th,
 .file-table td {
   text-align: left;
-  padding: 12px 8px;
+  padding: 10px 6px;
   border-bottom: 1px solid #e0e0e0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   vertical-align: middle;
-}
-
-/* Specific padding override for video table cells */
-.video-table th,
-.video-table td {
-  padding: 10px 6px;
 }
 
 /* Common styles for table headers (th) */
@@ -420,7 +411,7 @@ input[type="file"]::file-selector-button:hover {
 
 /* Column Widths */
 .video-select {
-  width: 40px;
+  width: 30px;
   text-align: center;
   padding-left: 10px;
   padding-right: 10px;
@@ -433,7 +424,6 @@ input[type="file"]::file-selector-button:hover {
 
 .video-size {
   width: 15%;
-  text-align: right;
 }
 
 .video-type {
@@ -537,7 +527,6 @@ input[type="file"]::file-selector-button:hover {
 .multi-progress-label {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   flex: 1;
 }
 
@@ -742,10 +731,8 @@ footer {
   .file-table th,
   .file-table td {
     padding: 8px 5px;
-    /* Slightly reduced padding for mobile */
     font-size: 13px;
     white-space: normal;
-    /* Allow wrapping on mobile */
     overflow: visible;
     text-overflow: clip;
     vertical-align: middle;
@@ -755,12 +742,6 @@ footer {
   .video-table .video-name {
     width: auto;
     min-width: 100px;
-  }
-
-  .video-table .video-size,
-  .video-table .video-type,
-  .video-table .video-date {
-    white-space: nowrap;
   }
 
   /* Style action buttons to stack nicely */

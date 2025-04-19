@@ -141,7 +141,7 @@ class App {
         this.driveConvertBtn = document.createElement('button');
         this.driveConvertBtn.id = 'drive-convert-btn';
         this.driveConvertBtn.className = 'btn primary';
-        this.driveConvertBtn.textContent = 'Convert Selected Drive Videos';
+        this.driveConvertBtn.textContent = 'Convert selected videos';
         this.driveConvertBtn.disabled = true;
         this.driveConvertBtn.style.marginTop = '15px'; // Add some space above the button
         // Append button inside the drive video list *section*
@@ -219,7 +219,7 @@ class App {
         if (!this.driveConvertBtn) return;
         const count = this.selectedDriveVideos.length;
         this.driveConvertBtn.disabled = count === 0;
-        this.driveConvertBtn.textContent = count > 1 ? `Convert ${count} Selected Drive Videos` : 'Convert Selected Drive Video';
+        this.driveConvertBtn.textContent = count > 1 ? `Convert ${count} selected videos` : 'Convert selected video';
     }
 
     // Handle file selection for upload
