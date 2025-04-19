@@ -545,7 +545,7 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteFileHandler handles deleting a converted file.
 func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
-	filename := strings.TrimPrefix(r.URL.Path, "/api/delete-file/")
+	filename := strings.TrimPrefix(r.URL.Path, "/api/file/delete/")
 	if r.Method != http.MethodDelete {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -577,7 +577,7 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // AbortConversionHandler handles requests to abort a conversion job.
 func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/abort/")
+	id := strings.TrimPrefix(r.URL.Path, "/api/conversions/abort/")
 	if r.Method != http.MethodPost {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
