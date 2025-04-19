@@ -377,23 +377,15 @@ input[type="file"]::file-selector-button:hover {
 }
 
 /* Common styles for all table cells (th, td) */
-.video-table th,
 .video-table td,
-.file-table th,
 .file-table td {
   text-align: left;
-  padding: 12px 8px;
+  padding: 10px 6px;
   border-bottom: 1px solid #e0e0e0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
-}
-
-/* Specific padding override for video table cells */
-.video-table th,
-.video-table td {
-  padding: 10px 6px;
 }
 
 /* Common styles for table headers (th) */
