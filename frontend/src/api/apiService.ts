@@ -1,4 +1,4 @@
-import { ConversionOptions, DriveConversionRequest, ConversionResponse, ConversionStatus, ServerConfig, FileInfo, DriveFile } from '../types'; // Assuming types are defined here
+import { ConversionOptions, DriveConversionRequest, ConversionResponse, ConversionStatus, ServerConfig, FileInfo, Video } from '../types';
 
 /**
  * API Service - Handles all communication with the backend API.
@@ -63,8 +63,8 @@ class ApiService {
      * @param folderId - Google Drive folder ID.
      * @returns Array of video file objects.
      */
-    async listVideos(folderId: string): Promise<DriveFile[]> {
-        return this.apiRequest<DriveFile[]>(
+    async listVideos(folderId: string): Promise<Video[]> {
+        return this.apiRequest<Video[]>(
             `/api/list-videos?folderId=${encodeURIComponent(folderId)}`,
             {},
             'listVideos'

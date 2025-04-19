@@ -1,6 +1,6 @@
-import { showMessage, clearMessages, createProgressItem } from '../utils/utils.js';
+import { showMessage, createProgressItem } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
-import { ConversionStatus, ConversionItem, ActiveConversionsContainer } from '../types';
+import { ConversionStatus, ActiveConversionsContainer } from '../types';
 
 const REMOVAL_DELAY = 10000; // Delay before removing completed/failed items (ms)
 const ABORT_REMOVAL_DELAY = 5000; // Shorter delay for aborted items

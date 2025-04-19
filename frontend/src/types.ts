@@ -1,7 +1,6 @@
 /**
  * Defines shared TypeScript types and interfaces for the frontend application.
  */
-
 export interface InputEvent extends Event {
     target: HTMLInputElement & EventTarget;
 }

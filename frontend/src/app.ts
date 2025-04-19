@@ -10,7 +10,7 @@ import { ConversionFormComponent } from './components/conversionFormComponent.js
 import { FileListComponent } from './components/fileListComponent.js';
 import { VideoListComponent } from './components/videoListComponent.js';
 import { showMessage, clearMessages, formatBytes } from './utils/utils.js';
-import { InputEvent, Video, ConversionOptions } from './types';
+import { Video, ConversionOptions } from './types';
 
 class App {
     // DOM Element References
