@@ -81,10 +81,10 @@ export class FileListComponent {
         const sizeFormatted = file.size ? formatBytes(file.size) : 'N/A';
 
         row.innerHTML = `
-            <td class="file-name" title="${file.name}">${file.name}</td>
-            <td class="file-size">${sizeFormatted}</td>
-            <td class="file-date">${formattedDate}</td>
-            <td class="file-actions">
+            <td class="file-name" title="${file.name}" data-label="Name">${file.name}</td>
+            <td class="file-size" data-label="Size">${sizeFormatted}</td>
+            <td class="file-date" data-label="Date">${formattedDate}</td>
+            <td class="file-actions" data-label="Actions">
                 <a href="${file.url}" class="btn small success" download title="Download file">↓</a>
                 <button class="btn small danger delete" title="Delete file">×</button>
             </td>

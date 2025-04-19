@@ -114,13 +114,13 @@ export class VideoListComponent {
         const sizeFormatted = video.size ? formatBytes(video.size) : 'N/A';
 
         row.innerHTML = `
-            <td class="video-select">
+            <td class="video-select" data-label="Select">
                 <input type="checkbox" class="video-checkbox" data-id="${video.id}">
             </td>
-            <td class="video-name" title="${video.name}">${video.name}</td>
-            <td class="video-size">${sizeFormatted}</td>
-            <td class="video-type">${mimeTypeShort}</td>
-            <td class="video-date">${formattedDate}</td>
+            <td class="video-name" title="${video.name}" data-label="Name">${video.name}</td>
+            <td class="video-size" data-label="Size">${sizeFormatted}</td>
+            <td class="video-type" data-label="Type">${mimeTypeShort}</td>
+            <td class="video-date" data-label="Date">${formattedDate}</td>
         `;
 
         const checkbox = row.querySelector<HTMLInputElement>('.video-checkbox');
