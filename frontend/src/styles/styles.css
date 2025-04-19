@@ -599,18 +599,97 @@ footer {
     gap: 10px;
   }
   
-  .btn {
-    padding: 8px 15px;
-    width: 100%;
-    margin-bottom: 5px;
-  }
-  
   input[type="file"] {
     width: 100%;
   }
   
   .form-control, select {
     width: 100%;
+  }
+
+  /* --- Apply Card Layout for Tables on Tablets and Smaller --- */
+  .video-table, .file-table {
+    display: block;
+    border-collapse: separate; /* Needed for border-radius on rows */
+    border-spacing: 0 5px; /* Further reduced space between "cards" */
+    margin-top: 8px; /* Further reduce top margin */
+  }
+
+  .video-table thead, .file-table thead {
+    display: none; /* Hide table headers */
+  }
+
+  .video-table tbody, .file-table tbody,
+  .video-table tr, .file-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  /* Create card-style rows - Use Grid for layout */
+  .video-table tr, .file-table tr {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px; /* Restore some padding for overall card */
+    background-color: #fff; /* Give cards a background */
+    display: grid; /* Use Grid for internal layout */
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    grid-template-rows: auto auto auto; /* Define rows for content + actions */
+    grid-gap: 5px 10px; /* Row gap, Column gap */
+  }
+
+  .video-table td, .file-table td {
+    display: block; /* Change from flex to block for label/value stacking */
+    text-align: left; /* Align value text to the left now */
+    padding: 2px 0; /* Minimal vertical padding */
+    border-bottom: none; /* Remove bottom border, grid gap provides separation */
+    white-space: normal; /* Allow wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ellipsis for long text */
+    font-size: 0.9em; /* Keep slightly smaller font */
+  }
+
+  /* Add data labels before each cell - display above value */
+  .video-table td:before, .file-table td:before {
+    content: attr(data-label); /* Get label from data-label attribute */
+    font-weight: bold;
+    display: block; /* Make label appear on its own line */
+    margin-bottom: 2px; /* Space between label and value */
+    color: #5f6368; /* Style the label */
+    white-space: nowrap; /* Prevent label from wrapping */
+    font-size: 0.8em; /* Make label slightly smaller */
+  }
+
+  /* Specific adjustments for file actions cell - Span both columns */
+   .file-table td.file-actions {
+     grid-column: 1 / -1; /* Make actions span full width */
+     display: flex; /* Use flex for button alignment */
+     justify-content: flex-end; /* Align buttons to the right */
+     gap: 5px; /* Keep gap between buttons */
+     padding-top: 5px; /* Add some space above buttons */
+     border-top: 1px dotted #eee; /* Add separator above actions */
+     margin-top: 5px; /* Add margin above the separator */
+   }
+
+  /* Hide the label for the actions cell */
+  .file-table td.file-actions::before {
+      display: none;
+  }
+
+  /* Adjust action buttons in tables */
+  .file-table a.btn,
+  .file-table button.delete {
+    width: auto; /* Override the 100% width for buttons inside tables */
+    margin-bottom: 0; /* Remove bottom margin */
+    padding: 3px 6px; /* Much smaller padding */
+    font-size: 12px; /* Smaller font */
+  }
+
+  /* Ensure video selection checkbox label is hidden */
+  .video-table td.video-select::before {
+    display: none;
+  }
+  .video-table td.video-select {
+    justify-content: center; /* Center the checkbox */
   }
 }
 
@@ -653,85 +732,21 @@ footer {
   .checkbox-container, .radio-container {
     padding: 8px 0;
   }
-  
-  /* Adjust table display for mobile */
-  .video-table, .file-table {
-    display: block;
-    border-collapse: separate; /* Needed for border-radius on rows */
-    border-spacing: 0 10px; /* Add space between "cards" */
-    margin-top: 10px; /* Reduce top margin */
-  }
-  
-  .video-table thead, .file-table thead {
-    display: none; /* Hide table headers */
-  }
-  
-  .video-table tbody, .file-table tbody,
-  .video-table tr, .file-table tr {
-    display: block;
+
+  /* Make buttons full width on mobile */
+   .btn {
+    padding: 10px 15px; /* Larger padding for touch */
     width: 100%;
+    margin-bottom: 10px; /* More spacing */
   }
   
-  /* Create card-style rows for mobile */
-  .video-table tr, .file-table tr {
-    /* Remove bottom margin, use border-spacing instead */
-    /* margin-bottom: 10px; */
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px; /* Add padding inside the card */
-    background-color: #fff; /* Give cards a background */
-  }
+  /* --- Table styles are now inherited from 768px breakpoint --- */
+  /* Adjustments specific to very small screens */
 
-  .video-table td, .file-table td {
-    display: flex;
-    justify-content: space-between; /* Push label and value apart */
-    align-items: center; /* Vertically align items */
-    text-align: right; /* Align the value text to the right */
-    padding: 8px 0; /* Adjust padding */
-    border-bottom: 1px dashed #eee; /* Separator between rows within a card */
-    position: relative;
-    /* Allow text wrapping */
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-  }
-  
-  .video-table tr td:last-child,
-  .file-table tr td:last-child {
-      border-bottom: none; /* No border for the last item in a card */
-  }
-  
-  /* Add data labels before each cell */
-  .video-table td:before, .file-table td:before {
-    content: attr(data-label); /* Get label from data-label attribute */
-    font-weight: bold;
-    text-align: left; /* Align label text to the left */
-    padding-right: 10px;
-    color: #5f6368; /* Style the label */
-    white-space: nowrap; /* Prevent label from wrapping */
-  }
-
-  /* Specific adjustments for file actions cell */
-   .file-table td.file-actions {
-     padding-top: 10px; /* Add some space above actions */
-   }
-
-  /* Hide the label for the actions cell */
-  .file-table td.file-actions::before {
-      display: none;
-  }
-  
-  /* Adjust file actions content alignment */
-  .file-table .file-actions {
-    display: flex;
-    justify-content: flex-end; /* Align buttons to the right */
-    flex-wrap: wrap; /* Allow buttons to wrap if needed */
-    gap: 5px; /* Reduce gap slightly */
-    width: 100%; /* Take full width within the td */
-  }
-  
   /* Make file action buttons larger for touch */
-  .file-table .btn.small {
+  .file-table .btn.small,
+  .file-table a.btn,
+  .file-table button.delete {
     padding: 8px 12px;
     font-size: 16px;
     min-width: 40px;
