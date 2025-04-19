@@ -41,17 +41,17 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 
 // SetupRoutes configures the HTTP routes.
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
-	// API Routes (keep these first)
-	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
-	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler)
-	mux.HandleFunc("/api/status/", h.StatusHandler)
-	mux.HandleFunc("/api/files", h.ListFilesHandler)
-	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler)
-	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)
-	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
+	// API Routes
 	mux.HandleFunc("/api/config", h.ConfigHandler)
-	mux.HandleFunc("/download/", h.DownloadHandler)
+	mux.HandleFunc("/api/videos/drive", h.ListDriveVideosHandler)
+	mux.HandleFunc("/api/convert/drive", h.ConvertFromDriveHandler)
+	mux.HandleFunc("/api/convert/upload", h.UploadConvertHandler)
+	mux.HandleFunc("/api/conversions/status", h.StatusHandler)
+	mux.HandleFunc("/api/conversions/active", h.ActiveConversionsHandler)
+	mux.HandleFunc("/api/conversions/abort", h.AbortConversionHandler)
+	mux.HandleFunc("/api/files", h.ListFilesHandler)
+	mux.HandleFunc("/api/file/delete", h.DeleteFileHandler)
+	mux.HandleFunc("/download", h.DownloadHandler)
 
 	// --- Static File Serving ---
 	staticDir := "frontend/dist"
