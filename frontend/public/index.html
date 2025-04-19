@@ -84,9 +84,11 @@
             <div id="drive-video-list-section" class="video-list-section">
                 <!-- Renamed h2 to h3 and added step number -->
                 <h3>4. Select Drive Videos (if applicable)</h3>
-                <!-- Add the container for the video list component back -->
-                <div id="video-list">
-                    <!-- Content managed by VideoListComponent -->
+                <!-- Add a wrapper div for the video list table for consistent overflow handling -->
+                <div class="video-list-container">
+                    <div id="video-list">
+                        <!-- Content managed by VideoListComponent -->
+                    </div>
                 </div>
                 <!-- The dynamically added button will appear after this div -->
             </div>
