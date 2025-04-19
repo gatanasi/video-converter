@@ -41,16 +41,16 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 
 // SetupRoutes configures the HTTP routes.
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
-	// API Routes (keep these first)
-	mux.HandleFunc("/api/list-videos", h.ListDriveVideosHandler)
-	mux.HandleFunc("/api/convert-from-drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/upload-convert", h.UploadConvertHandler)
-	mux.HandleFunc("/api/status/", h.StatusHandler)
-	mux.HandleFunc("/api/files", h.ListFilesHandler)
-	mux.HandleFunc("/api/delete-file/", h.DeleteFileHandler)
-	mux.HandleFunc("/api/abort/", h.AbortConversionHandler)
-	mux.HandleFunc("/api/active-conversions", h.ActiveConversionsHandler)
+	// API Routes
 	mux.HandleFunc("/api/config", h.ConfigHandler)
+	mux.HandleFunc("/api/videos/drive", h.ListDriveVideosHandler)
+	mux.HandleFunc("/api/convert/drive", h.ConvertFromDriveHandler)
+	mux.HandleFunc("/api/convert/upload", h.UploadConvertHandler)
+	mux.HandleFunc("/api/conversions/active", h.ActiveConversionsHandler)
+	mux.HandleFunc("/api/conversion/status/", h.StatusHandler)
+	mux.HandleFunc("/api/conversion/abort/", h.AbortConversionHandler)
+	mux.HandleFunc("/api/files", h.ListFilesHandler)
+	mux.HandleFunc("/api/file/delete/", h.DeleteFileHandler)
 	mux.HandleFunc("/download/", h.DownloadHandler)
 
 	// --- Static File Serving ---
@@ -418,7 +418,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 
 // StatusHandler returns the status of a conversion job.
 func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/status/")
+	id := strings.TrimPrefix(r.URL.Path, "/api/conversion/status/")
 	if id == "" {
 		h.sendErrorResponse(w, "Conversion ID not specified", http.StatusBadRequest)
 		return
@@ -545,7 +545,7 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteFileHandler handles deleting a converted file.
 func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
-	filename := strings.TrimPrefix(r.URL.Path, "/api/delete-file/")
+	filename := strings.TrimPrefix(r.URL.Path, "/api/file/delete/")
 	if r.Method != http.MethodDelete {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -577,7 +577,7 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // AbortConversionHandler handles requests to abort a conversion job.
 func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/abort/")
+	id := strings.TrimPrefix(r.URL.Path, "/api/conversion/abort/")
 	if r.Method != http.MethodPost {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return

@@ -65,7 +65,7 @@ class ApiService {
      */
     async listVideos(folderId: string): Promise<Video[]> {
         return this.apiRequest<Video[]>(
-            `/api/list-videos?folderId=${encodeURIComponent(folderId)}`,
+            `/api/videos/drive?folderId=${encodeURIComponent(folderId)}`,
             {},
             'listVideos'
         );
@@ -78,7 +78,7 @@ class ApiService {
      */
     async convertFromDrive(conversionData: DriveConversionRequest): Promise<ConversionResponse> {
         return this.apiRequest<ConversionResponse>(
-            `/api/convert-from-drive`,
+            `/api/convert/drive`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -105,7 +105,7 @@ class ApiService {
         // Note: We don't set Content-Type header when using FormData with fetch,
         // the browser sets it correctly including the boundary.
         return this.apiRequest<ConversionResponse>(
-            `/api/upload-convert`,
+            `/api/convert/upload`,
             {
                 method: 'POST',
                 body: formData
@@ -122,7 +122,7 @@ class ApiService {
      */
     async getConversionStatus(conversionId: string): Promise<ConversionStatus> {
         return this.apiRequest<ConversionStatus>(
-            `/api/status/${encodeURIComponent(conversionId)}`,
+            `/api/conversion/status/${encodeURIComponent(conversionId)}`,
             {},
             'getConversionStatus'
         );
@@ -156,7 +156,7 @@ class ApiService {
      */
     async deleteFile(fileName: string): Promise<{ success: boolean; message: string }> {
         return this.apiRequest<{ success: boolean; message: string }>(
-            `/api/delete-file/${encodeURIComponent(fileName)}`,
+            `/api/file/delete/${encodeURIComponent(fileName)}`,
             { method: 'DELETE' },
             'deleteFile'
         );
@@ -169,7 +169,7 @@ class ApiService {
      */
     async abortConversion(conversionId: string): Promise<ConversionResponse> {
         return this.apiRequest<ConversionResponse>(
-            `/api/abort/${encodeURIComponent(conversionId)}`,
+            `/api/conversion/abort/${encodeURIComponent(conversionId)}`,
             { method: 'POST' }, // Using POST as it changes server state
             'abortConversion'
         );
@@ -181,7 +181,7 @@ class ApiService {
      */
     async listActiveConversions(): Promise<ConversionStatus[]> {
         // Assuming the backend returns the same structure as ConversionStatus for active ones
-        return this.apiRequest<ConversionStatus[]>('/api/active-conversions', {}, 'listActiveConversions');
+        return this.apiRequest<ConversionStatus[]>('/api/conversions/active', {}, 'listActiveConversions');
     }
 }
 
