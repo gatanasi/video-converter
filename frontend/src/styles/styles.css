@@ -379,11 +379,18 @@ input[type="file"]::file-selector-button:hover {
 .video-type { width: 15%; }
 .video-date { width: 25%; }
 
-.file-table { table-layout: fixed; } /* File table specific layout */
 .file-table .file-name { width: 40%; }
 .file-table .file-size { width: 15%; }
 .file-table .file-date { width: 25%; }
-.file-table .file-actions { width: 20%; text-align: center; }
+.file-table .file-actions {
+    width: 20%;
+    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+}
 
 /* --- Messages --- */
 .messages {
@@ -570,16 +577,6 @@ footer {
     padding: 10px 12px;
   }
 
-  /* Ensure tables have a minimum width to necessitate scrolling */
-  .video-table,
-  .file-table {
-      min-width: 600px;
-  }
-
-  /* Ensure action buttons in file table have enough space */
-  .file-table .file-actions {
-      min-width: 120px;
-  }
 }
 
 /* Mobile Styles (e.g., screens <= 600px) */
@@ -653,12 +650,20 @@ footer {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+    vertical-align: middle;
   }
 
-  /* Adjust table min-width for smaller screens */
-  .video-table,
-  .file-table {
-      min-width: 500px;
+  /* Style action buttons to stack nicely */
+  .file-table .file-actions {
+      flex-direction: column;
+      gap: 8px;
+      width: auto;
+      padding: 8px 5px;
+  }
+
+  .file-table .file-actions .btn {
+      width: 100%;
+      margin-right: 0;
   }
 
   .selection-controls {
