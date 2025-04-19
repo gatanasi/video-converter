@@ -26,7 +26,9 @@ h1 {
   color: #4285f4;
 }
 
-h2, h3 { /* Apply to both h2 and h3 */
+h2,
+h3 {
+  /* Apply to both h2 and h3 */
   margin-bottom: 15px;
   color: #5f6368;
 }
@@ -44,7 +46,8 @@ h2, h3 { /* Apply to both h2 and h3 */
   color: #5f6368;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -2px; /* Overlap border */
+  margin-bottom: -2px;
+  /* Overlap border */
   cursor: pointer;
   font-size: 16px;
   transition: all 0.2s;
@@ -71,7 +74,7 @@ h2, h3 { /* Apply to both h2 and h3 */
 /* --- Sections --- */
 /* Base section style (can be used if needed, but specific sections have more styling) */
 .section {
-  margin-bottom: 25px;
+  margin-bottom: 15px;
   background-color: #f8f9fa;
   padding: 15px;
   border-radius: 5px;
@@ -85,25 +88,25 @@ h2, h3 { /* Apply to both h2 and h3 */
 .conversion-form-section,
 .files-section,
 .active-conversions-section {
-  margin-bottom: 25px;
+  margin-bottom: 10px;
 }
 
 /* Inner content styling for specific sections */
 .folder-input,
 .upload-input,
 .conversion-form,
-.active-conversions-section { /* Added active-conversions-section here */
+.active-conversions-section {
   background-color: #f8f9fa;
-  padding: 15px;
+  padding: 10px;
   border-radius: 5px;
 }
 
 /* Specific borders */
 .source-selection-section {
-    background-color: #e8f0fe; /* Light blue background */
-    padding: 15px;
-    border-radius: 5px;
-    border-left: 4px solid #4285f4;
+  background-color: #e8f0fe;
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #4285f4;
 }
 
 .folder-input {
@@ -111,7 +114,7 @@ h2, h3 { /* Apply to both h2 and h3 */
 }
 
 .upload-input {
-  border-left: 4px solid #fbbc05; /* Yellow border */
+  border-left: 4px solid #fbbc05;
 }
 
 .conversion-form {
@@ -119,7 +122,7 @@ h2, h3 { /* Apply to both h2 and h3 */
 }
 
 .active-conversions-section {
-  border-radius: 8px; /* Slightly different radius */
+  border-radius: 8px;
   border-left: 4px solid #fbbc05;
 }
 
@@ -130,9 +133,9 @@ h2, h3 { /* Apply to both h2 and h3 */
 
 /* Source selection specific */
 .source-options {
-    display: flex;
-    gap: 20px;
-    margin-top: 10px;
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
 }
 
 /* Upload specific */
@@ -155,29 +158,51 @@ h2, h3 { /* Apply to both h2 and h3 */
   transition: background-color 0.3s, box-shadow 0.3s;
   font-size: 16px;
   color: white;
-  background-color: #4285f4; /* Default blue */
+  background-color: #4285f4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  text-decoration: none; /* For <a> tags styled as buttons */
-  vertical-align: middle; /* Align with text/inputs */
+  text-decoration: none;
+  vertical-align: middle;
 }
 
 .btn:hover {
   background-color: #3367d6;
 }
 
-.btn.success { background-color: #34a853; }
-.btn.success:hover { background-color: #2d9249; }
+.btn.success {
+  background-color: #34a853;
+}
 
-.btn.danger { background-color: #ea4335; }
-.btn.danger:hover { background-color: #d93025; }
+.btn.success:hover {
+  background-color: #2d9249;
+}
 
-.btn.warning { background-color: #fbbc05; color: #333; }
-.btn.warning:hover { background-color: #f8ae00; }
+.btn.danger {
+  background-color: #ea4335;
+}
 
-.btn.secondary { background-color: #6c757d; color: white; }
-.btn.secondary:hover { background-color: #5a6268; }
+.btn.danger:hover {
+  background-color: #d93025;
+}
+
+.btn.warning {
+  background-color: #fbbc05;
+  color: #333;
+}
+
+.btn.warning:hover {
+  background-color: #f8ae00;
+}
+
+.btn.secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn.secondary:hover {
+  background-color: #5a6268;
+}
 
 .btn.small {
   padding: 5px 10px;
@@ -194,26 +219,31 @@ h2, h3 { /* Apply to both h2 and h3 */
 }
 
 .btn:disabled:hover {
-  background-color: #cccccc; /* Keep same background on hover when disabled */
+  background-color: #cccccc;
+  /* Keep same background on hover when disabled */
 }
 
 /* Specific button instances */
-.file-table a.btn { /* Download button in file list */
+.file-table a.btn {
+  /* Download button in file list */
   background-color: #34a853;
   margin-right: 5px;
 }
 
-.file-table button.delete { /* Delete button in file list */
+.file-table button.delete {
+  /* Delete button in file list */
   background-color: #ea4335;
 }
 
-.remove-selected { /* Remove button in selected list (currently unused) */
+.remove-selected {
+  /* Remove button in selected list (currently unused) */
   background-color: #ea4335;
   padding: 3px 8px;
   font-size: 12px;
 }
 
-.abort-button { /* Abort button in progress item */
+.abort-button {
+  /* Abort button in progress item */
   position: absolute;
   right: 10px;
   top: 50%;
@@ -235,14 +265,22 @@ h2, h3 { /* Apply to both h2 and h3 */
 
 /* Button pulse animation */
 @keyframes button-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(66, 133, 244, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+  }
 }
 
 .button-pulse {
   animation: button-pulse 1.5s infinite;
-  background-color: #3367d6; /* Slightly darker blue while processing */
+  background-color: #3367d6;
 }
 
 /* --- Forms & Inputs --- */
@@ -258,7 +296,8 @@ h2, h3 { /* Apply to both h2 and h3 */
 
 .form-control,
 select,
-input[type="file"] { /* Apply consistent styling to form elements */
+input[type="file"] {
+  /* Apply consistent styling to form elements */
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
@@ -288,7 +327,7 @@ input[type="file"]::file-selector-button:hover {
   gap: 10px;
 }
 
-.input-group input { /* Input within a group */
+.input-group input {
   flex: 1;
 }
 
@@ -306,7 +345,7 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .checkbox-container {
-  margin-bottom: 10px; /* Only checkboxes have bottom margin */
+  margin-bottom: 10px;
 }
 
 /* Common style for radio/checkbox inputs */
@@ -315,7 +354,7 @@ input[type="file"]::file-selector-button:hover {
   margin-right: 8px;
   width: 18px;
   height: 18px;
-  cursor: pointer; /* Already on container, but good for direct interaction */
+  cursor: pointer;
 }
 
 .form-actions {
@@ -343,11 +382,18 @@ input[type="file"]::file-selector-button:hover {
 .file-table th,
 .file-table td {
   text-align: left;
-  padding: 12px 15px;
+  padding: 12px 8px;
   border-bottom: 1px solid #e0e0e0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Specific padding override for video table cells */
+.video-table th,
+.video-table td {
+  padding: 10px 6px;
 }
 
 /* Common styles for table headers (th) */
@@ -373,23 +419,47 @@ input[type="file"]::file-selector-button:hover {
 }
 
 /* Column Widths */
-.video-select { width: 40px; text-align: center; }
-.video-name { width: 45%; }
-.video-size { width: 15%; }
-.video-type { width: 15%; }
-.video-date { width: 25%; }
+.video-select {
+  width: 40px;
+  text-align: center;
+  padding-left: 10px;
+  padding-right: 10px;
+}
 
-.file-table .file-name { width: 40%; }
-.file-table .file-size { width: 15%; }
-.file-table .file-date { width: 25%; }
+.video-name {
+  width: 40%;
+  min-width: 150px;
+}
+
+.video-size {
+  width: 15%;
+  text-align: right;
+}
+
+.video-type {
+  width: 15%;
+}
+
+.video-date {
+  width: 25%;
+}
+
+.file-table .file-name {
+  width: 40%;
+}
+
+.file-table .file-size {
+  width: 15%;
+}
+
+.file-table .file-date {
+  width: 25%;
+}
+
 .file-table .file-actions {
-    width: 20%;
-    text-align: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    justify-content: center;
-    align-items: center;
+  width: 20%;
+  text-align: center;
+  align-items: center;
 }
 
 /* --- Messages --- */
@@ -406,17 +476,37 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .message {
-  margin-bottom: 5px; /* Space between multiple messages if ever needed */
+  margin-bottom: 5px;
 }
+
 .message:last-child {
   margin-bottom: 0;
 }
 
 /* Message types */
-.message.info { color: #0c5460; background-color: #d1ecf1; border-color: #bee5eb; }
-.message.success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
-.message.warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
-.message.error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+.message.info {
+  color: #0c5460;
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+}
+
+.message.success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.message.warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border-color: #ffeeba;
+}
+
+.message.error {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
 
 /* --- Progress Indicators --- */
 .multi-progress {
@@ -431,6 +521,7 @@ input[type="file"]::file-selector-button:hover {
   border: 1px solid #ddd;
   border-radius: 5px;
 }
+
 .multi-progress-item:last-child {
   margin-bottom: 0;
 }
@@ -440,7 +531,7 @@ input[type="file"]::file-selector-button:hover {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  padding-right: 40px; /* Space for abort button */
+  padding-right: 40px;
 }
 
 .multi-progress-label {
@@ -467,7 +558,7 @@ input[type="file"]::file-selector-button:hover {
 
 .multi-progress-bar {
   height: 100%;
-  background-color: #4285f4; /* Default progress */
+  background-color: #4285f4;
   width: 0%;
   border-radius: 5px;
   transition: width 0.3s;
@@ -480,8 +571,13 @@ input[type="file"]::file-selector-button:hover {
   font-size: 13px;
 }
 
-.multi-progress-error { color: #ea4335; }
-.multi-progress-status.aborted { color: #856404; }
+.multi-progress-error {
+  color: #ea4335;
+}
+
+.multi-progress-status.aborted {
+  color: #856404;
+}
 
 /* Download link within progress item */
 .multi-progress-download {
@@ -497,12 +593,12 @@ input[type="file"]::file-selector-button:hover {
 
 /* Progress bar colors based on state */
 .multi-progress-item.complete .multi-progress-bar {
-  background-color: #34a853; /* Green for complete */
+  background-color: #34a853;
 }
 
 .multi-progress-item.error .multi-progress-bar,
 .multi-progress-item.aborted .multi-progress-bar {
-  background-color: #ea4335; /* Red for error/aborted */
+  background-color: #ea4335;
 }
 
 /* --- Video List Specific --- */
@@ -519,23 +615,21 @@ input[type="file"]::file-selector-button:hover {
   color: #5f6368;
 }
 
-.video-checkbox { /* Specific style for video list checkbox */
+.video-checkbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
 }
 
 /* --- File List Specific --- */
-.files-section,
-.video-list-section .video-list-container { /* Apply horizontal scroll to table containers */
+.files-section {
   overflow-x: auto;
 }
 
 .file-list-container,
-.video-list-container { /* Container for the actual table */
+.video-list-container {
   margin-top: 15px;
   max-width: 100%;
-  /* overflow-x: hidden; Removed, handled by parent */
 }
 
 /* --- Footer --- */
@@ -556,7 +650,7 @@ footer {
 .empty-message {
   text-align: center;
   color: #666;
-  padding: 20px;
+  padding: 10px;
   font-style: italic;
 }
 
@@ -582,7 +676,7 @@ footer {
 /* Mobile Styles (e.g., screens <= 600px) */
 @media (max-width: 600px) {
   .container {
-    margin: 10px;
+    margin: 10px auto;
     padding: 10px;
     border-radius: 5px;
   }
@@ -592,7 +686,8 @@ footer {
     margin-bottom: 20px;
   }
 
-  h2, h3 {
+  h2,
+  h3 {
     font-size: 1.2em;
     margin-bottom: 10px;
   }
@@ -635,6 +730,7 @@ footer {
   input[type="file"] {
     font-size: 13px;
   }
+
   input[type="file"]::file-selector-button {
     padding: 6px 10px;
     margin-right: 5px;
@@ -645,25 +741,40 @@ footer {
   .video-table td,
   .file-table th,
   .file-table td {
-    padding: 8px 10px;
+    padding: 8px 5px;
+    /* Slightly reduced padding for mobile */
     font-size: 13px;
     white-space: normal;
+    /* Allow wrapping on mobile */
     overflow: visible;
     text-overflow: clip;
     vertical-align: middle;
   }
 
+  /* Adjust video table column widths for mobile if needed */
+  .video-table .video-name {
+    width: auto;
+    min-width: 100px;
+  }
+
+  .video-table .video-size,
+  .video-table .video-type,
+  .video-table .video-date {
+    white-space: nowrap;
+  }
+
   /* Style action buttons to stack nicely */
   .file-table .file-actions {
-      flex-direction: column;
-      gap: 8px;
-      width: auto;
-      padding: 8px 5px;
+    flex-direction: column;
+    gap: 8px;
+    width: auto;
+    padding: 8px 5px;
   }
 
   .file-table .file-actions .btn {
-      width: 100%;
-      margin-right: 0;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 5px;
   }
 
   .selection-controls {
@@ -679,13 +790,13 @@ footer {
   }
 
   .multi-progress-info {
-    padding-right: 35px; /* Slightly reduce padding for abort button */
+    padding-right: 30px;
     flex-wrap: wrap;
   }
 
   .multi-progress-label {
     flex-basis: 100%;
-    margin-bottom: 5px; /* Add space if it wraps */
+    margin-bottom: 5px;
   }
 
   .multi-progress-percent {
