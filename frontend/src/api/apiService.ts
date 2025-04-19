@@ -122,7 +122,7 @@ class ApiService {
      */
     async getConversionStatus(conversionId: string): Promise<ConversionStatus> {
         return this.apiRequest<ConversionStatus>(
-            `/api/conversions/status/${encodeURIComponent(conversionId)}`,
+            `/api/conversion/status/${encodeURIComponent(conversionId)}`,
             {},
             'getConversionStatus'
         );
@@ -169,7 +169,7 @@ class ApiService {
      */
     async abortConversion(conversionId: string): Promise<ConversionResponse> {
         return this.apiRequest<ConversionResponse>(
-            `/api/conversions/abort/${encodeURIComponent(conversionId)}`,
+            `/api/conversion/abort/${encodeURIComponent(conversionId)}`,
             { method: 'POST' }, // Using POST as it changes server state
             'abortConversion'
         );

@@ -46,12 +46,12 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/videos/drive", h.ListDriveVideosHandler)
 	mux.HandleFunc("/api/convert/drive", h.ConvertFromDriveHandler)
 	mux.HandleFunc("/api/convert/upload", h.UploadConvertHandler)
-	mux.HandleFunc("/api/conversions/status", h.StatusHandler)
 	mux.HandleFunc("/api/conversions/active", h.ActiveConversionsHandler)
-	mux.HandleFunc("/api/conversions/abort", h.AbortConversionHandler)
+	mux.HandleFunc("/api/conversion/status/", h.StatusHandler)
+	mux.HandleFunc("/api/conversion/abort/", h.AbortConversionHandler)
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
-	mux.HandleFunc("/api/file/delete", h.DeleteFileHandler)
-	mux.HandleFunc("/download", h.DownloadHandler)
+	mux.HandleFunc("/api/file/delete/", h.DeleteFileHandler)
+	mux.HandleFunc("/download/", h.DownloadHandler)
 
 	// --- Static File Serving ---
 	staticDir := "frontend/dist"
@@ -418,7 +418,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 
 // StatusHandler returns the status of a conversion job.
 func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/status/")
+	id := strings.TrimPrefix(r.URL.Path, "/api/conversion/status/")
 	if id == "" {
 		h.sendErrorResponse(w, "Conversion ID not specified", http.StatusBadRequest)
 		return
@@ -577,7 +577,7 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // AbortConversionHandler handles requests to abort a conversion job.
 func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/conversions/abort/")
+	id := strings.TrimPrefix(r.URL.Path, "/api/conversion/abort/")
 	if r.Method != http.MethodPost {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
