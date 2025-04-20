@@ -96,18 +96,3 @@ jobs:
 
       - name: Run backend tests
         run: go test -v ./...
-
-  deploy:
-    name: Deploy Application
-    runs-on: ubuntu-latest
-    needs: [frontend-build, backend-build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Placeholder for deployment steps
-        run: |
-          echo "Starting deployment..."
-          echo "Deployment finished."
