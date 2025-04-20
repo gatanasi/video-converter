@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read # Needed for checkout, lint, format check, build, test
+  actions: write # Needed for cache write
+
 jobs:
   build:
     runs-on: ubuntu-latest
