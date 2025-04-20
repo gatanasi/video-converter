@@ -158,6 +158,32 @@ func (h *Handler) ListDriveVideosHandler(w http.ResponseWriter, r *http.Request)
 	h.sendJSONResponse(w, fileList.Files, http.StatusOK)
 }
 
+// isPathWithinBase checks if the targetPath is safely within the baseDir.
+// It resolves both paths to absolute paths for comparison.
+func isPathWithinBase(baseDir, targetPath string) (bool, error) {
+	absBaseDir, err := filepath.Abs(baseDir)
+	if err != nil {
+		log.Printf("CRITICAL: Could not determine absolute path for base directory '%s': %v", baseDir, err)
+		return false, fmt.Errorf("internal server configuration error (base dir)")
+	}
+
+	absTargetPath, err := filepath.Abs(targetPath)
+	if err != nil {
+		// Don't log targetPath directly here if it might be malicious
+		log.Printf("WARN: Could not determine absolute path for target path during validation: %v", err)
+		return false, fmt.Errorf("invalid target path generated")
+	}
+
+	// Check if the absolute target path starts with the absolute base directory path followed by a separator,
+	// or if the path is exactly the base directory (less likely for files but included for completeness).
+	if !strings.HasPrefix(absTargetPath, absBaseDir+string(os.PathSeparator)) && absTargetPath != absBaseDir {
+		log.Printf("WARN: Security check failed: Path '%s' is outside of base directory '%s'.", absTargetPath, absBaseDir)
+		return false, nil // Path is outside, but not necessarily an error state, just fails the check.
+	}
+
+	return true, nil
+}
+
 func resolveAndValidateSubPath(baseDirConfig string, relativeSubPath string) (string, error) {
 	// Resolve base directory
 	absBaseDir, err := filepath.Abs(baseDirConfig)
@@ -290,12 +316,23 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	if err := drive.DownloadFile(request.FileID, h.Config.GoogleDriveAPIKey, uploadedFilePath, h.Config.MaxFileSize); err != nil {
 		errMsg := fmt.Sprintf("Failed to download file from Google Drive: %v", err)
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
-		h.Store.UpdateStatusWithError(conversionID, errMsg)
+		genericErrMsg := "Failed to download file from Google Drive"
+		h.Store.UpdateStatusWithError(conversionID, genericErrMsg)
 
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("WARN [job %s]: Failed to remove uploaded file %s after download error: %v", conversionID, uploadedFilePath, removeErr)
+		// --- Re-validate path before removing ---
+		validPath, validationErr := isPathWithinBase(h.Config.UploadsDir, uploadedFilePath)
+		if validationErr != nil {
+			log.Printf("ERROR [job %s]: Validation error before removing file %s: %v", conversionID, uploadedFilePath, validationErr)
+		} else if validPath {
+			if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove uploaded file %s after download error: %v", conversionID, uploadedFilePath, removeErr)
+			}
+		} else {
+			log.Printf("CRITICAL [job %s]: Security check failed before removing file %s. Removal skipped.", conversionID, uploadedFilePath)
 		}
-		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
+		// --- End Re-validation ---
+
+		h.sendErrorResponse(w, genericErrMsg, http.StatusInternalServerError)
 		return
 	}
 	log.Printf("Download complete for job %s", conversionID)
@@ -315,10 +352,21 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	if err := h.Converter.QueueJob(job); err != nil {
 		log.Printf("ERROR [job %s]: Failed to queue job: %v", conversionID, err)
 		h.Store.DeleteStatus(conversionID)
-		// Attempt to remove the uploaded file, log if it fails
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil {
-			log.Printf("WARN [job %s]: Failed to remove uploaded file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
+
+		// --- Re-validate path before removing ---
+		validPath, validationErr := isPathWithinBase(h.Config.UploadsDir, uploadedFilePath)
+		if validationErr != nil {
+			log.Printf("ERROR [job %s]: Validation error before removing file %s after queue failure: %v", conversionID, uploadedFilePath, validationErr)
+		} else if validPath {
+			// Attempt to remove the uploaded file, log if it fails
+			if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) { // Check for IsNotExist here too
+				log.Printf("WARN [job %s]: Failed to remove uploaded file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
+			}
+		} else {
+			log.Printf("CRITICAL [job %s]: Security check failed before removing file %s after queue failure. Removal skipped.", conversionID, uploadedFilePath)
 		}
+		// --- End Re-validation ---
+
 		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
 		return
 	}
@@ -402,7 +450,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	removeSound := removeSoundStr == "true"
 
 	// --- Prepare file paths and job details ---
-	originalFileName := handler.Filename
+	originalFileName := filepath.Base(handler.Filename)
 	sanitizedBaseName := filestore.SanitizeFilename(originalFileName)
 	if sanitizedBaseName == "" {
 		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().Unix()) // Fallback with shorter timestamp
@@ -438,9 +486,18 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	written, err := io.Copy(outFile, limitedReader)
 	if err != nil {
 		// Clean up partially written file
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("WARN [job %s]: Failed to remove partially written upload file %s: %v", conversionID, uploadedFilePath, removeErr)
+		// --- Re-validate path before removing ---
+		validPath, validationErr := isPathWithinBase(h.Config.UploadsDir, uploadedFilePath)
+		if validationErr != nil {
+			log.Printf("ERROR [job %s]: Validation error before removing partially written file %s: %v", conversionID, uploadedFilePath, validationErr)
+		} else if validPath {
+			if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove partially written upload file %s: %v", conversionID, uploadedFilePath, removeErr)
+			}
+		} else {
+			log.Printf("CRITICAL [job %s]: Security check failed before removing partially written file %s. Removal skipped.", conversionID, uploadedFilePath)
 		}
+		// --- End Re-validation ---
 		errMsg := fmt.Sprintf("Failed to save uploaded file: %v", err)
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
 		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
@@ -450,9 +507,18 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the limit was hit during copy
 	if limitedReader.N <= 0 {
 		// Clean up oversized file
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("WARN [job %s]: Failed to remove oversized upload file %s: %v", conversionID, uploadedFilePath, removeErr)
+		// --- Re-validate path before removing ---
+		validPath, validationErr := isPathWithinBase(h.Config.UploadsDir, uploadedFilePath)
+		if validationErr != nil {
+			log.Printf("ERROR [job %s]: Validation error before removing oversized file %s: %v", conversionID, uploadedFilePath, validationErr)
+		} else if validPath {
+			if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
+				log.Printf("WARN [job %s]: Failed to remove oversized upload file %s: %v", conversionID, uploadedFilePath, removeErr)
+			}
+		} else {
+			log.Printf("CRITICAL [job %s]: Security check failed before removing oversized file %s. Removal skipped.", conversionID, uploadedFilePath)
 		}
+		// --- End Re-validation ---
 		h.sendErrorResponse(w, fmt.Sprintf("Upload failed: File exceeds maximum allowed size (%d MB)", h.Config.MaxFileSize/(1024*1024)), http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -484,9 +550,18 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("ERROR [job %s]: Failed to queue upload job: %v", conversionID, err)
 		h.Store.DeleteStatus(conversionID)
 		// Attempt to remove the saved uploaded file
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil {
-			log.Printf("WARN [job %s]: Failed to remove saved upload file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
+		// --- Re-validate path before removing ---
+		validPath, validationErr := isPathWithinBase(h.Config.UploadsDir, uploadedFilePath)
+		if validationErr != nil {
+			log.Printf("ERROR [job %s]: Validation error before removing saved upload file %s after queue failure: %v", conversionID, uploadedFilePath, validationErr)
+		} else if validPath {
+			if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) { // Check IsNotExist
+				log.Printf("WARN [job %s]: Failed to remove saved upload file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
+			}
+		} else {
+			log.Printf("CRITICAL [job %s]: Security check failed before removing saved upload file %s after queue failure. Removal skipped.", conversionID, uploadedFilePath)
 		}
+		// --- End Re-validation ---
 		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
 		return
 	}
