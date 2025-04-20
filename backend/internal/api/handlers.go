@@ -201,7 +201,7 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 
 	absUploadedFilePath, err := filepath.Abs(uploadedFilePath)
 	if err != nil || !strings.HasPrefix(absUploadedFilePath, filepath.Clean(h.Config.UploadsDir)+string(os.PathSeparator)) {
-		log.Printf("WARN: Invalid file path detected: %s", uploadedFilePath)
+		log.Printf("WARN: Invalid file path detected: %s. Error: %v", uploadedFilePath, err)
 
 		h.sendErrorResponse(w, "Invalid file path", http.StatusBadRequest)
 		return
