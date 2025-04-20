@@ -2,14 +2,12 @@ name: Go
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
+    branches: [ "main" ]
 
 permissions:
-  contents: read # Needed for checkout, lint, format check, build, test
+  contents: read
   actions: write # Needed for cache write
 
 jobs:
