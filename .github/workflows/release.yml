@@ -8,6 +8,15 @@ on:
         required: true
         default: 'main'
         type: string
+      force_release:
+        description: 'Force a release even if no relevant commits are found'
+        required: false
+        default: false
+        type: boolean
+      manual_version:
+        description: 'Manually specify the version number (e.g., 1.2.3). Only used if force_release is true.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -23,8 +32,8 @@ jobs:
     name: Determine Next Version
     runs-on: ubuntu-latest
     outputs:
-      next_version: ${{ steps.get_version.outputs.version }}
-      should_release: ${{ steps.get_version.outputs.release_published }}
+      next_version: ${{ steps.set_version.outputs.version }}
+      should_release: ${{ steps.set_version.outputs.release_published }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,31 +55,49 @@ jobs:
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Determine next version
-        id: get_version
+      - name: Determine next version (Semantic Release or Manual)
+        id: set_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Run semantic-release in dry run mode and capture output
-          # Use --no-ci to prevent interference with CI checks if semantic-release detects CI environment
-          output=$(pnpm exec semantic-release --dry-run --no-ci) # Use pnpm exec
-          echo "$output" # Log output for debugging
-
-          # Check if a release would be published
-          # Regex looks for "Published release X.Y.Z on branch main"
-          if echo "$output" | grep -q "Published release"; then
-            echo "release_published=true" >> $GITHUB_OUTPUT
-            version=$(echo "$output" | grep -oP 'Published release \K[0-9]+\.[0-9]+\.[0-9]+')
-            if [ -z "$version" ]; then
-              echo "::error::Could not extract version from semantic-release output."
+          if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
+            echo "Forcing release."
+            if [[ -z "${{ github.event.inputs.manual_version }}" ]]; then
+              echo "::error::Manual version must be provided when force_release is true."
               exit 1
             fi
-            echo "version=${version}" >> $GITHUB_OUTPUT
-            echo "Determined next version: ${version}"
+            MANUAL_VERSION="${{ github.event.inputs.manual_version }}"
+            # Basic validation for version format (e.g., X.Y.Z)
+            if ! [[ "$MANUAL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+               echo "::error::Manual version '$MANUAL_VERSION' is not valid. Use format X.Y.Z (e.g., 1.2.3)."
+               exit 1
+            fi
+            echo "Using manual version: $MANUAL_VERSION"
+            echo "release_published=true" >> $GITHUB_OUTPUT
+            echo "version=$MANUAL_VERSION" >> $GITHUB_OUTPUT
           else
-            echo "release_published=false" >> $GITHUB_OUTPUT
-            echo "version=skip" >> $GITHUB_OUTPUT
-            echo "No release will be published based on commits."
+            echo "Determining version using semantic-release..."
+            # Run semantic-release in dry run mode and capture output
+            # Use --no-ci to prevent interference with CI checks if semantic-release detects CI environment
+            output=$(pnpm exec semantic-release --dry-run --no-ci) # Use pnpm exec
+            echo "$output" # Log output for debugging
+
+            # Check if a release would be published
+            # Regex looks for "Published release X.Y.Z on branch main"
+            if echo "$output" | grep -q "Published release"; then
+              echo "release_published=true" >> $GITHUB_OUTPUT
+              version=$(echo "$output" | grep -oP 'Published release \K[0-9]+\.[0-9]+\.[0-9]+')
+              if [ -z "$version" ]; then
+                echo "::error::Could not extract version from semantic-release output."
+                exit 1
+              fi
+              echo "version=${version}" >> $GITHUB_OUTPUT
+              echo "Determined next version: ${version}"
+            else
+              echo "release_published=false" >> $GITHUB_OUTPUT
+              echo "version=skip" >> $GITHUB_OUTPUT
+              echo "No release will be published based on commits."
+            fi
           fi
 
   frontend-build:
@@ -217,14 +244,49 @@ jobs:
         run: zip -r frontend-dist.zip frontend/dist
 
       - name: Run semantic-release (perform release)
+        if: github.event.inputs.force_release == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PNPM_SCRIPT_SHELL: bash
         run: pnpm exec semantic-release --no-ci
 
+      - name: Configure Git user
+        if: github.event.inputs.force_release == 'true'
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Create and Push Git Tag (Manual Force)
+        if: github.event.inputs.force_release == 'true'
+        env:
+          TAG_NAME: v${{ needs.determine-version.outputs.next_version }}
+        run: |
+          echo "Creating and pushing tag: $TAG_NAME"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "::warning::Tag $TAG_NAME already exists locally."
+          elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME$"; then
+            echo "::warning::Tag $TAG_NAME already exists remotely."
+          else
+            git tag "$TAG_NAME" -m "Release $TAG_NAME (Forced)"
+            git push origin "$TAG_NAME"
+          fi
+
+      - name: Create GitHub Release (Manual Force)
+        if: github.event.inputs.force_release == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: v${{ needs.determine-version.outputs.next_version }}
+          NEXT_VERSION: ${{ needs.determine-version.outputs.next_version }}
+        run: |
+          echo "Creating GitHub release for tag $TAG_NAME"
+          gh release create "$TAG_NAME" \
+            --title "Release $NEXT_VERSION (Forced)" \
+            --notes "Manually forced release for version $NEXT_VERSION." \
+            --target "${{ github.event.inputs.branch }}" \
+            ./video-converter-app#Backend Binary ($TAG_NAME) \
+            ./frontend-dist.zip#Frontend Assets ($TAG_NAME)
+
       - name: Placeholder for deployment steps
         run: |
           echo "Starting deployment process for branch ${{ github.event.inputs.branch }}..."
-          # Add steps here to deploy the artifacts (video-converter-app, frontend-dist.zip)
-          # You might need to fetch the release tag created by semantic-release if needed for deployment
           echo "Deployment process finished."
