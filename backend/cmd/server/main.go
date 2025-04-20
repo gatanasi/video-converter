@@ -19,6 +19,9 @@ import (
 	"github.com/gatanasi/video-converter/internal/models"
 )
 
+// version is set during build time using ldflags
+var version string = "dev"
+
 func main() {
 	conf := config.New()
 
@@ -58,6 +61,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
+		fmt.Printf("Video Converter Server version: %s\n", version)
 		fmt.Printf("Server starting on http://localhost:%s\n", conf.Port)
 		fmt.Printf("Using %d conversion workers.\n", conf.WorkerCount)
 		fmt.Println("Allowed Origins:", conf.AllowedOrigins)

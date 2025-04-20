@@ -14,6 +14,11 @@ permissions:
   contents: read
   actions: write
 
+env:
+  NODE_VERSION: '22.x'
+  PNPM_VERSION: '10.x'
+  GO_VERSION: '1.24'
+
 jobs:
   frontend-build:
     name: Frontend Build
@@ -22,24 +27,19 @@ jobs:
       run:
         working-directory: ./frontend
 
-    strategy:
-      matrix:
-        node-version: [22.x]
-        pnpm-version: [10.x]
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup pnpm
+    - name: Setup pnpm ${{ env.PNPM_VERSION }}
       uses: pnpm/action-setup@v4
       with:
-        version: ${{ matrix.pnpm-version }}
+        version: ${{ env.PNPM_VERSION }}
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'pnpm'
         cache-dependency-path: frontend/pnpm-lock.yaml
 
@@ -66,7 +66,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: ${{ env.GO_VERSION }}
           check-latest: true
 
       - name: Cache Go modules
