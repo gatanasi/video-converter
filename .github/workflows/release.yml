@@ -283,8 +283,8 @@ jobs:
             --title "Release $NEXT_VERSION (Forced)" \
             --notes "Manually forced release for version $NEXT_VERSION." \
             --target "${{ github.event.inputs.branch }}" \
-            ./video-converter-app#Backend Binary ($TAG_NAME) \
-            ./frontend-dist.zip#Frontend Assets ($TAG_NAME)
+            "./video-converter-app#Backend Binary ($TAG_NAME)" \
+            "./frontend-dist.zip#Frontend Assets ($TAG_NAME)"
 
       - name: Placeholder for deployment steps
         run: |
