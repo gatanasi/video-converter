@@ -198,10 +198,16 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	// Use timestamp and original (sanitized) name for uniqueness and traceability
 	uploadedFileName := fmt.Sprintf("%d-%s", timestamp, sanitizedBaseName)
 	uploadedFilePath := filepath.Join(h.Config.UploadsDir, uploadedFileName)
-	if !isPathWithinDir(uploadedFilePath, h.Config.UploadsDir) {
+
+	absUploadedFilePath, err := filepath.Abs(uploadedFilePath)
+	if err != nil || !strings.HasPrefix(absUploadedFilePath, filepath.Clean(h.Config.UploadsDir)+string(os.PathSeparator)) {
+		log.Printf("WARN: Invalid file path detected: %s", uploadedFilePath)
+
 		h.sendErrorResponse(w, "Invalid file path", http.StatusBadRequest)
 		return
 	}
+	uploadedFilePath = absUploadedFilePath
+
 	outputFileName := fmt.Sprintf("%s-%d.%s", fileNameWithoutExt, timestamp, request.TargetFormat)
 	outputFilePath := filepath.Join(h.Config.ConvertedDir, outputFileName)
 
