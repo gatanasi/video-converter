@@ -1,4 +1,5 @@
 // Package api contains HTTP handlers for the application's API endpoints
+
 package api
 
 import (
@@ -197,6 +198,10 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	// Use timestamp and original (sanitized) name for uniqueness and traceability
 	uploadedFileName := fmt.Sprintf("%d-%s", timestamp, sanitizedBaseName)
 	uploadedFilePath := filepath.Join(h.Config.UploadsDir, uploadedFileName)
+	if !isPathWithinDir(uploadedFilePath, h.Config.UploadsDir) {
+		h.sendErrorResponse(w, "Invalid file path", http.StatusBadRequest)
+		return
+	}
 	outputFileName := fmt.Sprintf("%s-%d.%s", fileNameWithoutExt, timestamp, request.TargetFormat)
 	outputFilePath := filepath.Join(h.Config.ConvertedDir, outputFileName)
 
