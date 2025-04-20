@@ -55,7 +55,7 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/download/", h.DownloadHandler)
 
 	// --- Static File Serving ---
-	staticDir := "frontend/dist"
+	staticDir := "static"
 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
 		log.Printf("WARN: Static file directory '%s' not found. Frontend assets will not be served.", staticDir)
 		// Handle root path minimally if static dir is missing

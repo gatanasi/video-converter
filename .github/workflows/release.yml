@@ -241,7 +241,10 @@ jobs:
           path: .
 
       - name: Zip frontend assets for release
-        run: zip -r frontend-dist.zip frontend/dist
+        run: |
+          cd frontend/dist
+          zip -r ../../frontend-dist.zip .
+          cd ../.. # Go back to the original directory
 
       - name: Run semantic-release (perform release)
         if: github.event.inputs.force_release == 'false'
@@ -267,7 +270,7 @@ jobs:
           elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME$"; then
             echo "::warning::Tag $TAG_NAME already exists remotely."
           else
-            git tag "$TAG_NAME" -m "Release $TAG_NAME (Forced)"
+            git tag "$TAG_NAME" -m "Release $TAG_NAME"
             git push origin "$TAG_NAME"
           fi
 
@@ -280,7 +283,7 @@ jobs:
         run: |
           echo "Creating GitHub release for tag $TAG_NAME"
           gh release create "$TAG_NAME" \
-            --title "Release $NEXT_VERSION (Forced)" \
+            --title "Release $NEXT_VERSION" \
             --notes "Manually forced release for version $NEXT_VERSION." \
             --target "${{ github.event.inputs.branch }}" \
             "./video-converter-app#Backend Binary ($TAG_NAME)" \

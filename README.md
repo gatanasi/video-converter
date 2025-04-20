@@ -18,7 +18,9 @@ A simple web application that allows users to fetch videos from a specified Goog
 
 ## Prerequisites
 
-Before running the application, make sure you have the following installed:
+Before running the application or deploying, make sure you have the following installed:
+
+**For Running the Application:**
 
 -   [Go](https://golang.org/dl/) (v1.18 or newer recommended, tested with v1.24)
 -   [Node.js](https://nodejs.org/) and [pnpm](https://pnpm.io/installation) (for building the frontend)
@@ -46,8 +48,8 @@ This application is configured primarily via environment variables for security 
 
 -   `PORT`: The port the Go backend server will listen on. (Default: `3000`)
 -   `WORKER_COUNT`: The number of concurrent FFmpeg conversion processes allowed. (Default: Number of CPU cores reported by `runtime.NumCPU()`)
--   `MAX_FILE_SIZE_MB`: Maximum allowed size (in Megabytes) for a video file downloaded from Google Drive. (Default: `2000`)
--   `UPLOADS_DIR`: Directory path for temporary storage of downloaded videos before conversion. (Default: `uploads`)
+-   `MAX_FILE_SIZE_MB`: Maximum allowed size (in Megabytes) for a video file downloaded from Google Drive or uploaded directly. (Default: `2000`)
+-   `UPLOADS_DIR`: Directory path for temporary storage of downloaded/uploaded videos before conversion. (Default: `uploads`)
 -   `CONVERTED_DIR`: Directory path for storing successfully converted videos. (Default: `converted`)
 -   `DEFAULT_DRIVE_FOLDER_ID`: Pre-configures a default Google Drive folder ID for the application. When set, this folder ID will be automatically used as the default when the application loads, saving users from having to manually enter it. Users can still override this by entering a different folder ID in the UI. This is useful for deployments where most users will be accessing the same folder.
 
@@ -84,39 +86,89 @@ This application is configured primarily via environment variables for security 
     *   Install dependencies: `pnpm install`
     *   Build the production assets: `pnpm run build`
     *   The static frontend files will be generated in the `frontend/dist` directory.
+    *   **For Release:** The release workflow zips this directory into `frontend-dist.zip`.
 
 2.  **Build Backend:**
     *   Navigate to the `backend` directory: `cd ../backend`
     *   Build the Go executable:
         ```bash
+        # For local testing
         go build -ldflags="-s -w" -o ../video-converter-app ./cmd/server/main.go
+        # The release workflow injects the version:
+        # go build -ldflags="-X main.version=$VERSION -s -w" -o ../video-converter-app ./cmd/server/main.go
         ```
-        This creates an optimized executable named `video-converter-app` in the `root` directory.
+        This creates an optimized executable named `video-converter-app` in the project `root` directory.
 
 ## Deploying to Production
 
-Deploying involves placing the built backend executable and the static frontend assets onto your server and running the backend process. Using a reverse proxy (like Nginx or Caddy) is highly recommended.
+Deployment involves getting the built backend executable and the frontend assets onto your server, configuring the environment, and running the backend as a service.
 
-**Example Steps:**
+### Using the Deployment Script (Recommended)
 
-1.  **Copy Files:**
-    *   Copy the backend executable (`backend/video-converter-app`) to your server (e.g., `/opt/video-converter/`).
-    *   Copy the entire contents of the frontend build output directory (`frontend/dist/*`) to a location your web server will serve (e.g., `/var/www/video-converter/`).
+A deployment script (`deploy-video-converter.sh`) is provided to automate the process of deploying a specific release version from GitHub Releases.
 
-2.  **Configure Backend Environment:**
+**Prerequisites:**
+
+*   The systemd service (`video-converter.service`) must be pre-configured (see [Systemd Setup](#run-backend-example-using-systemd)).
+*   The user and group specified in the script (`SERVICE_USER`, `SERVICE_GROUP`) must exist on the server.
+*   The installation directory (`INSTALL_DIR`) must exist and be writable by the user running the script (initially, then permissions are set).
+
+**Steps:**
+
+1.  **Copy the Script:** Copy `deploy-video-converter.sh` to your server.
+2.  **Configure Script (Optional):** Edit the script's `Configuration` section if your paths or service details differ from the defaults:
+    *   `INSTALL_DIR`: Where the application binary and frontend files will be placed (Default: `/opt/video-converter`).
+    *   `BINARY_NAME`: Expected name of the backend executable in the release (Default: `video-converter-app`).
+    *   `FRONTEND_ZIP_NAME`: Expected name of the frontend zip archive in the release (Default: `frontend-dist.zip`).
+    *   `SERVICE_NAME`: Name of the systemd service (Default: `video-converter.service`).
+    *   `SERVICE_USER`/`SERVICE_GROUP`: User/group the service runs as (Default: `converter`).
+3.  **Run the Script:** Execute the script with the desired GitHub release tag (e.g., `v1.0.1`):
+    ```bash
+    chmod +x deploy-video-converter.sh
+    ./deploy-video-converter.sh <version_tag>
+    # Example: ./deploy-video-converter.sh v1.0.1
+    ```
+
+**What the script does:**
+
+*   Creates a temporary directory for downloads.
+*   Downloads the specified backend binary (`video-converter-app`) and frontend zip (`frontend-dist.zip`) from the GitHub release assets.
+*   Stops the systemd service.
+*   Replaces the old backend binary with the downloaded one.
+*   Sets appropriate ownership (`SERVICE_USER:SERVICE_GROUP`) and permissions (`755`) for the binary.
+*   Clears the old frontend assets directory (`$INSTALL_DIR/static`).
+*   Unzips the new frontend assets into the directory.
+*   Sets appropriate ownership and permissions for the frontend files.
+*   Starts the systemd service.
+*   Checks the service status.
+*   Cleans up the temporary download directory.
+
+### Manual Deployment Steps
+
+If you prefer not to use the script, these are the general steps involved:
+
+1.  **Build Artifacts:** Build the backend executable (`video-converter-app`) and the frontend assets (`frontend/dist/*`) as described in [Building for Production](#building-for-production).
+2.  **Copy Files:**
+    *   Copy the backend executable (`video-converter-app`) to your server (e.g., `/opt/video-converter/`).
+    *   Create the static directory (e.g., `/opt/video-converter/static`).
+    *   Copy the entire contents of the frontend build output directory (`frontend/dist/*`) to the static directory on your server (e.g., `/opt/video-converter/static/`).
+3.  **Configure Backend Environment:**
     *   Create a `.env` file on the server in the same directory as the executable (e.g., `/opt/video-converter/.env`) with your production settings:
         ```dotenv
         # /opt/video-converter/.env
         GOOGLE_DRIVE_API_KEY=YOUR_PRODUCTION_API_KEY_HERE
         ALLOWED_ORIGINS=https://your-frontend-domain.com # Replace with your actual frontend URL
         PORT=3000 # Or the port the backend should listen on internally
-        UPLOADS_DIR=/opt/video-converter/uploads # Ensure this dir exists and is writable
-        CONVERTED_DIR=/opt/video-converter/converted # Ensure this dir exists and is writable
+        UPLOADS_DIR=/opt/video-converter/uploads # Ensure this dir exists and is writable by the service user
+        CONVERTED_DIR=/opt/video-converter/converted # Ensure this dir exists and is writable by the service user
         # Add other variables as needed (WORKER_COUNT, MAX_FILE_SIZE_MB, etc.)
         ```
     *   **Important:** Ensure this file has secure permissions (e.g., `chmod 600 .env`) and is owned by the user running the service.
-
-3.  **Run Backend (Example using systemd):**
+4.  **Set Permissions:**
+    *   Ensure the executable has execute permissions (`chmod +x /opt/video-converter/video-converter-app`).
+    *   Ensure the `UPLOADS_DIR` and `CONVERTED_DIR` exist and are writable by the user/group the service will run as.
+    *   Set appropriate ownership for all files (e.g., `sudo chown -R converter:converter /opt/video-converter`).
+5.  **Run Backend (Example using systemd):**
     *   Create a systemd service file (e.g., `/etc/systemd/system/video-converter.service`):
         ```ini
         [Unit]
@@ -130,6 +182,7 @@ Deploying involves placing the built backend executable and the static frontend 
         Group=converter
         # Path to the executable and its directory
         WorkingDirectory=/opt/video-converter
+        # Load environment variables from .env file
         EnvironmentFile=/opt/video-converter/.env
         ExecStart=/opt/video-converter/video-converter-app
         Restart=on-failure
@@ -138,6 +191,8 @@ Deploying involves placing the built backend executable and the static frontend 
         PrivateTmp=true
         ProtectSystem=full
         NoNewPrivileges=true
+        # Ensure uploads/converted directories are accessible if outside WorkingDirectory
+        # ReadWritePaths=/path/to/uploads /path/to/converted
 
         [Install]
         WantedBy=multi-user.target
@@ -145,8 +200,8 @@ Deploying involves placing the built backend executable and the static frontend 
     *   Enable and start the service:
         ```bash
         sudo systemctl daemon-reload
-        sudo systemctl enable video-converter
-        sudo systemctl start video-converter
-        # Check status: sudo systemctl status video-converter
-        # View logs: sudo journalctl -u video-converter -f
+        sudo systemctl enable video-converter.service
+        sudo systemctl start video-converter.service
+        # Check status: sudo systemctl status video-converter.service
+        # View logs: sudo journalctl -u video-converter.service -f
         ```
