@@ -188,11 +188,11 @@ func resolveAndValidateSubPath(baseDirConfig string, relativeSubPath string) (st
 	return absSubPath, nil
 }
 
-func (h *Handler) resolveAndValidatePaths(baseFileName, targetFormat, timestampStr string) (absInputPath, absOutputPath string, err error) {
-	// Generate relative filenames
+func (h *Handler) resolveAndValidatePaths(baseFileName, targetFormat, conversionID string) (absInputPath, absOutputPath string, err error) {
+	// Generate relative filenames using conversionID for uniqueness
 	fileNameWithoutExt := strings.TrimSuffix(baseFileName, filepath.Ext(baseFileName))
-	inputFileName := fmt.Sprintf("%s-%s", timestampStr, baseFileName)
-	outputFileName := fmt.Sprintf("%s-%s.%s", fileNameWithoutExt, timestampStr, targetFormat)
+	inputFileName := fmt.Sprintf("%s-%s", conversionID, baseFileName)
+	outputFileName := fmt.Sprintf("%s-%s.%s", fileNameWithoutExt, conversionID, targetFormat)
 
 	// Resolve and validate input path
 	absInputPath, err = resolveAndValidateSubPath(h.Config.UploadsDir, inputFileName)
@@ -266,12 +266,11 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	if sanitizedBaseName == "" {
 		sanitizedBaseName = fmt.Sprintf("gdrive-video-%s", request.FileID) // Fallback
 	}
-	timestamp := time.Now().UnixNano()
-	conversionID := strconv.FormatInt(timestamp, 5)
-	timestampStr := strconv.FormatInt(timestamp, 10)
 
+	timestamp := time.Now().Unix()
+	conversionID := strconv.FormatInt(timestamp, 10)
 	// --- Resolve and Validate Paths ---
-	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, request.TargetFormat, timestampStr)
+	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, request.TargetFormat, conversionID)
 	if err != nil {
 		h.sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
@@ -406,14 +405,13 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	originalFileName := handler.Filename
 	sanitizedBaseName := filestore.SanitizeFilename(originalFileName)
 	if sanitizedBaseName == "" {
-		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().UnixNano()) // Fallback
+		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().Unix()) // Fallback with shorter timestamp
 	}
-	timestamp := time.Now().UnixNano()
-	conversionID := strconv.FormatInt(timestamp, 5)
-	timestampStr := strconv.FormatInt(timestamp, 10)
+	timestamp := time.Now().Unix()
+	conversionID := strconv.FormatInt(timestamp, 10)
 
 	// --- Resolve and Validate Paths ---
-	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, targetFormat, timestampStr)
+	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, targetFormat, conversionID)
 	if err != nil {
 		h.sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
