@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/gatanasi/video-converter/compare/v1.1.2...v1.1.3) (2025-04-21)
+
+
+### Bug Fixes
+
+* Add app_version input to build jobs and update release workflow ([cfd20de](https://github.com/gatanasi/video-converter/commit/cfd20de3c95e9eaeb5dc2f40e97afc37a79fa7c8))
+
 ## [1.1.2](https://github.com/gatanasi/video-converter/compare/v1.1.1...v1.1.2) (2025-04-21)
 
 
