@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/gatanasi/video-converter/compare/v1.1.1...v1.1.2) (2025-04-21)
+
+
+### Bug Fixes
+
+* Add upload artifacts option to build jobs and update workflow names ([e8a111f](https://github.com/gatanasi/video-converter/commit/e8a111f36e02d98c117ba9eff155c20f933fc1ae))
+
 ## [1.1.1](https://github.com/gatanasi/video-converter/compare/v1.1.0...v1.1.1) (2025-04-21)
 
 
