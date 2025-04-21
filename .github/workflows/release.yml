@@ -113,6 +113,7 @@ jobs:
     uses: ./.github/workflows/build-jobs.yml
     with:
       upload_artifacts: true
+      app_version: ${{ needs.determine-version.outputs.next_version }}
 
   release:
     name: Create Release

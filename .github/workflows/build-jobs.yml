@@ -23,6 +23,10 @@ on:
         required: false
         type: boolean
         default: false
+      app_version:
+        required: false
+        type: string
+        default: 'dev'
     outputs:
       frontend_artifact:
         description: "Video Converter - Frontend"
@@ -111,10 +115,14 @@ jobs:
           working-directory: ./backend
 
       - name: Check formatting
-        run: test -z "$(gofmt -l .)"
+        run: test -z "$(gofmt -l .)" || (echo "Go code is not formatted. Run 'gofmt -w .' "; exit 1)
 
       - name: Build backend
-        run: go build -v -ldflags="-s -w" -o video-converter-app ./cmd/server/main.go
+        env:
+          NEXT_VERSION: ${{ inputs.app_version }}
+        run: |
+          echo "Building backend version: $NEXT_VERSION"
+          go build -v -trimpath -ldflags="-X main.version=$NEXT_VERSION -s -w" -o video-converter-app ./cmd/server/main.go
 
       - name: Run backend tests
         run: go test -v ./...
