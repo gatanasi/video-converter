@@ -193,15 +193,19 @@ func resolveAndValidateSubPath(baseDirConfig string, relativeSubPath string) (st
 		return "", fmt.Errorf("internal server configuration error (base dir)")
 	}
 
-	// Resolve the full path for the subpath
-	// Note: We join baseDirConfig (potentially relative) with relativeSubPath first,
-	// then resolve the absolute path. This handles cases where baseDirConfig might be like "."
-	absSubPath, err := filepath.Abs(filepath.Join(baseDirConfig, relativeSubPath))
+	// Clean and resolve the full path for the subpath
+	cleanSubPath := filepath.Clean(relativeSubPath)
+	absSubPath, err := filepath.Abs(filepath.Join(absBaseDir, cleanSubPath))
 	if err != nil {
 		log.Printf("WARN: Could not determine absolute path for subpath '%s' within base '%s': %v", relativeSubPath, baseDirConfig, err)
 		return "", fmt.Errorf("invalid file path generated")
 	}
 
+	// Ensure the resolved path is within the base directory
+	if !strings.HasPrefix(absSubPath, absBaseDir) {
+		log.Printf("SECURITY: Path traversal attempt detected. Subpath: '%s', Base: '%s'", relativeSubPath, baseDirConfig)
+		return "", fmt.Errorf("invalid file path: access outside allowed directory")
+	}
 	// Security check: Ensure the final path is strictly within the intended base directory.
 	// Check if the path starts with the base directory followed by a path separator,
 	// or if the path is exactly the base directory (for cases where relativeSubPath might be "." or empty, though handled elsewhere).
