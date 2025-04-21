@@ -1,12 +1,10 @@
-// Package api contains HTTP handlers for the application's API endpoints
-
 package api
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io" // Import io package
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -160,7 +158,185 @@ func (h *Handler) ListDriveVideosHandler(w http.ResponseWriter, r *http.Request)
 	h.sendJSONResponse(w, fileList.Files, http.StatusOK)
 }
 
-// ConvertFromDriveHandler handles requests to convert a video from Google Drive.
+// isPathWithinBase checks if the targetPath is safely within the baseDir.
+// It resolves both paths to absolute paths for comparison.
+func isPathWithinBase(baseDir, targetPath string) (bool, error) {
+	absBaseDir, err := filepath.Abs(baseDir)
+	if err != nil {
+		log.Printf("CRITICAL: Could not determine absolute path for base directory '%s': %v", baseDir, err)
+		return false, fmt.Errorf("internal server configuration error (base dir)")
+	}
+
+	absTargetPath, err := filepath.Abs(targetPath)
+	if err != nil {
+		// Don't log targetPath directly here if it might be malicious
+		log.Printf("WARN: Could not determine absolute path for target path during validation: %v", err)
+		return false, fmt.Errorf("invalid target path generated")
+	}
+
+	// Check if the absolute target path starts with the absolute base directory path followed by a separator,
+	// or if the path is exactly the base directory (less likely for files but included for completeness).
+	if !strings.HasPrefix(absTargetPath, absBaseDir+string(os.PathSeparator)) && absTargetPath != absBaseDir {
+		log.Printf("WARN: Security check failed: Path '%s' is outside of base directory '%s'.", absTargetPath, absBaseDir)
+		return false, nil // Path is outside, but not necessarily an error state, just fails the check.
+	}
+
+	return true, nil
+}
+
+func resolveAndValidateSubPath(baseDirConfig string, relativeSubPath string) (string, error) {
+	// Resolve base directory
+	absBaseDir, err := filepath.Abs(baseDirConfig)
+	if err != nil {
+		log.Printf("CRITICAL: Could not determine absolute path for base directory '%s': %v", baseDirConfig, err)
+		// Use a generic error message to avoid leaking internal paths
+		return "", fmt.Errorf("internal server configuration error (base dir)")
+	}
+
+	// Clean and resolve the full path for the subpath
+	cleanSubPath := filepath.Clean(relativeSubPath)
+	absSubPath, err := filepath.Abs(filepath.Join(absBaseDir, cleanSubPath))
+	if err != nil {
+		log.Printf("WARN: Could not determine absolute path for subpath '%s' within base '%s': %v", relativeSubPath, baseDirConfig, err)
+		return "", fmt.Errorf("invalid file path generated")
+	}
+
+	// Ensure the resolved path is within the base directory
+	if !strings.HasPrefix(absSubPath, absBaseDir) {
+		log.Printf("SECURITY: Path traversal attempt detected. Subpath: '%s', Base: '%s'", relativeSubPath, baseDirConfig)
+		return "", fmt.Errorf("invalid file path: access outside allowed directory")
+	}
+	// Security check: Ensure the final path is strictly within the intended base directory.
+	// Check if the path starts with the base directory followed by a path separator,
+	// or if the path is exactly the base directory (for cases where relativeSubPath might be "." or empty, though handled elsewhere).
+	relPath, err := filepath.Rel(absBaseDir, absSubPath)
+	if err != nil || strings.HasPrefix(relPath, "..") || filepath.IsAbs(relPath) {
+		log.Printf("WARN: Invalid path detected (outside designated directory): Subpath='%s', Resolved='%s', BaseDir='%s'.",
+			relativeSubPath, absSubPath, absBaseDir)
+		return "", fmt.Errorf("invalid file path generated (security check failed)")
+	}
+
+	return absSubPath, nil
+}
+
+func (h *Handler) resolveAndValidatePaths(baseFileName, targetFormat, conversionID string) (absInputPath, absOutputPath string, err error) {
+	// Generate relative filenames using conversionID for uniqueness
+	fileNameWithoutExt := strings.TrimSuffix(baseFileName, filepath.Ext(baseFileName))
+	inputFileName := fmt.Sprintf("%s-%s", conversionID, baseFileName)
+	outputFileName := fmt.Sprintf("%s-%s.%s", fileNameWithoutExt, conversionID, targetFormat)
+
+	// Resolve and validate input path
+	absInputPath, err = resolveAndValidateSubPath(h.Config.UploadsDir, inputFileName)
+	if err != nil {
+		log.Printf("WARN: Input path validation failed for '%s': %v", inputFileName, err)
+		return "", "", fmt.Errorf("invalid input file path generated: %w", err)
+	}
+
+	// Resolve and validate output path
+	absOutputPath, err = resolveAndValidateSubPath(h.Config.ConvertedDir, outputFileName)
+	if err != nil {
+		log.Printf("WARN: Output path validation failed for '%s': %v", outputFileName, err)
+		return "", "", fmt.Errorf("invalid output file path generated: %w", err)
+	}
+
+	return absInputPath, absOutputPath, nil
+}
+
+func (h *Handler) resolveAndValidateConvertedFilePath(r *http.Request, urlPrefix string) (absFilePath, filename string, err error) {
+	filename = strings.TrimPrefix(r.URL.Path, urlPrefix)
+	// Basic filename validation (prevent directory traversal, empty names, etc.)
+	if filename == "" || strings.Contains(filename, "..") || strings.ContainsAny(filename, "/\\") {
+		log.Printf("WARN: Invalid filename requested via URL %s: %s", r.URL.Path, filename)
+		return "", "", fmt.Errorf("invalid filename")
+	}
+
+	// Resolve and validate the path using the helper
+	absFilePath, err = resolveAndValidateSubPath(h.Config.ConvertedDir, filename)
+	if err != nil {
+		log.Printf("WARN: Converted file path validation failed for filename '%s' from URL '%s': %v", filename, r.URL.Path, err)
+		// Map the generic helper error to a more context-specific one for the user.
+		if strings.Contains(err.Error(), "security check failed") || strings.Contains(err.Error(), "invalid file path generated") {
+			return "", "", fmt.Errorf("invalid filename")
+		}
+		if strings.Contains(err.Error(), "internal server configuration error") {
+			return "", "", fmt.Errorf("internal server configuration error")
+		}
+		return "", "", fmt.Errorf("failed to validate file path: %w", err)
+	}
+
+	return absFilePath, filename, nil
+}
+
+// validateFileSafety performs security validations for file operations:
+// 1. Checks if the path is within the allowed base directory
+// 2. Ensures the path exists and is a regular file (not a directory or symlink)
+// Returns the file info if validation passes, along with an error explaining any failure
+func (h *Handler) validateFileSafety(baseDir, filePath, operationContext string) (os.FileInfo, error) {
+	// 1. First verify the path is within the allowed directory
+	validPath, validationErr := isPathWithinBase(baseDir, filePath)
+	if validationErr != nil {
+		log.Printf("SECURITY [%s]: Validation error for file operation - %s: %v",
+			operationContext, filePath, validationErr)
+		return nil, fmt.Errorf("internal server error")
+	}
+
+	if !validPath {
+		log.Printf("SECURITY [%s]: Rejected file operation - path outside allowed directory: %s",
+			operationContext, filePath)
+		return nil, fmt.Errorf("invalid file path")
+	}
+
+	// 2. Check that the path exists and is a regular file (not a symlink or directory)
+	fileInfo, err := os.Lstat(filePath) // Lstat doesn't follow symlinks
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("file not found")
+		}
+		log.Printf("ERROR [%s]: Cannot stat file for operation - %s: %v",
+			operationContext, filePath, err)
+		return nil, fmt.Errorf("error accessing file")
+	}
+
+	// Ensure it's a regular file
+	if !fileInfo.Mode().IsRegular() {
+		log.Printf("SECURITY [%s]: Rejected file operation - not a regular file: %s",
+			operationContext, filePath)
+		return nil, fmt.Errorf("invalid file type")
+	}
+
+	return fileInfo, nil
+}
+
+// safeRemoveFile safely removes a file after performing security validations
+// Returns true if removal was successful or the file didn't exist, false otherwise
+func (h *Handler) safeRemoveFile(baseDir, filePath, operationContext string) bool {
+	_, err := h.validateFileSafety(baseDir, filePath, operationContext)
+	if err != nil {
+		if err.Error() == "file not found" {
+			// File doesn't exist anyway, so removal is "successful"
+			return true
+		}
+		// All other validation errors indicate failure
+		return false
+	}
+
+	// All validations passed, proceed with removal
+	if err := os.Remove(filePath); err != nil {
+		log.Printf("ERROR [%s]: Failed to remove file %s: %v",
+			operationContext, filePath, err)
+		return false
+	}
+
+	return true
+}
+
+// safeAccessFile validates a file for safe download
+// Returns the file info if the file is safe to access, or an error if not
+func (h *Handler) safeAccessFile(baseDir, filePath, operationContext string) (os.FileInfo, error) {
+	// Simply delegate to the common validation function - it already does everything we need
+	return h.validateFileSafety(baseDir, filePath, operationContext)
+}
+
 func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -191,25 +367,16 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	if sanitizedBaseName == "" {
 		sanitizedBaseName = fmt.Sprintf("gdrive-video-%s", request.FileID) // Fallback
 	}
-	fileNameWithoutExt := strings.TrimSuffix(sanitizedBaseName, filepath.Ext(sanitizedBaseName))
-	timestamp := time.Now().UnixNano()
+
+	timestamp := time.Now().Unix()
 	conversionID := strconv.FormatInt(timestamp, 10)
-
-	// Use timestamp and original (sanitized) name for uniqueness and traceability
-	uploadedFileName := fmt.Sprintf("%d-%s", timestamp, sanitizedBaseName)
-	uploadedFilePath := filepath.Join(h.Config.UploadsDir, uploadedFileName)
-
-	absUploadedFilePath, err := filepath.Abs(uploadedFilePath)
-	if err != nil || !strings.HasPrefix(absUploadedFilePath, filepath.Clean(h.Config.UploadsDir)+string(os.PathSeparator)) {
-		log.Printf("WARN: Invalid file path detected: %s. Error: %v", uploadedFilePath, err)
-
-		h.sendErrorResponse(w, "Invalid file path", http.StatusBadRequest)
+	// --- Resolve and Validate Paths ---
+	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, request.TargetFormat, conversionID)
+	if err != nil {
+		h.sendErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	uploadedFilePath = absUploadedFilePath
-
-	outputFileName := fmt.Sprintf("%s-%d.%s", fileNameWithoutExt, timestamp, request.TargetFormat)
-	outputFilePath := filepath.Join(h.Config.ConvertedDir, outputFileName)
+	// --- End Path Resolution ---
 
 	status := &models.ConversionStatus{
 		InputPath:  uploadedFilePath,
@@ -220,12 +387,17 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	}
 	h.Store.SetStatus(conversionID, status)
 
-	log.Printf("Starting download for job %s (File ID: %s)", conversionID, request.FileID)
+	log.Printf("Starting download for job %s (File ID: %s) to %s", conversionID, request.FileID, uploadedFilePath)
 	if err := drive.DownloadFile(request.FileID, h.Config.GoogleDriveAPIKey, uploadedFilePath, h.Config.MaxFileSize); err != nil {
 		errMsg := fmt.Sprintf("Failed to download file from Google Drive: %v", err)
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
-		h.Store.UpdateStatusWithError(conversionID, errMsg)
-		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
+		genericErrMsg := "Failed to download file from Google Drive"
+		h.Store.UpdateStatusWithError(conversionID, genericErrMsg)
+
+		// Replace the vulnerable path removal with our safe version
+		h.safeRemoveFile(h.Config.UploadsDir, uploadedFilePath, fmt.Sprintf("job %s", conversionID))
+
+		h.sendErrorResponse(w, genericErrMsg, http.StatusInternalServerError)
 		return
 	}
 	log.Printf("Download complete for job %s", conversionID)
@@ -245,10 +417,10 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	if err := h.Converter.QueueJob(job); err != nil {
 		log.Printf("ERROR [job %s]: Failed to queue job: %v", conversionID, err)
 		h.Store.DeleteStatus(conversionID)
-		// Attempt to remove the uploaded file, log if it fails
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil {
-			log.Printf("WARN [job %s]: Failed to remove uploaded file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
-		}
+
+		// Replace with safe removal
+		h.safeRemoveFile(h.Config.UploadsDir, uploadedFilePath, fmt.Sprintf("job %s", conversionID))
+
 		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
 		return
 	}
@@ -332,19 +504,21 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	removeSound := removeSoundStr == "true"
 
 	// --- Prepare file paths and job details ---
-	originalFileName := handler.Filename
+	originalFileName := filepath.Base(handler.Filename)
 	sanitizedBaseName := filestore.SanitizeFilename(originalFileName)
 	if sanitizedBaseName == "" {
-		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().UnixNano()) // Fallback
+		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().Unix()) // Fallback with shorter timestamp
 	}
-	fileNameWithoutExt := strings.TrimSuffix(sanitizedBaseName, filepath.Ext(sanitizedBaseName))
-	timestamp := time.Now().UnixNano()
+	timestamp := time.Now().Unix()
 	conversionID := strconv.FormatInt(timestamp, 10)
 
-	uploadedFileName := fmt.Sprintf("%d-%s", timestamp, sanitizedBaseName)
-	uploadedFilePath := filepath.Join(h.Config.UploadsDir, uploadedFileName)
-	outputFileName := fmt.Sprintf("%s-%d.%s", fileNameWithoutExt, timestamp, targetFormat)
-	outputFilePath := filepath.Join(h.Config.ConvertedDir, outputFileName)
+	// --- Resolve and Validate Paths ---
+	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, targetFormat, conversionID)
+	if err != nil {
+		h.sendErrorResponse(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// --- End Path Resolution ---
 
 	// --- Save the uploaded file ---
 	log.Printf("Saving uploaded file for job %s: %s -> %s", conversionID, originalFileName, uploadedFilePath)
@@ -366,9 +540,9 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	written, err := io.Copy(outFile, limitedReader)
 	if err != nil {
 		// Clean up partially written file
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("WARN [job %s]: Failed to remove partially written upload file %s: %v", conversionID, uploadedFilePath, removeErr)
-		}
+		// Replace with safe file removal
+		h.safeRemoveFile(h.Config.UploadsDir, uploadedFilePath, fmt.Sprintf("job %s", conversionID))
+
 		errMsg := fmt.Sprintf("Failed to save uploaded file: %v", err)
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)
 		h.sendErrorResponse(w, errMsg, http.StatusInternalServerError)
@@ -378,9 +552,9 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the limit was hit during copy
 	if limitedReader.N <= 0 {
 		// Clean up oversized file
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil && !os.IsNotExist(removeErr) {
-			log.Printf("WARN [job %s]: Failed to remove oversized upload file %s: %v", conversionID, uploadedFilePath, removeErr)
-		}
+		// Replace with safe file removal
+		h.safeRemoveFile(h.Config.UploadsDir, uploadedFilePath, fmt.Sprintf("job %s", conversionID))
+
 		h.sendErrorResponse(w, fmt.Sprintf("Upload failed: File exceeds maximum allowed size (%d MB)", h.Config.MaxFileSize/(1024*1024)), http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -412,9 +586,9 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("ERROR [job %s]: Failed to queue upload job: %v", conversionID, err)
 		h.Store.DeleteStatus(conversionID)
 		// Attempt to remove the saved uploaded file
-		if removeErr := os.Remove(uploadedFilePath); removeErr != nil {
-			log.Printf("WARN [job %s]: Failed to remove saved upload file %s after queue failure: %v", conversionID, uploadedFilePath, removeErr)
-		}
+		// Replace with safe file removal
+		h.safeRemoveFile(h.Config.UploadsDir, uploadedFilePath, fmt.Sprintf("job %s", conversionID))
+
 		h.sendErrorResponse(w, "Server busy, conversion queue is full", http.StatusServiceUnavailable)
 		return
 	}
@@ -467,29 +641,30 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 // DownloadHandler serves the converted file.
 func (h *Handler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
-	filename := strings.TrimPrefix(r.URL.Path, "/download/")
-	if filename == "" || strings.Contains(filename, "..") || strings.ContainsAny(filename, "/\\") {
-		log.Printf("WARN: Invalid filename requested for download: %s", filename)
-		http.Error(w, "Invalid filename", http.StatusBadRequest)
-		return
-	}
-
-	filePath := filepath.Join(h.Config.ConvertedDir, filename)
-
-	fileInfo, err := os.Stat(filePath)
+	filePath, filename, err := h.resolveAndValidateConvertedFilePath(r, "/download/")
 	if err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("WARN: Requested download file not found: %s", filePath)
-			http.Error(w, "File not found", http.StatusNotFound)
+		if err.Error() == "internal server configuration error" {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
-			log.Printf("ERROR: Error stating download file %s: %v", filePath, err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return
 	}
-	if fileInfo.IsDir() {
-		log.Printf("WARN: Directory requested for download instead of file: %s", filePath)
-		http.Error(w, "Invalid request (directory specified)", http.StatusBadRequest)
+
+	fileInfo, err := h.safeAccessFile(h.Config.ConvertedDir, filePath, fmt.Sprintf("download %s", filename))
+	if err != nil {
+		// Handle different error types with appropriate status codes
+		switch err.Error() {
+		case "file not found":
+			log.Printf("WARN: Requested download file not found: %s", filePath)
+			http.Error(w, "File not found", http.StatusNotFound)
+		case "invalid file path", "invalid file type":
+			log.Printf("WARN: Invalid file requested for download: %s", filePath)
+			http.Error(w, "Invalid file request", http.StatusBadRequest)
+		default:
+			log.Printf("ERROR: Error stating download file %s: %v", filePath, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -556,29 +731,25 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteFileHandler handles deleting a converted file.
 func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
-	filename := strings.TrimPrefix(r.URL.Path, "/api/file/delete/")
 	if r.Method != http.MethodDelete {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	if filename == "" || strings.Contains(filename, "..") || strings.ContainsAny(filename, "/\\") {
-		log.Printf("WARN: Invalid filename requested for deletion: %s", filename)
-		http.Error(w, "Invalid filename", http.StatusBadRequest)
-		return
+	filePath, filename, err := h.resolveAndValidateConvertedFilePath(r, "/api/file/delete/")
+	if err != nil {
+		if err.Error() == "internal server configuration error" {
+			h.sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else {
+			h.sendErrorResponse(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
-	filePath := filepath.Join(h.Config.ConvertedDir, filename)
-
-	err := os.Remove(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("WARN: File not found for deletion: %s", filePath)
-			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
-			log.Printf("ERROR: Failed to delete file %s: %v", filePath, err)
-			h.sendErrorResponse(w, fmt.Sprintf("Failed to delete file: %v", err), http.StatusInternalServerError)
-		}
+	// Replace direct os.Remove with safe version
+	if !h.safeRemoveFile(h.Config.ConvertedDir, filePath, fmt.Sprintf("delete %s", filename)) {
+		h.sendErrorResponse(w, "Failed to delete file", http.StatusInternalServerError)
 		return
 	}
 
