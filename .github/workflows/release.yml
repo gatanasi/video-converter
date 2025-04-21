@@ -22,6 +22,11 @@ permissions:
   contents: write
   actions: write
 
+env:
+  NODE_VERSION: '22.x'
+  PNPM_VERSION: '10.9.0'
+  GO_VERSION: '1.24'
+
 jobs:
   determine-version:
     name: Determine Next Version
