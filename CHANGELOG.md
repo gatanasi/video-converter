@@ -1,3 +1,12 @@
+## [1.1.1](https://github.com/gatanasi/video-converter/compare/v1.1.0...v1.1.1) (2025-04-21)
+
+
+### Bug Fixes
+
+* Correct output path for backend build artifact ([671ba91](https://github.com/gatanasi/video-converter/commit/671ba91ab0d6492eb8d38451454246275bb7c162))
+* Correct path for backend build artifact upload ([d10542c](https://github.com/gatanasi/video-converter/commit/d10542c655df61a0c3743173399d48cb1d94a7a8))
+* Correct path for backend build artifact upload ([03dfad2](https://github.com/gatanasi/video-converter/commit/03dfad2cd91c7d5df0065e97ff403a99d101e8ea))
+
 # [1.1.0](https://github.com/gatanasi/video-converter/compare/v1.0.0...v1.1.0) (2025-04-21)
 
 
