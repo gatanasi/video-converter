@@ -109,7 +109,7 @@ jobs:
         run: test -z "$(gofmt -l .)"
 
       - name: Build backend
-        run: go build -v -ldflags="-s -w" -o ../video-converter-app ./cmd/server/main.go
+        run: go build -v -ldflags="-s -w" -o video-converter-app ./cmd/server/main.go
 
       - name: Run backend tests
         run: go test -v ./...
@@ -118,4 +118,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-build
-          path: ../video-converter-app
+          path: video-converter-app
