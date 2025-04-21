@@ -20,6 +20,9 @@ on:
         type: string
         default: 'v2.1.2'
 
+permissions:
+  contents: read
+
 jobs:
   frontend-build:
     name: Frontend Build
