@@ -106,95 +106,16 @@ jobs:
             fi
           fi
 
-  frontend-build:
-    name: Frontend Build
-    runs-on: ubuntu-latest
+  build:
+    name: Build Frontend and Backend
     needs: determine-version
     if: needs.determine-version.outputs.should_release == 'true'
-    defaults:
-      run:
-        working-directory: ./frontend
-    steps:
-    - name: Checkout code from specified branch
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.inputs.branch }}
-    - name: Setup pnpm ${{ env.PNPM_VERSION }}
-      uses: pnpm/action-setup@v4
-      with:
-        version: ${{ env.PNPM_VERSION }}
-    - name: Use Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
-        cache-dependency-path: frontend/pnpm-lock.yaml
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-    - name: Build frontend
-      run: pnpm run build
-    - name: Run frontend tests
-      run: pnpm test
-    - name: Upload frontend artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-build
-        path: frontend/dist
-
-  backend-build:
-    name: Backend Build
-    runs-on: ubuntu-latest
-    needs: determine-version
-    if: needs.determine-version.outputs.should_release == 'true'
-    defaults:
-      run:
-        working-directory: ./backend
-    steps:
-      - name: Checkout code from specified branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.branch }}
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Install dependencies
-        run: go mod download
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.1.2
-          working-directory: ./backend
-      - name: Check formatting
-        run: test -z "$(gofmt -l .)" || (echo "Go code is not formatted. Run 'gofmt -w .' "; exit 1)
-      - name: Build backend with version
-        env:
-          NEXT_VERSION: ${{ needs.determine-version.outputs.next_version }}
-        run: |
-          echo "Building backend version: $NEXT_VERSION"
-          go build -v -trimpath -ldflags="-X main.version=$NEXT_VERSION -s -w" -o ../video-converter-app ./cmd/server/main.go
-      - name: Run backend tests
-        run: go test -v -race ./...
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-build
-          path: video-converter-app
+    uses: ./.github/workflows/build-jobs.yml
 
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [determine-version, frontend-build, backend-build]
+    needs: [determine-version, build]
     if: needs.determine-version.outputs.should_release == 'true'
     permissions:
       contents: write

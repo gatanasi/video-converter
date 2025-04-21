@@ -1,0 +1,102 @@
+name: Video Converter Build Jobs
+
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        required: false
+        type: string
+        default: '22.x'
+      pnpm_version:
+        required: false
+        type: string
+        default: '10.9.0'
+      go_version:
+        required: false
+        type: string
+        default: '1.24'
+      go_lint_version:
+        required: false
+        type: string
+        default: 'v2.1.2'
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup pnpm ${{ inputs.pnpm_version }}
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm_version }}
+
+    - name: Use Node.js ${{ inputs.node_version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node_version }}
+        cache: 'pnpm'
+        cache-dependency-path: frontend/pnpm-lock.yaml
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build frontend
+      run: pnpm run build
+
+    - name: Run frontend tests
+      run: pnpm test
+
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go_version }}
+          check-latest: true
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run golangci-lint ${{ inputs.go_lint_version }}
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: ${{ inputs.go_lint_version }}
+          working-directory: ./backend
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Build backend
+        run: go build -v -ldflags="-s -w" -o ../video-converter-app ./cmd/server/main.go
+
+      - name: Run backend tests
+        run: go test -v ./...
