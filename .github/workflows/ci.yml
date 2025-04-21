@@ -2,14 +2,11 @@ name: Video Converter CI
 
 on:
   push:
-    branches: [ "main" ]
     paths:
       - 'frontend/**'
       - 'backend/**'
       - '.github/workflows/ci.yml'
       - '.github/workflows/build-jobs.yml'
-  pull_request:
-    branches: [ "main" ]
 
 permissions:
   contents: read
