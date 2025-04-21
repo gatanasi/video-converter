@@ -1,0 +1,14 @@
+# [1.1.0](https://github.com/gatanasi/video-converter/compare/v1.0.0...v1.1.0) (2025-04-21)
+
+
+### Bug Fixes
+
+* Enhance path validation and error handling in video conversion ([#21](https://github.com/gatanasi/video-converter/issues/21)) ([6b9d9b1](https://github.com/gatanasi/video-converter/commit/6b9d9b1453b70805ec9e81d7962ec45e652e696b))
+* Enhance path validation and error handling in video conversion handlers ([a4ecefb](https://github.com/gatanasi/video-converter/commit/a4ecefb87ed806de56d7bba1fd55739cc817261c))
+
+
+### Features
+
+* Implement path validation for file operations to enhance security ([de9ecab](https://github.com/gatanasi/video-converter/commit/de9ecab941a83437772a6dec73b004bb72db054a))
+* Implement safe file removal with security validations in handlers ([8055443](https://github.com/gatanasi/video-converter/commit/8055443e97f3a4cf3786edd95a8af3f8fa1c5b89))
+* Refactor file validation logic for improved security and error handling ([ac0ee18](https://github.com/gatanasi/video-converter/commit/ac0ee181f69b7b5003fde6c76eebd613905285f6))
