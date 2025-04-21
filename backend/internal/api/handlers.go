@@ -262,45 +262,60 @@ func (h *Handler) resolveAndValidateConvertedFilePath(r *http.Request, urlPrefix
 	return absFilePath, filename, nil
 }
 
-// safeRemoveFile safely removes a file after performing multiple security validations:
+// validateFileSafety performs security validations for file operations:
 // 1. Checks if the path is within the allowed base directory
 // 2. Ensures the path exists and is a regular file (not a directory or symlink)
-// Returns true if removal was successful or the file didn't exist, false otherwise
-func (h *Handler) safeRemoveFile(baseDir, filePath, operationContext string) bool {
+// Returns the file info if validation passes, along with an error explaining any failure
+func (h *Handler) validateFileSafety(baseDir, filePath, operationContext string) (os.FileInfo, error) {
 	// 1. First verify the path is within the allowed directory
 	validPath, validationErr := isPathWithinBase(baseDir, filePath)
 	if validationErr != nil {
-		log.Printf("SECURITY [%s]: Validation error before file removal - %s: %v",
+		log.Printf("SECURITY [%s]: Validation error for file operation - %s: %v",
 			operationContext, filePath, validationErr)
-		return false
+		return nil, fmt.Errorf("internal server error")
 	}
 
 	if !validPath {
-		log.Printf("SECURITY [%s]: Rejected file removal - path outside allowed directory: %s",
+		log.Printf("SECURITY [%s]: Rejected file operation - path outside allowed directory: %s",
 			operationContext, filePath)
-		return false
+		return nil, fmt.Errorf("invalid file path")
 	}
 
 	// 2. Check that the path exists and is a regular file (not a symlink or directory)
 	fileInfo, err := os.Lstat(filePath) // Lstat doesn't follow symlinks
 	if err != nil {
 		if os.IsNotExist(err) {
-			// File doesn't exist anyway, so removal is "successful"
-			return true
+			return nil, fmt.Errorf("file not found")
 		}
-		log.Printf("ERROR [%s]: Cannot stat file before removal - %s: %v",
+		log.Printf("ERROR [%s]: Cannot stat file for operation - %s: %v",
 			operationContext, filePath, err)
-		return false
+		return nil, fmt.Errorf("error accessing file")
 	}
 
 	// Ensure it's a regular file
 	if !fileInfo.Mode().IsRegular() {
-		log.Printf("SECURITY [%s]: Rejected file removal - not a regular file: %s",
+		log.Printf("SECURITY [%s]: Rejected file operation - not a regular file: %s",
 			operationContext, filePath)
+		return nil, fmt.Errorf("invalid file type")
+	}
+
+	return fileInfo, nil
+}
+
+// safeRemoveFile safely removes a file after performing security validations
+// Returns true if removal was successful or the file didn't exist, false otherwise
+func (h *Handler) safeRemoveFile(baseDir, filePath, operationContext string) bool {
+	_, err := h.validateFileSafety(baseDir, filePath, operationContext)
+	if err != nil {
+		if err.Error() == "file not found" {
+			// File doesn't exist anyway, so removal is "successful"
+			return true
+		}
+		// All other validation errors indicate failure
 		return false
 	}
 
-	// 3. All validations passed, proceed with removal
+	// All validations passed, proceed with removal
 	if err := os.Remove(filePath); err != nil {
 		log.Printf("ERROR [%s]: Failed to remove file %s: %v",
 			operationContext, filePath, err)
@@ -308,6 +323,13 @@ func (h *Handler) safeRemoveFile(baseDir, filePath, operationContext string) boo
 	}
 
 	return true
+}
+
+// safeAccessFile validates a file for safe download
+// Returns the file info if the file is safe to access, or an error if not
+func (h *Handler) safeAccessFile(baseDir, filePath, operationContext string) (os.FileInfo, error) {
+	// Simply delegate to the common validation function - it already does everything we need
+	return h.validateFileSafety(baseDir, filePath, operationContext)
 }
 
 func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request) {
@@ -624,20 +646,20 @@ func (h *Handler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileInfo, err := os.Stat(filePath)
+	fileInfo, err := h.safeAccessFile(h.Config.ConvertedDir, filePath, fmt.Sprintf("download %s", filename))
 	if err != nil {
-		if os.IsNotExist(err) {
+		// Handle different error types with appropriate status codes
+		switch err.Error() {
+		case "file not found":
 			log.Printf("WARN: Requested download file not found: %s", filePath)
 			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
+		case "invalid file path", "invalid file type":
+			log.Printf("WARN: Invalid file requested for download: %s", filePath)
+			http.Error(w, "Invalid file request", http.StatusBadRequest)
+		default:
 			log.Printf("ERROR: Error stating download file %s: %v", filePath, err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
-		return
-	}
-	if fileInfo.IsDir() {
-		log.Printf("WARN: Directory requested for download instead of file: %s", filePath)
-		http.Error(w, "Invalid request (directory specified)", http.StatusBadRequest)
 		return
 	}
 
