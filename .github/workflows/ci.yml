@@ -7,6 +7,7 @@ on:
       - 'frontend/**'
       - 'backend/**'
       - '.github/workflows/ci.yml'
+      - '.github/workflows/build-jobs.yml'
   pull_request:
     branches: [ "main" ]
 
@@ -14,85 +15,7 @@ permissions:
   contents: read
   actions: write
 
-env:
-  NODE_VERSION: '22.x'
-  PNPM_VERSION: '10.9.0'
-  GO_VERSION: '1.24'
-
 jobs:
-  frontend-build:
-    name: Frontend Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup pnpm ${{ env.PNPM_VERSION }}
-      uses: pnpm/action-setup@v4
-      with:
-        version: ${{ env.PNPM_VERSION }}
-
-    - name: Use Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
-        cache-dependency-path: frontend/pnpm-lock.yaml
-
-    - name: Install dependencies
-      run: pnpm install
-
-    - name: Build frontend
-      run: pnpm run build
-
-    - name: Run frontend tests
-      run: pnpm test
-
-  backend-build:
-    name: Backend Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.1.2
-          working-directory: ./backend
-
-      - name: Check formatting
-        run: test -z "$(gofmt -l .)"
-
-      - name: Build backend
-        run: go build -v -ldflags="-s -w" -o ../video-converter-app ./cmd/server/main.go
-
-      - name: Run backend tests
-        run: go test -v ./...
+  build:
+    name: Build Frontend and Backend
+    uses: ./.github/workflows/build-jobs.yml
