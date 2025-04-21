@@ -209,7 +209,8 @@ func resolveAndValidateSubPath(baseDirConfig string, relativeSubPath string) (st
 	// Security check: Ensure the final path is strictly within the intended base directory.
 	// Check if the path starts with the base directory followed by a path separator,
 	// or if the path is exactly the base directory (for cases where relativeSubPath might be "." or empty, though handled elsewhere).
-	if !strings.HasPrefix(absSubPath, absBaseDir+string(os.PathSeparator)) && absSubPath != absBaseDir {
+	relPath, err := filepath.Rel(absBaseDir, absSubPath)
+	if err != nil || strings.HasPrefix(relPath, "..") || filepath.IsAbs(relPath) {
 		log.Printf("WARN: Invalid path detected (outside designated directory): Subpath='%s', Resolved='%s', BaseDir='%s'.",
 			relativeSubPath, absSubPath, absBaseDir)
 		return "", fmt.Errorf("invalid file path generated (security check failed)")
