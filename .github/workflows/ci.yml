@@ -1,4 +1,4 @@
-name: Video Converter CI
+name: Video Converter - CI
 
 on:
   push:
@@ -13,5 +13,5 @@ permissions:
 
 jobs:
   build:
-    name: Build Frontend and Backend
+    name: Full Build
     uses: ./.github/workflows/build-jobs.yml

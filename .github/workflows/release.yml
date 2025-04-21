@@ -1,4 +1,4 @@
-name: Release Video Converter
+name: Video Converter - Release
 
 on:
   workflow_dispatch:
@@ -107,10 +107,12 @@ jobs:
           fi
 
   build:
-    name: Build Frontend and Backend
+    name: Full Build
     needs: determine-version
     if: needs.determine-version.outputs.should_release == 'true'
     uses: ./.github/workflows/build-jobs.yml
+    with:
+      upload_artifacts: true
 
   release:
     name: Create Release
