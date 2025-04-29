@@ -9,13 +9,13 @@ importers:
   .:
     devDependencies:
       '@types/node':
-        specifier: ^22.0.0
+        specifier: 22.15.1
         version: 22.15.1
       esbuild:
-        specifier: ^0.25.0
+        specifier: 0.25.3
         version: 0.25.3
       typescript:
-        specifier: ^5.8.3
+        specifier: 5.8.3
         version: 5.8.3
 
 packages:

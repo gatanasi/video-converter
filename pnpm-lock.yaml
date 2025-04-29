@@ -9,25 +9,25 @@ importers:
   .:
     devDependencies:
       '@commitlint/cli':
-        specifier: ^19.8.0
+        specifier: 19.8.0
         version: 19.8.0(@types/node@22.14.1)(typescript@5.8.3)
       '@commitlint/config-conventional':
-        specifier: ^19.8.0
+        specifier: 19.8.0
         version: 19.8.0
       '@semantic-release/changelog':
-        specifier: ^6.0.3
+        specifier: 6.0.3
         version: 6.0.3(semantic-release@24.2.3(typescript@5.8.3))
       '@semantic-release/git':
-        specifier: ^10.0.1
+        specifier: 10.0.1
         version: 10.0.1(semantic-release@24.2.3(typescript@5.8.3))
       '@semantic-release/github':
-        specifier: ^11.0.0
+        specifier: 11.0.1
         version: 11.0.1(semantic-release@24.2.3(typescript@5.8.3))
       husky:
-        specifier: ^9.1.7
+        specifier: 9.1.7
         version: 9.1.7
       semantic-release:
-        specifier: ^24.0.0
+        specifier: 24.2.3
         version: 24.2.3(typescript@5.8.3)
 
 packages:
