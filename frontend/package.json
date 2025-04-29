@@ -12,8 +12,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "esbuild": "^0.25.0",
-    "typescript": "^5.8.3"
+    "@types/node": "22.15.1",
+    "esbuild": "0.25.3",
+    "typescript": "5.8.3"
   }
 }
