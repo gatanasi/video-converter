@@ -8,8 +8,9 @@
   "schedule": ["after 8pm on sunday"],
   "packageRules": [
     {
-      "matchUpdateTypes": ["major"],
-      "separateMajorMinor": true
+      "matchDatasources": ["github-actions"],
+      "groupName": "github actions",
+      "groupSlug": "github-actions"
     },
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
@@ -24,11 +25,6 @@
       "matchDepTypes": ["devDependencies"],
       "groupName": "all non-major devDependencies",
       "groupSlug": "non-major-dev-deps"
-    },
-    {
-      "matchDatasources": ["github-actions"],
-      "groupName": "github actions",
-      "groupSlug": "github-actions"
     }
   ]
 }
