@@ -53,6 +53,10 @@ jobs:
         cache: 'pnpm'
         cache-dependency-path: frontend/pnpm-lock.yaml
 
+    - name: Enable Corepack
+      run: corepack enable
+      shell: bash
+
     - name: Install dependencies
       run: pnpm install
 
