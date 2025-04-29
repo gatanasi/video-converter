@@ -1,6 +1,34 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:best-practices",
+    "helpers:pinGitHubActionDigestsToSemver",
+    "npm:unpublishSafe"
+  ],
+  "schedule": ["after 8pm on sunday"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "separateMajorMinor": true
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "all non-major devDependencies",
+      "groupSlug": "non-major-dev-deps"
+    },
+    {
+      "matchDatasources": ["github-actions"],
+      "groupName": "github actions",
+      "groupSlug": "github-actions"
+    }
   ]
 }
