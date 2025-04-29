@@ -72,7 +72,7 @@ jobs:
       run: pnpm test
 
     - name: Upload frontend build artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: inputs.upload_artifacts == true
       with:
         name: frontend-build
@@ -128,7 +128,7 @@ jobs:
         run: go test -v ./...
 
       - name: Upload backend build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: inputs.upload_artifacts == true
         with:
           name: backend-build
