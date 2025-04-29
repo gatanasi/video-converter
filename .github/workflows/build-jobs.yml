@@ -103,7 +103,7 @@ jobs:
         run: go mod download
 
       - name: Run golangci-lint ${{ inputs.go_lint_version }}
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7
         with:
           version: ${{ inputs.go_lint_version }}
           working-directory: ./backend
