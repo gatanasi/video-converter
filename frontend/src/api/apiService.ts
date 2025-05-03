@@ -126,20 +126,23 @@ class ApiService {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (error) {
-                        reject(new Error('Invalid server response format'));
+                        reject(new Error(`Failed to parse server response: ${xhr.responseText}`));
                     }
                 } else {
-                    let errorMessage = `HTTP error ${xhr.status}`;
+                    let errorMessage = `Upload failed with HTTP status ${xhr.status}`;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
                         if (errorResponse && errorResponse.error) {
-                            errorMessage = errorResponse.error;
+                            errorMessage = `Upload failed: ${errorResponse.error} (Status: ${xhr.status})`;
+                        } else if (xhr.statusText) {
+                            errorMessage = `Upload failed: ${xhr.statusText} (Status: ${xhr.status})`;
                         }
                     } catch (e) {
-                        // If response is not JSON, use status text
+                        // If response is not JSON or parsing fails, use status text or default
                         if (xhr.statusText) {
-                            errorMessage = xhr.statusText;
+                            errorMessage = `Upload failed: ${xhr.statusText} (Status: ${xhr.status})`;
                         }
+                        // Keep the default message if statusText is also unavailable
                     }
                     reject(new Error(errorMessage));
                 }
@@ -157,11 +160,12 @@ class ApiService {
             
             // Handle abort
             xhr.addEventListener('abort', () => {
-                reject(new Error('Upload was aborted'));
+                reject(new Error('Upload was aborted by the client'));
             });
             
             // Open and send the request
             xhr.open('POST', `${this.baseUrl}/api/convert/upload`);
+            xhr.timeout = 900000; // 15 minutes timeout
             xhr.send(formData);
         });
     }

@@ -235,10 +235,7 @@ class App {
         const target = event.target as HTMLInputElement; // Cast here is okay
         const file = target.files?.[0];
         
-        // Hide progress bar when file selection changes
-        this.uploadProgressContainer.classList.add('hidden');
-        this.uploadProgressBar.style.width = '0%';
-        this.uploadProgressPercent.textContent = '0%';
+        this.resetUploadProgress();
         
         if (file) {
             this.selectedUploadFile = file;
@@ -429,7 +426,7 @@ class App {
         // Disable button and show processing state
         this.uploadConvertBtn.disabled = true;
         this.uploadConvertBtn.classList.add('button-pulse');
-        this.uploadConvertBtn.textContent = 'Uploading...'; // Indicate upload phase
+        this.uploadConvertBtn.textContent = 'Uploading...';
 
         // Show and reset progress bar
         this.uploadProgressContainer.classList.remove('hidden');
@@ -451,9 +448,6 @@ class App {
                 (percent) => {
                     this.uploadProgressBar.style.width = `${percent}%`;
                     this.uploadProgressPercent.textContent = `${percent}%`;
-                    
-                    // Update button text with progress
-                    this.uploadConvertBtn.textContent = `Uploading... ${percent}%`;
                 }
             );
 
@@ -486,8 +480,7 @@ class App {
             );
             console.error(`Upload/conversion start error for ${file.name}:`, error);
         } finally {
-            // Hide progress bar
-            this.uploadProgressContainer.classList.add('hidden');
+            this.resetUploadProgress();
             
             // Restore button state
             this.uploadConvertBtn.classList.remove('button-pulse');
@@ -496,6 +489,12 @@ class App {
             this.uploadConvertBtn.disabled = !this.selectedUploadFile;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+    }
+
+    private resetUploadProgress(): void {
+        this.uploadProgressContainer.classList.add('hidden');
+        this.uploadProgressBar.style.width = '0%';
+        this.uploadProgressPercent.textContent = '0%';
     }
 
     // Handle resetting the folder ID
