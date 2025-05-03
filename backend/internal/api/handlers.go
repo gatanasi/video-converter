@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/gatanasi/video-converter/internal/conversion"
 	"github.com/gatanasi/video-converter/internal/drive"
@@ -510,12 +509,13 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	// --- Prepare file paths and job details ---
 	originalFileName := filepath.Base(handler.Filename)
 	sanitizedBaseName := filestore.SanitizeFilename(originalFileName)
-	if sanitizedBaseName == "" {
-		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().Unix()) // Fallback with shorter timestamp
-	}
-
 	// Generate a unique Conversion ID using UUID
 	conversionID := uuid.NewString()
+	if sanitizedBaseName == "" {
+		// Use the generated conversionID for a unique fallback name
+		sanitizedBaseName = fmt.Sprintf("upload-%s", conversionID)
+		log.Printf("WARN: Sanitized filename was empty for original '%s', using fallback: %s", originalFileName, sanitizedBaseName)
+	}
 
 	// --- Resolve and Validate Paths ---
 	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, targetFormat, conversionID)
