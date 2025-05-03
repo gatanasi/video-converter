@@ -20,6 +20,7 @@ import (
 	"github.com/gatanasi/video-converter/internal/drive"
 	"github.com/gatanasi/video-converter/internal/filestore"
 	"github.com/gatanasi/video-converter/internal/models"
+	"github.com/google/uuid"
 )
 
 // Handler encapsulates dependencies for API handlers.
@@ -223,7 +224,9 @@ func (h *Handler) resolveAndValidatePaths(baseFileName, targetFormat, conversion
 	// Generate relative filenames using conversionID for uniqueness
 	fileNameWithoutExt := strings.TrimSuffix(baseFileName, filepath.Ext(baseFileName))
 	inputFileName := fmt.Sprintf("%s-%s", conversionID, baseFileName)
-	outputFileName := fmt.Sprintf("%s-%s.%s", fileNameWithoutExt, conversionID, targetFormat)
+	// Use only the first 3 chars of UUID for the output filename
+	shortID := conversionID[:3]
+	outputFileName := fmt.Sprintf("%s-%s.%s", fileNameWithoutExt, shortID, targetFormat)
 
 	// Resolve and validate input path
 	absInputPath, err = resolveAndValidateSubPath(h.Config.UploadsDir, inputFileName)
@@ -368,8 +371,9 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 		sanitizedBaseName = fmt.Sprintf("gdrive-video-%s", request.FileID) // Fallback
 	}
 
-	timestamp := time.Now().Unix()
-	conversionID := strconv.FormatInt(timestamp, 10)
+	// Generate a unique Conversion ID using UUID
+	conversionID := uuid.NewString()
+
 	// --- Resolve and Validate Paths ---
 	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, request.TargetFormat, conversionID)
 	if err != nil {
@@ -509,8 +513,9 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	if sanitizedBaseName == "" {
 		sanitizedBaseName = fmt.Sprintf("upload-%d", time.Now().Unix()) // Fallback with shorter timestamp
 	}
-	timestamp := time.Now().Unix()
-	conversionID := strconv.FormatInt(timestamp, 10)
+
+	// Generate a unique Conversion ID using UUID
+	conversionID := uuid.NewString()
 
 	// --- Resolve and Validate Paths ---
 	uploadedFilePath, outputFilePath, err := h.resolveAndValidatePaths(sanitizedBaseName, targetFormat, conversionID)
