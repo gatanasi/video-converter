@@ -1,3 +1,18 @@
+# [1.2.0](https://github.com/gatanasi/video-converter/compare/v1.1.4...v1.2.0) (2025-05-03)
+
+
+### Bug Fixes
+
+* use UUID for fallback sanitized filename in UploadConvertHandler ([61e5997](https://github.com/gatanasi/video-converter/commit/61e59974473654469bb4d3cfbced39168658102d))
+* use UUID for unique conversion IDs ([1c86706](https://github.com/gatanasi/video-converter/commit/1c86706fcb8662fcbb7a5937e08cf986394f51c6))
+* use UUID for unique conversion IDs ([#41](https://github.com/gatanasi/video-converter/issues/41)) ([3d22f34](https://github.com/gatanasi/video-converter/commit/3d22f34689cf8fd5914c3c696dac964a40637e15))
+
+
+### Features
+
+* add upload progress bar ([2c392d5](https://github.com/gatanasi/video-converter/commit/2c392d5440edc0bda533842b5bf6767e6d7de6ad))
+* Add upload progress bar ([#42](https://github.com/gatanasi/video-converter/issues/42)) ([e464b8f](https://github.com/gatanasi/video-converter/commit/e464b8f95b741db12d48eb97932b00c15d9aa53b))
+
 ## [1.1.3](https://github.com/gatanasi/video-converter/compare/v1.1.2...v1.1.3) (2025-04-21)
 
 
