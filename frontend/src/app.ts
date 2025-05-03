@@ -38,6 +38,10 @@ class App {
     private uploadFileInfo: HTMLElement;
     private uploadFileName: HTMLElement;
     private uploadFileSize: HTMLElement;
+    // Add references for progress bar elements
+    private uploadProgressContainer: HTMLElement;
+    private uploadProgressBar: HTMLElement;
+    private uploadProgressPercent: HTMLElement;
 
     // Conversion Options
     private conversionFormContainer: HTMLElement;
@@ -83,6 +87,10 @@ class App {
         this.uploadFileInfo = document.getElementById('upload-file-info')!;
         this.uploadFileName = document.getElementById('upload-file-name')!;
         this.uploadFileSize = document.getElementById('upload-file-size')!;
+        // Initialize progress bar elements
+        this.uploadProgressContainer = document.getElementById('upload-progress-container')!;
+        this.uploadProgressBar = document.getElementById('upload-progress-bar')!;
+        this.uploadProgressPercent = document.getElementById('upload-progress-percent')!;
 
         // Conversion Options
         this.conversionFormContainer = document.getElementById('conversion-options-section')!; // Use section ID
@@ -226,6 +234,12 @@ class App {
     handleFileSelection(event: Event): void { // Use Event type directly
         const target = event.target as HTMLInputElement; // Cast here is okay
         const file = target.files?.[0];
+        
+        // Hide progress bar when file selection changes
+        this.uploadProgressContainer.classList.add('hidden');
+        this.uploadProgressBar.style.width = '0%';
+        this.uploadProgressPercent.textContent = '0%';
+        
         if (file) {
             this.selectedUploadFile = file;
             this.uploadFileName.textContent = file.name;
@@ -417,6 +431,11 @@ class App {
         this.uploadConvertBtn.classList.add('button-pulse');
         this.uploadConvertBtn.textContent = 'Uploading...'; // Indicate upload phase
 
+        // Show and reset progress bar
+        this.uploadProgressContainer.classList.remove('hidden');
+        this.uploadProgressBar.style.width = '0%';
+        this.uploadProgressPercent.textContent = '0%';
+
         showMessage(
             this.messageArea,
             `Uploading and starting conversion for ${file.name}...`,
@@ -425,7 +444,18 @@ class App {
         );
 
         try {
-            const response = await apiService.uploadAndConvert(file, options);
+            // Pass progress callback function to update UI
+            const response = await apiService.uploadAndConvert(
+                file, 
+                options, 
+                (percent) => {
+                    this.uploadProgressBar.style.width = `${percent}%`;
+                    this.uploadProgressPercent.textContent = `${percent}%`;
+                    
+                    // Update button text with progress
+                    this.uploadConvertBtn.textContent = `Uploading... ${percent}%`;
+                }
+            );
 
             if (response.success) {
                 showMessage(
@@ -438,7 +468,6 @@ class App {
                 // Clear file input after successful start
                 this.fileUploadInput.value = ''; // Reset file input
                 // Simulate empty event for handleFileSelection to update UI state
-                // Create a simple object mimicking the necessary structure
                 const emptyFileEvent = { target: this.fileUploadInput } as unknown as Event;
                 this.handleFileSelection(emptyFileEvent);
             } else {
@@ -457,6 +486,9 @@ class App {
             );
             console.error(`Upload/conversion start error for ${file.name}:`, error);
         } finally {
+            // Hide progress bar
+            this.uploadProgressContainer.classList.add('hidden');
+            
             // Restore button state
             this.uploadConvertBtn.classList.remove('button-pulse');
             this.uploadConvertBtn.textContent = 'Upload & Convert';

@@ -92,27 +92,78 @@ class ApiService {
      * Upload a video file and start conversion.
      * @param file - The video file to upload.
      * @param options - Conversion options (targetFormat, reverseVideo, removeSound).
-     * @returns Conversion initiation response.
+     * @param onProgress - Optional callback to track upload progress (0 to 100).
+     * @returns Promise that resolves to the conversion initiation response.
      */
-    async uploadAndConvert(file: File, options: ConversionOptions): Promise<ConversionResponse> {
-        const formData = new FormData();
-        formData.append('videoFile', file);
-        formData.append('targetFormat', options.targetFormat);
-        // FormData values are typically strings
-        formData.append('reverseVideo', String(options.reverseVideo));
-        formData.append('removeSound', String(options.removeSound));
-
-        // Note: We don't set Content-Type header when using FormData with fetch,
-        // the browser sets it correctly including the boundary.
-        return this.apiRequest<ConversionResponse>(
-            `/api/convert/upload`,
-            {
-                method: 'POST',
-                body: formData
-                // No 'Content-Type' header needed here
-            },
-            'uploadAndConvert'
-        );
+    async uploadAndConvert(
+        file: File, 
+        options: ConversionOptions, 
+        onProgress?: (percent: number) => void
+    ): Promise<ConversionResponse> {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            
+            formData.append('videoFile', file);
+            formData.append('targetFormat', options.targetFormat);
+            formData.append('reverseVideo', String(options.reverseVideo));
+            formData.append('removeSound', String(options.removeSound));
+            
+            // Set up upload progress event
+            if (onProgress) {
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const percent = Math.round((event.loaded / event.total) * 100);
+                        onProgress(percent);
+                    }
+                });
+            }
+            
+            // Handle response
+            xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (error) {
+                        reject(new Error('Invalid server response format'));
+                    }
+                } else {
+                    let errorMessage = `HTTP error ${xhr.status}`;
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        if (errorResponse && errorResponse.error) {
+                            errorMessage = errorResponse.error;
+                        }
+                    } catch (e) {
+                        // If response is not JSON, use status text
+                        if (xhr.statusText) {
+                            errorMessage = xhr.statusText;
+                        }
+                    }
+                    reject(new Error(errorMessage));
+                }
+            });
+            
+            // Handle network errors
+            xhr.addEventListener('error', () => {
+                reject(new Error('Network error occurred during upload'));
+            });
+            
+            // Handle timeout
+            xhr.addEventListener('timeout', () => {
+                reject(new Error('Upload request timed out'));
+            });
+            
+            // Handle abort
+            xhr.addEventListener('abort', () => {
+                reject(new Error('Upload was aborted'));
+            });
+            
+            // Open and send the request
+            xhr.open('POST', `${this.baseUrl}/api/convert/upload`);
+            xhr.send(formData);
+        });
     }
 
     /**
