@@ -140,9 +140,6 @@ export class ActiveConversionsComponent {
             }
         } catch (error: unknown) {
             console.error('Error loading active conversions:', error);
-            // Optionally show a message in the UI
-            // const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            // showMessage(this.messageContainer, `Error loading conversions: ${errorMessage}`, 'error');
         } finally {
             this.isPolling = false;
         }
@@ -151,7 +148,11 @@ export class ActiveConversionsComponent {
     addConversionItem(conversionId: string, fileName: string, format: string, initialProgress: number = 0): void {
         this.removeEmptyStateMessage();
 
-        const progressItem = createProgressItem(`${fileName} → ${format.toUpperCase()}`);
+        // Remove file extension for display
+        const lastDotIndex = fileName.lastIndexOf('.');
+        const nameWithoutExtension = lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
+
+        const progressItem = createProgressItem(`${nameWithoutExtension} → ${format.toUpperCase()}`);
         progressItem.dataset.id = conversionId;
 
         const abortButton = document.createElement('button');
