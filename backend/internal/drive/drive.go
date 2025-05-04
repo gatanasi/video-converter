@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/gatanasi/video-converter/internal/utils"
 )
 
 const (
@@ -82,7 +84,7 @@ func DownloadFile(fileID, apiKey, destinationPath string, maxFileSize int64) err
 		return fmt.Errorf("file ID %s download exceeded maximum size of %d bytes", fileID, maxFileSize)
 	}
 
-	log.Printf("Successfully downloaded %d bytes for file ID %s to %s", written, fileID, destinationPath)
+	log.Printf("Successfully downloaded %s for file ID %s to %s", utils.FormatBytesToMB(written), fileID, destinationPath)
 	return nil
 }
 
