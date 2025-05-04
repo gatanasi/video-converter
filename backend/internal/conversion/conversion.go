@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/gatanasi/video-converter/internal/models"
+	"github.com/gatanasi/video-converter/internal/utils"
 )
 
 // VideoConverter manages the conversion worker pool and queue.
@@ -347,8 +348,8 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 
 	// Mark as complete
 	c.store.UpdateStatusOnSuccess(conversionID)
-	log.Printf("Conversion successful for job %s: %s -> %s (%d bytes)",
-		conversionID, filepath.Base(inputPath), filepath.Base(outputPath), outputInfo.Size())
+	log.Printf("Conversion successful for job %s: %s -> %s (%s)",
+		conversionID, filepath.Base(inputPath), filepath.Base(outputPath), utils.FormatBytesToMB(outputInfo.Size()))
 
 	// Clean up the original downloaded file *after* successful conversion and metadata copy
 	err = os.Remove(inputPath)

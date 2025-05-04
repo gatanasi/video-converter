@@ -19,6 +19,7 @@ import (
 	"github.com/gatanasi/video-converter/internal/drive"
 	"github.com/gatanasi/video-converter/internal/filestore"
 	"github.com/gatanasi/video-converter/internal/models"
+	"github.com/gatanasi/video-converter/internal/utils"
 	"github.com/google/uuid"
 )
 
@@ -563,7 +564,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 		h.sendErrorResponse(w, fmt.Sprintf("Upload failed: File exceeds maximum allowed size (%d MB)", h.Config.MaxFileSize/(1024*1024)), http.StatusRequestEntityTooLarge)
 		return
 	}
-	log.Printf("Successfully saved %d bytes for job %s from upload %s", written, conversionID, originalFileName)
+	log.Printf("Successfully saved %s for job %s from upload %s", utils.FormatBytesToMB(written), conversionID, originalFileName)
 
 	// --- Queue the conversion job ---
 	status := &models.ConversionStatus{
