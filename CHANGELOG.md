@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/gatanasi/video-converter/compare/v1.2.0...v1.2.1) (2025-05-04)
+
+
+### Bug Fixes
+
+* remove redundant argument from exiftool command in video conversion ([30ac0e3](https://github.com/gatanasi/video-converter/commit/30ac0e39369965a94e652195f4b284c3a04b4c2f))
+
 # [1.2.0](https://github.com/gatanasi/video-converter/compare/v1.1.4...v1.2.0) (2025-05-03)
 
 
