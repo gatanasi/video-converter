@@ -336,7 +336,7 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	// -overwrite_original modifies the output file directly
 	// -preserve keeps original file modification time if possible
 	// -P preserves filesystem timestamp
-	exifCmd := exec.Command("exiftool", "-tagsFromFile", inputPath, "-all:all>all:all", "-preserve", "-overwrite_original", outputPath)
+	exifCmd := exec.Command("exiftool", "-tagsFromFile", inputPath, "-preserve", "-overwrite_original", outputPath)
 	exifOutput, exifErr := exifCmd.CombinedOutput()
 	if exifErr != nil {
 		// Log warning, don't fail the conversion
