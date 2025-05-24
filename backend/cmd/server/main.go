@@ -50,7 +50,7 @@ func main() {
 		Addr:         ":" + conf.Port,
 		Handler:      middleware.CORS(mux),
 		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 120 * time.Second, // Increased for potentially long conversions/downloads
+		WriteTimeout: 120 * time.Second,
 		IdleTimeout:  180 * time.Second,
 	}
 
@@ -88,7 +88,7 @@ func main() {
 func setupFileCleanup(conf models.Config) {
 	// Run cleanup shortly after start and then periodically
 	initialDelay := 5 * time.Minute
-	cleanupInterval := 1 * time.Hour
+	cleanupInterval := 4 * time.Hour
 
 	log.Printf("Scheduling initial file cleanup in %v...", initialDelay)
 	time.AfterFunc(initialDelay, func() {
@@ -106,7 +106,7 @@ func setupFileCleanup(conf models.Config) {
 
 // cleanupFiles removes old files from configured directories.
 func cleanupFiles(conf models.Config) {
-	maxAge := 24 * time.Hour // Files older than 24 hours
+	maxAge := 24 * time.Hour * 3 // Files older than 3 days
 	log.Println("Running cleanup for old files...")
 
 	uploadsRemoved := filestore.CleanupOldFiles(conf.UploadsDir, maxAge)
