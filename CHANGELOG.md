@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/gatanasi/video-converter/compare/v1.2.4...v1.3.0) (2025-09-28)
+
+
+### Features
+
+* add video quality presets ([e8290ad](https://github.com/gatanasi/video-converter/commit/e8290ad4c97fec581239eb3dc9ff55ec6006c7bd))
+
 ## [1.2.1](https://github.com/gatanasi/video-converter/compare/v1.2.0...v1.2.1) (2025-05-04)
 
 
