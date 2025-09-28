@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/gatanasi/video-converter/compare/v1.3.1...v1.4.0) (2025-09-28)
+
+
+### Features
+
+* add configuration manager for API base URL retrieval ([99f8e8c](https://github.com/gatanasi/video-converter/commit/99f8e8c455283b4cfa00aea2cb17e10190b05ea8))
+* implement Server-Sent Events ([d0d339d](https://github.com/gatanasi/video-converter/commit/d0d339d0cdc587565a9df351c6745e412090e169))
+
 # [1.3.0](https://github.com/gatanasi/video-converter/compare/v1.2.4...v1.3.0) (2025-09-28)
 
 
