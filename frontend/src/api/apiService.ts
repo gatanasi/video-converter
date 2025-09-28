@@ -106,6 +106,7 @@ class ApiService {
             
             formData.append('videoFile', file);
             formData.append('targetFormat', options.targetFormat);
+            formData.append('quality', options.quality);
             formData.append('reverseVideo', String(options.reverseVideo));
             formData.append('removeSound', String(options.removeSound));
             

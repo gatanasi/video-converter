@@ -9,6 +9,7 @@ A simple web application that allows users to fetch videos from a specified Goog
 -   Special video processing options:
     -   **Reverse video**: Play the video in reverse.
     -   **Remove sound**: Strip audio from the output video (enabled by default).
+    -   **Quality presets**: Choose between Default (CRF 22 · slow), High (CRF 20 · slower), or Fast (CRF 23 · medium) encoding profiles.
 -   Preserves metadata from original files using exiftool.
 -   Displays currently running conversions with accurate progress and abort option.
 -   Includes a tab to browse and manage previously converted videos (download or delete).

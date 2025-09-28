@@ -27,12 +27,23 @@ type ConversionResponse struct {
 	Details      string `json:"details,omitempty"` // Potentially more detailed error info
 }
 
+// QualitySetting describes the encoder parameters for a named quality option.
+type QualitySetting struct {
+	Name   string
+	Preset string
+	CRF    int
+}
+
+// DefaultQualityName is the fallback quality option used when none is provided or when an unknown value is supplied.
+const DefaultQualityName = "default"
+
 // DriveConversionRequest is the payload for starting a conversion from Google Drive.
 type DriveConversionRequest struct {
 	FileID       string `json:"fileId"`
 	FileName     string `json:"fileName"`
 	MimeType     string `json:"mimeType"`
 	TargetFormat string `json:"targetFormat"`
+	Quality      string `json:"quality"`
 	ReverseVideo bool   `json:"reverseVideo"`
 	RemoveSound  bool   `json:"removeSound"`
 }
@@ -42,6 +53,7 @@ type ConversionStatus struct {
 	InputPath       string  // Path to the originally downloaded file
 	OutputPath      string  // Path to the target converted file
 	Format          string  // Target format (e.g., "mp4")
+	Quality         string  // Selected quality label (e.g., "default")
 	DurationSeconds float64 // Total duration of the input video in seconds
 	Progress        float64 // Estimated progress (0-100)
 	Complete        bool    // True if finished (successfully or with error)
@@ -54,6 +66,9 @@ type ConversionJob struct {
 	FileID           string // Original Google Drive File ID (for reference)
 	FileName         string // Original filename (for reference)
 	TargetFormat     string
+	Quality          string
+	VideoPreset      string
+	VideoCRF         int
 	UploadedFilePath string            // Path to the file downloaded from Drive
 	OutputFilePath   string            // Path where the converted file should be saved
 	Status           *ConversionStatus // Pointer to the shared status object
@@ -89,6 +104,7 @@ type ActiveConversionInfo struct {
 	FileName string  `json:"fileName"` // Output filename
 	Format   string  `json:"format"`
 	Progress float64 `json:"progress"`
+	Quality  string  `json:"quality,omitempty"`
 }
 
 // --- End of Global State Management ---

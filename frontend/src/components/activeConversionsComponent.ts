@@ -1,6 +1,6 @@
 import { showMessage, createProgressItem } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
-import { ConversionStatus, ActiveConversionsContainer } from '../types';
+import { ConversionStatus, ActiveConversionsContainer, ConversionQuality } from '../types';
 
 const REMOVAL_DELAY = 10000; // Delay before removing completed/failed items (ms)
 const ABORT_REMOVAL_DELAY = 5000; // Shorter delay for aborted items
@@ -15,6 +15,7 @@ export class ActiveConversionsComponent {
     private activeConversions: Map<string, {
         fileName: string;
         format: string;
+        quality?: ConversionQuality;
         element: HTMLElement;
         aborted?: boolean;
         timeoutId?: number;
@@ -33,6 +34,7 @@ export class ActiveConversionsComponent {
         this.activeConversions = new Map<string, {
             fileName: string;
             format: string;
+            quality?: ConversionQuality;
             element: HTMLElement;
             aborted?: boolean;
             timeoutId?: number;
@@ -113,7 +115,13 @@ export class ActiveConversionsComponent {
             serverConversions.forEach((conv: ConversionStatus) => {
                 if (!clientIds.has(conv.id)) {
                     // Provide default for potentially undefined fileName
-                    this.addConversionItem(conv.id, conv.fileName || 'Unknown File', conv.format, conv.progress);
+                    this.addConversionItem(
+                        conv.id,
+                        conv.fileName || 'Unknown File',
+                        conv.format,
+                        conv.progress,
+                        conv.quality
+                    );
                 }
             });
 
@@ -145,14 +153,21 @@ export class ActiveConversionsComponent {
         }
     }
 
-    addConversionItem(conversionId: string, fileName: string, format: string, initialProgress: number = 0): void {
+    addConversionItem(
+        conversionId: string,
+        fileName: string,
+        format: string,
+        initialProgress: number = 0,
+        quality?: ConversionQuality
+    ): void {
         this.removeEmptyStateMessage();
 
         // Remove file extension for display
         const lastDotIndex = fileName.lastIndexOf('.');
         const nameWithoutExtension = lastDotIndex === -1 ? fileName : fileName.substring(0, lastDotIndex);
 
-        const progressItem = createProgressItem(`${nameWithoutExtension} → ${format.toUpperCase()}`);
+        const qualitySuffix = quality ? ` · ${this.formatQualityLabel(quality)}` : '';
+        const progressItem = createProgressItem(`${nameWithoutExtension} → ${format.toUpperCase()}${qualitySuffix}`);
         progressItem.dataset.id = conversionId;
 
         const abortButton = document.createElement('button');
@@ -173,9 +188,21 @@ export class ActiveConversionsComponent {
         this.activeConversions.set(conversionId, {
             fileName,
             format,
+            quality,
             element: progressItem,
             conversionId
         });
+    }
+
+    private formatQualityLabel(quality: ConversionQuality): string {
+        switch (quality) {
+            case 'high':
+                return 'High Quality';
+            case 'fast':
+                return 'Fast Quality';
+            default:
+                return 'Default Quality';
+        }
     }
 
     /** Safely removes a conversion item from the UI and map */
@@ -400,7 +427,13 @@ export class ActiveConversionsComponent {
                     console.warn(`Found untracked active conversion ${status.id}, adding to list.`);
                     // We might not have the original file name readily available here
                     // Using status.fileName if available, otherwise a placeholder
-                    this.addConversionItem(status.id, status.fileName || 'Unknown File', status.format, status.progress);
+                    this.addConversionItem(
+                        status.id,
+                        status.fileName || 'Unknown File',
+                        status.format,
+                        status.progress,
+                        status.quality
+                    );
                 }
             });
 

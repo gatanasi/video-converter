@@ -161,6 +161,18 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 		"-v", "warning", // Log level for FFmpeg messages on stderr
 	}
 
+	selectedPreset := job.VideoPreset
+	selectedCRF := job.VideoCRF
+	if selectedPreset == "" || selectedCRF <= 0 {
+		defaultQuality := ResolveQualitySetting(models.DefaultQualityName)
+		if selectedPreset == "" {
+			selectedPreset = defaultQuality.Preset
+		}
+		if selectedCRF <= 0 {
+			selectedCRF = defaultQuality.CRF
+		}
+	}
+
 	// Add video filters if requested
 	if job.ReverseVideo {
 		ffmpegArgs = append(ffmpegArgs, "-vf", "reverse")
@@ -184,8 +196,8 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 		ffmpegArgs = append(ffmpegArgs,
 			"-tag:v", "hvc1",
 			"-c:v", "libx265",
-			"-preset", "slower",
-			"-crf", "20",
+			"-preset", selectedPreset,
+			"-crf", strconv.Itoa(selectedCRF),
 			"-movflags", "+faststart",
 		)
 	default:

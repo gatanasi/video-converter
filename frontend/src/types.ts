@@ -5,8 +5,11 @@ export interface InputEvent extends Event {
     target: HTMLInputElement & EventTarget;
 }
 
+export type ConversionQuality = 'default' | 'high' | 'fast';
+
 export interface ConversionOptions {
     targetFormat: string;
+    quality: ConversionQuality;
     reverseVideo: boolean;
     removeSound: boolean;
 }
@@ -29,6 +32,7 @@ export interface ConversionStatus {
     complete: boolean;
     error?: string;
     format: string;
+    quality?: ConversionQuality;
     downloadUrl?: string;
     fileName?: string;
 }
@@ -36,6 +40,7 @@ export interface ConversionStatus {
 export interface ConversionItem {
     fileName: string;
     format: string;
+    quality?: ConversionQuality;
     element: HTMLElement;
     aborted?: boolean;
     timeoutId?: number;

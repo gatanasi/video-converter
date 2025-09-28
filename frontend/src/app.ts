@@ -340,6 +340,7 @@ class App {
                 fileName: video.name,
                 mimeType: video.mimeType || '', // Provide default empty string
                 targetFormat: options.targetFormat,
+                quality: options.quality,
                 reverseVideo: options.reverseVideo,
                 removeSound: options.removeSound
             };

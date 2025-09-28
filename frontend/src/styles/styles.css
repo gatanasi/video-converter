@@ -327,6 +327,17 @@ input[type="file"]::file-selector-button:hover {
   gap: 10px;
 }
 
+.conversion-form .conversion-select-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.conversion-form .conversion-select-group .form-group {
+  flex: 1 1 180px;
+  margin-bottom: 0;
+}
+
 .input-group input {
   flex: 1;
 }

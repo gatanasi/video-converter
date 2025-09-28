@@ -366,6 +366,11 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	qualitySetting := conversion.ResolveQualitySetting(request.Quality)
+	if request.Quality != "" && !conversion.IsValidQualityName(request.Quality) {
+		log.Printf("WARN: Unknown quality '%s' requested, defaulting to '%s'", request.Quality, qualitySetting.Name)
+	}
+
 	sanitizedBaseName := filestore.SanitizeFilename(request.FileName)
 	if sanitizedBaseName == "" {
 		sanitizedBaseName = fmt.Sprintf("gdrive-video-%s", request.FileID) // Fallback
@@ -386,6 +391,7 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 		InputPath:  uploadedFilePath,
 		OutputPath: outputFilePath,
 		Format:     request.TargetFormat,
+		Quality:    qualitySetting.Name,
 		Progress:   0,
 		Complete:   false,
 	}
@@ -411,6 +417,9 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 		FileID:           request.FileID,
 		FileName:         request.FileName,
 		TargetFormat:     request.TargetFormat,
+		Quality:          qualitySetting.Name,
+		VideoPreset:      qualitySetting.Preset,
+		VideoCRF:         qualitySetting.CRF,
 		UploadedFilePath: uploadedFilePath,
 		OutputFilePath:   outputFilePath,
 		Status:           status,
@@ -493,6 +502,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 	targetFormat := r.FormValue("targetFormat")
 	reverseVideoStr := r.FormValue("reverseVideo")
 	removeSoundStr := r.FormValue("removeSound")
+	qualityStr := r.FormValue("quality")
 
 	if targetFormat == "" {
 		h.sendErrorResponse(w, "Missing required field: targetFormat", http.StatusBadRequest)
@@ -506,6 +516,10 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 
 	reverseVideo := reverseVideoStr == "true"
 	removeSound := removeSoundStr == "true"
+	qualitySetting := conversion.ResolveQualitySetting(qualityStr)
+	if qualityStr != "" && !conversion.IsValidQualityName(qualityStr) {
+		log.Printf("WARN: Unknown quality '%s' requested via upload, defaulting to '%s'", qualityStr, qualitySetting.Name)
+	}
 
 	// --- Prepare file paths and job details ---
 	originalFileName := filepath.Base(handler.Filename)
@@ -571,6 +585,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 		InputPath:  uploadedFilePath,
 		OutputPath: outputFilePath,
 		Format:     targetFormat,
+		Quality:    qualitySetting.Name,
 		Progress:   0,
 		Complete:   false,
 	}
@@ -581,6 +596,9 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 		FileID:           "",               // No Drive File ID for uploads
 		FileName:         originalFileName, // Store original uploaded name
 		TargetFormat:     targetFormat,
+		Quality:          qualitySetting.Name,
+		VideoPreset:      qualitySetting.Preset,
+		VideoCRF:         qualitySetting.CRF,
 		UploadedFilePath: uploadedFilePath,
 		OutputFilePath:   outputFilePath,
 		Status:           status,
@@ -628,12 +646,14 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		Error       string  `json:"error,omitempty"`
 		Format      string  `json:"format"`
 		DownloadURL string  `json:"downloadUrl,omitempty"`
+		Quality     string  `json:"quality,omitempty"`
 	}{
 		ID:       id,
 		Progress: status.Progress,
 		Complete: status.Complete,
 		Error:    status.Error,
 		Format:   status.Format,
+		Quality:  status.Quality,
 		DownloadURL: func() string {
 			if status.Complete && status.Error == "" {
 				return fmt.Sprintf("/download/%s", filepath.Base(status.OutputPath))

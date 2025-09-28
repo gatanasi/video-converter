@@ -20,12 +20,22 @@ export class ConversionFormComponent {
         form.className = 'conversion-form';
         form.innerHTML = `
             <h3>Conversion Options</h3>
-            <div class="form-group">
-                <label for="target-format">Target Format:</label>
-                <select id="target-format" class="form-control">
-                    <option value="mov">MOV (H.265)</option>
-                    <option value="mp4">MP4 (H.265)</option>
-                </select>
+            <div class="input-group conversion-select-group">
+                <div class="form-group">
+                    <label for="target-format">Target Format:</label>
+                    <select id="target-format" class="form-control">
+                        <option value="mov">MOV (H.265)</option>
+                        <option value="mp4">MP4 (H.265)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="conversion-quality">Quality:</label>
+                    <select id="conversion-quality" class="form-control">
+                        <option value="default">Default (CRF 22 · slow)</option>
+                        <option value="high">High (CRF 20 · slower)</option>
+                        <option value="fast">Fast (CRF 23 · slow)</option>
+                    </select>
+                </div>
             </div>
             <div class="form-options">
                 <label class="checkbox-container">
@@ -51,8 +61,9 @@ export class ConversionFormComponent {
     /** Helper method for App.ts to get current options */
     getConversionOptions(): ConversionOptions {
         const targetFormat = (this.container.querySelector('#target-format') as HTMLSelectElement).value;
+        const quality = (this.container.querySelector('#conversion-quality') as HTMLSelectElement).value as ConversionOptions['quality'];
         const reverseVideo = (this.container.querySelector('#reverse-video') as HTMLInputElement).checked;
         const removeSound = (this.container.querySelector('#remove-sound') as HTMLInputElement).checked;
-        return { targetFormat, reverseVideo, removeSound };
+        return { targetFormat, quality, reverseVideo, removeSound };
     }
 }

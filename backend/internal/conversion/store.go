@@ -64,6 +64,7 @@ func (s *Store) GetActiveConversionsInfo() []models.ActiveConversionInfo {
 				FileName: filepath.Base(status.OutputPath), // Use OutputPath from status
 				Format:   status.Format,
 				Progress: status.Progress,
+				Quality:  status.Quality,
 			})
 		}
 	}
