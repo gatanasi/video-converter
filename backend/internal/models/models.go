@@ -60,6 +60,18 @@ type ConversionStatus struct {
 	Error           string  // Error message if conversion failed
 }
 
+// ConversionStatusResponse represents the status information returned to clients.
+type ConversionStatusResponse struct {
+	ID          string  `json:"id"`
+	FileName    string  `json:"fileName,omitempty"`
+	Progress    float64 `json:"progress"`
+	Complete    bool    `json:"complete"`
+	Error       string  `json:"error,omitempty"`
+	Format      string  `json:"format"`
+	Quality     string  `json:"quality,omitempty"`
+	DownloadURL string  `json:"downloadUrl,omitempty"`
+}
+
 // ConversionJob represents a job passed to a conversion worker.
 type ConversionJob struct {
 	ConversionID     string

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/gatanasi/video-converter/internal/conversion"
 	"github.com/gatanasi/video-converter/internal/drive"
@@ -47,6 +48,7 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/convert/drive", h.ConvertFromDriveHandler)
 	mux.HandleFunc("/api/convert/upload", h.UploadConvertHandler)
 	mux.HandleFunc("/api/conversions/active", h.ActiveConversionsHandler)
+	mux.HandleFunc("/api/conversions/stream", h.ActiveConversionsStreamHandler)
 	mux.HandleFunc("/api/conversion/status/", h.StatusHandler)
 	mux.HandleFunc("/api/conversion/abort/", h.AbortConversionHandler)
 	mux.HandleFunc("/api/files", h.ListFilesHandler)
@@ -639,28 +641,7 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := struct {
-		ID          string  `json:"id"`
-		Progress    float64 `json:"progress"`
-		Complete    bool    `json:"complete"`
-		Error       string  `json:"error,omitempty"`
-		Format      string  `json:"format"`
-		DownloadURL string  `json:"downloadUrl,omitempty"`
-		Quality     string  `json:"quality,omitempty"`
-	}{
-		ID:       id,
-		Progress: status.Progress,
-		Complete: status.Complete,
-		Error:    status.Error,
-		Format:   status.Format,
-		Quality:  status.Quality,
-		DownloadURL: func() string {
-			if status.Complete && status.Error == "" {
-				return fmt.Sprintf("/download/%s", filepath.Base(status.OutputPath))
-			}
-			return ""
-		}(),
-	}
+	response := buildStatusResponse(id, status)
 
 	h.sendJSONResponse(w, response, http.StatusOK)
 }
@@ -861,6 +842,116 @@ func (h *Handler) ActiveConversionsHandler(w http.ResponseWriter, r *http.Reques
 	activeJobs := h.Store.GetActiveConversionsInfo()
 
 	h.sendJSONResponse(w, activeJobs, http.StatusOK)
+}
+
+// ActiveConversionsStreamHandler streams conversion updates to clients via Server-Sent Events (SSE).
+func (h *Handler) ActiveConversionsStreamHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		h.sendErrorResponse(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	events := h.Store.Subscribe()
+	defer h.Store.Unsubscribe(events)
+
+	ctx := r.Context()
+
+	initialStatuses := h.Store.GetAllStatuses()
+	for id, status := range initialStatuses {
+		if status.Complete {
+			continue
+		}
+
+		response := buildStatusResponse(id, status)
+		event := conversion.StoreEvent{
+			Type:         "status",
+			ConversionID: id,
+			Status:       &response,
+		}
+		if err := writeSSEEvent(w, flusher, event.Type, event); err != nil {
+			log.Printf("WARN: Failed to send initial SSE status for %s: %v", id, err)
+			return
+		}
+	}
+
+	heartbeat := time.NewTicker(30 * time.Second)
+	defer heartbeat.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event, ok := <-events:
+			if !ok {
+				return
+			}
+			if err := writeSSEEvent(w, flusher, event.Type, event); err != nil {
+				log.Printf("WARN: SSE send error for conversion %s: %v", event.ConversionID, err)
+				return
+			}
+		case <-heartbeat.C:
+			if err := writeSSEHeartbeat(w, flusher); err != nil {
+				log.Printf("WARN: SSE heartbeat failed: %v", err)
+				return
+			}
+		}
+	}
+}
+
+func writeSSEEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, payload interface{}) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	if eventType != "" {
+		if _, err := fmt.Fprintf(w, "event: %s\n", eventType); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
+		return err
+	}
+
+	flusher.Flush()
+	return nil
+}
+
+func writeSSEHeartbeat(w http.ResponseWriter, flusher http.Flusher) error {
+	if _, err := w.Write([]byte(": keep-alive\n\n")); err != nil {
+		return err
+	}
+	flusher.Flush()
+	return nil
+}
+
+func buildStatusResponse(id string, status models.ConversionStatus) models.ConversionStatusResponse {
+	response := models.ConversionStatusResponse{
+		ID:       id,
+		FileName: filepath.Base(status.OutputPath),
+		Progress: status.Progress,
+		Complete: status.Complete,
+		Error:    status.Error,
+		Format:   status.Format,
+		Quality:  status.Quality,
+	}
+
+	if status.Complete && status.Error == "" && status.OutputPath != "" {
+		response.DownloadURL = fmt.Sprintf("/download/%s", filepath.Base(status.OutputPath))
+	}
+
+	return response
 }
 
 // ConfigHandler returns relevant configuration values to the client.

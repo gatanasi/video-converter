@@ -24,7 +24,64 @@ export class ActiveConversionsComponent {
     private progressInterval: number | null;
     private pollingInterval: number | null;
     private isPolling: boolean;
+    private updateMode: 'sse' | 'polling';
+    private readonly supportsStream: boolean;
+    private streamUnsubscribe: (() => void) | null;
     private progressContainer!: HTMLElement;
+
+    private handleStreamStatus = (status: ConversionStatus): void => {
+        const conversionId = status.id;
+        if (!conversionId) {
+            return;
+        }
+
+        if (this.updateMode === 'polling') {
+            this.stopPolling();
+            this.updateMode = 'sse';
+        }
+
+        if (!this.activeConversions.has(conversionId)) {
+            if (status.complete) {
+                return;
+            }
+            const fileName = status.fileName || 'Unknown File';
+            this.addConversionItem(
+                conversionId,
+                fileName,
+                status.format,
+                status.progress,
+                status.quality
+            );
+        }
+
+        const conversion = this.activeConversions.get(conversionId);
+        if (!conversion) {
+            return;
+        }
+
+        this.updateProgressBar(conversion.element, status.progress);
+
+        if (status.complete) {
+            this.handleCompletion(conversionId, status);
+        }
+    };
+
+    private handleStreamRemoval = (conversionId: string): void => {
+        this.removeConversionItem(conversionId);
+    };
+
+    private handleStreamError = (): void => {
+        console.warn('Active conversions stream encountered an issue; falling back to polling.');
+        this.fallbackToPolling();
+    };
+
+    private fallbackToPolling(): void {
+        if (this.updateMode === 'polling') {
+            return;
+        }
+
+        this.startPolling();
+    }
 
     // Use Container interface for options
     constructor(options: ActiveConversionsContainer) {
@@ -43,18 +100,32 @@ export class ActiveConversionsComponent {
         this.progressInterval = null;
         this.pollingInterval = null;
         this.isPolling = false;
+        this.supportsStream = apiService.isActiveConversionStreamSupported();
+        this.updateMode = this.supportsStream ? 'sse' : 'polling';
+        this.streamUnsubscribe = null;
 
         this.createElements();
-        this.loadActiveConversions(); // Initial load
-        this.startPolling();
+        if (this.supportsStream) {
+            this.streamUnsubscribe = apiService.connectActiveConversionsStream({
+                onStatus: this.handleStreamStatus,
+                onRemoval: this.handleStreamRemoval,
+                onError: () => this.handleStreamError()
+            });
+        } else {
+            this.startPolling();
+        }
     }
 
-    startPolling(): void {
+    startPolling(prime: boolean = true): void {
         if (this.pollingInterval) clearInterval(this.pollingInterval);
-        // Poll immediately, then set interval
-        this.loadActiveConversions();
+        this.updateMode = 'polling';
+
+        if (prime) {
+            void this.loadActiveConversions();
+        }
+
         this.pollingInterval = window.setInterval(() => this.loadActiveConversions(), 5000);
-        console.log('Started polling for active conversions every 5 seconds');
+        console.info('Polling active conversions every 5 seconds.');
     }
 
     stopPolling(): void {
@@ -103,6 +174,10 @@ export class ActiveConversionsComponent {
     }
 
     async loadActiveConversions(): Promise<void> {
+        if (this.updateMode !== 'polling') {
+            return;
+        }
+
         if (this.isPolling) return; // Prevent concurrent polls
         this.isPolling = true;
 
@@ -135,7 +210,7 @@ export class ActiveConversionsComponent {
             // Update UI state (empty message, progress interval)
             if (this.activeConversions.size > 0) {
                 this.removeEmptyStateMessage();
-                if (!this.progressInterval) {
+                if (this.updateMode === 'polling' && !this.progressInterval) {
                     // Start progress updates only if there are active items
                     this.progressInterval = window.setInterval(() => this.updateAllProgressBars(), 2000);
                 }
@@ -257,6 +332,10 @@ export class ActiveConversionsComponent {
             return;
         }
 
+        if (this.updateMode !== 'polling') {
+            return;
+        }
+
         // Create promises for all status requests
         const statusPromises = Array.from(this.activeConversions.keys()).map(id =>
             apiService.getConversionStatus(id).catch((error: unknown) => {
@@ -362,6 +441,10 @@ export class ActiveConversionsComponent {
     }
 
     async pollConversionStatuses(): Promise<void> {
+        if (this.updateMode !== 'polling') {
+            return;
+        }
+
         if (this.isPolling || this.activeConversions.size === 0) {
             return;
         }
@@ -458,6 +541,15 @@ export class ActiveConversionsComponent {
             } else {
                 this.stopPolling();
             }
+        }
+
+    }
+
+    destroy(): void {
+        this.stopPolling();
+        if (this.streamUnsubscribe) {
+            this.streamUnsubscribe();
+            this.streamUnsubscribe = null;
         }
     }
 }

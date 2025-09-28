@@ -1,13 +1,29 @@
 import { ConversionOptions, DriveConversionRequest, ConversionResponse, ConversionStatus, ServerConfig, FileInfo, Video } from '../types';
 
+type ActiveConversionStreamCallbacks = {
+    onStatus: (status: ConversionStatus) => void;
+    onRemoval: (conversionId: string) => void;
+    onError?: (error: Event | Error) => void;
+};
+
 /**
  * API Service - Handles all communication with the backend API.
  */
 class ApiService {
     private baseUrl: string;
+    private readonly supportsEventSource: boolean;
+    private readonly activeConversionStreamEndpoint = '/api/conversions/stream';
+    private readonly activeConversionReconnectDelay = 15000;
+    private activeConversionEventSource: EventSource | null;
+    private activeConversionCallbacks: Set<ActiveConversionStreamCallbacks>;
+    private activeConversionReconnectTimer: number | null;
 
     constructor() {
         this.baseUrl = ''; // Assumes API is served from the same origin
+        this.supportsEventSource = typeof window !== 'undefined' && 'EventSource' in window;
+        this.activeConversionEventSource = null;
+        this.activeConversionReconnectTimer = null;
+        this.activeConversionCallbacks = new Set();
     }
 
     /**
@@ -238,6 +254,164 @@ class ApiService {
     async listActiveConversions(): Promise<ConversionStatus[]> {
         // Assuming the backend returns the same structure as ConversionStatus for active ones
         return this.apiRequest<ConversionStatus[]>('/api/conversions/active', {}, 'listActiveConversions');
+    }
+
+    /**
+     * Returns true when the environment supports Server-Sent Events for active conversions.
+     */
+    isActiveConversionStreamSupported(): boolean {
+        return this.supportsEventSource;
+    }
+
+    /**
+     * Subscribes to the active conversions SSE stream. Returns an unsubscribe function.
+     */
+    connectActiveConversionsStream(callbacks: ActiveConversionStreamCallbacks): () => void {
+        if (!this.supportsEventSource) {
+            callbacks.onError?.(new Error('Server-sent events are not supported in this environment.'));
+            return () => undefined;
+        }
+
+        this.activeConversionCallbacks.add(callbacks);
+        this.ensureActiveConversionStream();
+
+        return () => {
+            this.activeConversionCallbacks.delete(callbacks);
+            if (this.activeConversionCallbacks.size === 0) {
+                this.teardownActiveConversionStream();
+            }
+        };
+    }
+
+    private ensureActiveConversionStream(): void {
+        if (!this.supportsEventSource || this.activeConversionEventSource) {
+            return;
+        }
+
+        // Cancel pending reconnect timers since we're about to establish a new connection.
+        if (this.activeConversionReconnectTimer !== null) {
+            window.clearTimeout(this.activeConversionReconnectTimer);
+            this.activeConversionReconnectTimer = null;
+        }
+
+        const streamUrl = `${this.baseUrl}${this.activeConversionStreamEndpoint}`;
+
+        try {
+            const eventSource = new EventSource(streamUrl);
+            this.activeConversionEventSource = eventSource;
+
+            eventSource.addEventListener('status', this.handleActiveConversionStatusEvent as EventListener);
+            eventSource.addEventListener('removed', this.handleActiveConversionRemovalEvent as EventListener);
+            eventSource.onopen = () => {
+                if (this.activeConversionReconnectTimer !== null) {
+                    window.clearTimeout(this.activeConversionReconnectTimer);
+                    this.activeConversionReconnectTimer = null;
+                }
+            };
+            eventSource.onerror = (event: Event) => {
+                this.notifyActiveConversionError(event);
+                this.restartActiveConversionStream();
+            };
+        } catch (error: unknown) {
+            this.notifyActiveConversionError(error instanceof Error ? error : new Error(String(error)));
+            this.restartActiveConversionStream();
+        }
+    }
+
+    private restartActiveConversionStream(): void {
+        this.teardownActiveConversionStream();
+
+        if (this.activeConversionCallbacks.size === 0 || !this.supportsEventSource) {
+            return;
+        }
+
+        if (this.activeConversionReconnectTimer !== null) {
+            return;
+        }
+
+        this.activeConversionReconnectTimer = window.setTimeout(() => {
+            this.activeConversionReconnectTimer = null;
+            this.ensureActiveConversionStream();
+        }, this.activeConversionReconnectDelay);
+    }
+
+    private teardownActiveConversionStream(): void {
+        if (this.activeConversionEventSource) {
+            this.activeConversionEventSource.removeEventListener('status', this.handleActiveConversionStatusEvent as EventListener);
+            this.activeConversionEventSource.removeEventListener('removed', this.handleActiveConversionRemovalEvent as EventListener);
+            this.activeConversionEventSource.onerror = null;
+            this.activeConversionEventSource.onopen = null;
+            this.activeConversionEventSource.close();
+            this.activeConversionEventSource = null;
+        }
+
+        if (this.activeConversionReconnectTimer !== null) {
+            window.clearTimeout(this.activeConversionReconnectTimer);
+            this.activeConversionReconnectTimer = null;
+        }
+    }
+
+    private handleActiveConversionStatusEvent = (event: MessageEvent): void => {
+        try {
+            const payload = JSON.parse(event.data) as {
+                conversionId?: string;
+                status?: ConversionStatus;
+            };
+
+            if (!payload || !payload.status) {
+                return;
+            }
+
+            const conversionId = payload.status.id || payload.conversionId;
+            if (!conversionId) {
+                return;
+            }
+
+            const normalizedStatus: ConversionStatus = {
+                ...payload.status,
+                id: conversionId,
+            };
+
+            this.notifyActiveConversionStatus(normalizedStatus);
+        } catch (error: unknown) {
+            this.notifyActiveConversionError(error instanceof Error ? error : new Error(String(error)));
+        }
+    };
+
+    private handleActiveConversionRemovalEvent = (event: MessageEvent): void => {
+        try {
+            const payload = JSON.parse(event.data) as {
+                conversionId?: string;
+                status?: ConversionStatus;
+            };
+
+            const conversionId = payload?.conversionId || payload?.status?.id;
+            if (!conversionId) {
+                return;
+            }
+
+            this.notifyActiveConversionRemoval(conversionId);
+        } catch (error: unknown) {
+            this.notifyActiveConversionError(error instanceof Error ? error : new Error(String(error)));
+        }
+    };
+
+    private notifyActiveConversionStatus(status: ConversionStatus): void {
+        this.activeConversionCallbacks.forEach(callbacks => {
+            callbacks.onStatus(status);
+        });
+    }
+
+    private notifyActiveConversionRemoval(conversionId: string): void {
+        this.activeConversionCallbacks.forEach(callbacks => {
+            callbacks.onRemoval(conversionId);
+        });
+    }
+
+    private notifyActiveConversionError(error: Event | Error): void {
+        this.activeConversionCallbacks.forEach(callbacks => {
+            callbacks.onError?.(error);
+        });
     }
 }
 
