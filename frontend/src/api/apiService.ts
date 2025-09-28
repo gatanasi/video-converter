@@ -1,4 +1,5 @@
 import { ConversionOptions, DriveConversionRequest, ConversionResponse, ConversionStatus, ServerConfig, FileInfo, Video } from '../types';
+import configManager from '../config/configManager.js';
 
 type ActiveConversionStreamCallbacks = {
     onStatus: (status: ConversionStatus) => void;
@@ -19,7 +20,7 @@ class ApiService {
     private activeConversionReconnectTimer: number | null;
 
     constructor() {
-        this.baseUrl = ''; // Assumes API is served from the same origin
+        this.baseUrl = configManager.apiBaseUrl || '';
         this.supportsEventSource = typeof window !== 'undefined' && 'EventSource' in window;
         this.activeConversionEventSource = null;
         this.activeConversionReconnectTimer = null;
