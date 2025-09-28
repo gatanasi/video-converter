@@ -360,7 +360,7 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	validFormats := map[string]bool{"mov": true, "mp4": true, "avi": true}
+	validFormats := map[string]bool{"mov": true, "mp4": true}
 	if !validFormats[request.TargetFormat] {
 		h.sendErrorResponse(w, "Invalid target format specified", http.StatusBadRequest)
 		return
@@ -498,7 +498,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 		h.sendErrorResponse(w, "Missing required field: targetFormat", http.StatusBadRequest)
 		return
 	}
-	validFormats := map[string]bool{"mov": true, "mp4": true, "avi": true}
+	validFormats := map[string]bool{"mov": true, "mp4": true}
 	if !validFormats[targetFormat] {
 		h.sendErrorResponse(w, "Invalid target format specified", http.StatusBadRequest)
 		return
@@ -682,8 +682,6 @@ func (h *Handler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = "video/quicktime"
 	case ".mp4":
 		contentType = "video/mp4"
-	case ".avi":
-		contentType = "video/x-msvideo"
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))

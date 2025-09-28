@@ -25,7 +25,6 @@ export class ConversionFormComponent {
                 <select id="target-format" class="form-control">
                     <option value="mov">MOV (H.265)</option>
                     <option value="mp4">MP4 (H.265)</option>
-                    <option value="avi">AVI (Xvid)</option>
                 </select>
             </div>
             <div class="form-options">

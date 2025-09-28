@@ -180,12 +180,14 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 
 	// Add format-specific arguments (consider making these configurable)
 	switch job.TargetFormat {
-	case "mov":
-		ffmpegArgs = append(ffmpegArgs, "-tag:v", "hvc1", "-c:v", "libx265", "-preset", "slow", "-crf", "22")
-	case "mp4":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libx265", "-preset", "slow", "-crf", "22", "-movflags", "+faststart")
-	case "avi":
-		ffmpegArgs = append(ffmpegArgs, "-c:v", "libxvid", "-q:v", "3")
+	case "mov", "mp4":
+		ffmpegArgs = append(ffmpegArgs,
+			"-tag:v", "hvc1",
+			"-c:v", "libx265",
+			"-preset", "slower",
+			"-crf", "20",
+			"-movflags", "+faststart",
+		)
 	default:
 		errMsg := fmt.Sprintf("Unsupported target format '%s'", job.TargetFormat)
 		log.Printf("ERROR [job %s]: %s", conversionID, errMsg)

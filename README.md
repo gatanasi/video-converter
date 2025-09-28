@@ -5,7 +5,7 @@ A simple web application that allows users to fetch videos from a specified Goog
 ## Features
 
 -   Lists videos from a Google Drive folder using the Google Drive API.
--   Converts videos to various formats (MOV, MP4, AVI) using FFmpeg.
+-   Converts videos to various formats (MOV, MP4) using FFmpeg.
 -   Special video processing options:
     -   **Reverse video**: Play the video in reverse.
     -   **Remove sound**: Strip audio from the output video (enabled by default).
