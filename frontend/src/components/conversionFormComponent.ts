@@ -33,7 +33,7 @@ export class ConversionFormComponent {
                     <select id="conversion-quality" class="form-control">
                         <option value="default">Default (CRF 22 · slow)</option>
                         <option value="high">High (CRF 20 · slower)</option>
-                        <option value="fast">Fast (CRF 23 · slow)</option>
+                        <option value="fast">Fast (CRF 23 · medium)</option>
                     </select>
                 </div>
             </div>
