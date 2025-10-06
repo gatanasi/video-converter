@@ -16,15 +16,31 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-minor-patch"
+      "groupName": "npm non-major dependencies",
+      "groupSlug": "npm-minor-patch"
     },
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
-      "groupName": "all non-major devDependencies",
-      "groupSlug": "non-major-dev-deps"
+      "groupName": "npm non-major devDependencies",
+      "groupSlug": "npm-non-major-dev-deps"
+    },
+    {
+      "matchManagers": ["docker"],
+      "matchUpdateTypes": ["major"]
+    },
+    {
+      "matchManagers": ["docker"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "docker minor updates",
+      "groupSlug": "docker-minor-patch"
+    },
+    {
+      "matchManagers": ["docker"],
+      "matchUpdateTypes": ["digest"],
+      "groupName": "docker digest updates",
+      "groupSlug": "docker-digest"
     }
   ]
 }
