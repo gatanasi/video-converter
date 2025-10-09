@@ -3,7 +3,7 @@
   "extends": [
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver",
-    "npm:unpublishSafe"
+    "security:minimumReleaseAgeNpm"
   ],
   "schedule": ["after 8pm on sunday"],
   "packageRules": [
