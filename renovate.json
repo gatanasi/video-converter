@@ -3,42 +3,77 @@
   "extends": [
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver",
-    "npm:unpublishSafe"
+    "security:minimumReleaseAgeNpm"
   ],
-  "schedule": ["after 8pm on sunday"],
+  "schedule": [
+    "after 8pm on sunday"
+  ],
   "packageRules": [
     {
-      "matchDatasources": ["github-actions"],
+      "matchDatasources": [
+        "github-actions"
+      ],
       "groupName": "github actions",
       "groupSlug": "github-actions"
     },
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchDepTypes": [
+        "dependencies"
+      ],
       "groupName": "npm non-major dependencies",
       "groupSlug": "npm-minor-patch"
     },
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
       "groupName": "npm non-major devDependencies",
       "groupSlug": "npm-non-major-dev-deps"
     },
     {
-      "matchManagers": ["docker"],
-      "matchUpdateTypes": ["major"]
+      "matchManagers": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ]
     },
     {
-      "matchManagers": ["docker"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "groupName": "docker minor updates",
       "groupSlug": "docker-minor-patch"
     },
     {
-      "matchManagers": ["docker"],
-      "matchUpdateTypes": ["digest"],
+      "matchManagers": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
       "groupName": "docker digest updates",
       "groupSlug": "docker-digest"
     }
