@@ -22,7 +22,7 @@ COPY frontend/ ./
 RUN pnpm run build
 
 # Stage 2: Build Backend
-FROM golang:1.24-alpine@sha256:7342d2571d7e5f75ba18b0adba39a62bac193642548a0d59c23c4ec46f82a01d AS backend-builder
+FROM golang:1.25-alpine AS backend-builder
 
 WORKDIR /app/backend
 

@@ -43,7 +43,7 @@ For Docker-specific commands and troubleshooting, see [DOCKER.md](DOCKER.md).
 -   [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
 
 **For Local Development:**
--   [Go](https://golang.org/dl/) (v1.18 or newer recommended, tested with v1.24)
+-   [Go](https://golang.org/dl/) (v1.18 or newer recommended, tested with v1.25)
 -   [Node.js](https://nodejs.org/) and [pnpm](https://pnpm.io/installation) (for building the frontend)
 -   [FFmpeg](https://ffmpeg.org/download.html) - Must be installed and accessible in your system's `PATH`. `ffprobe` (usually included with FFmpeg) is also required for accurate progress calculation.
 -   [ExifTool](https://exiftool.org/install.html) - Required for metadata preservation. Must be installed and accessible in your system's `PATH`.
