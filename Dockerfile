@@ -2,7 +2,7 @@
 # This builds both frontend and backend in a single container
 
 # Stage 1: Build Frontend
-FROM node:20-alpine@sha256:1ab6fc5a31d515dc7b6b25f6acfda2001821f2c2400252b6cb61044bd9f9ad48 AS frontend-builder
+FROM node:22-alpine@sha256:dbcedd8aeab47fbc0f4dd4bffa55b7c3c729a707875968d467aaaea42d6225af AS frontend-builder
 
 WORKDIR /app/frontend
 
