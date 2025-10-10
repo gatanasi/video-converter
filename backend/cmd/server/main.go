@@ -46,9 +46,20 @@ func main() {
 	mux := http.NewServeMux()
 	handler.SetupRoutes(mux)
 
+	// Wrap handler to disable write timeout for SSE stream endpoint
+	wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/conversions/stream" {
+			// Disable write timeout for SSE stream
+			if conn, ok := w.(interface{ SetWriteDeadline(time.Time) error }); ok {
+				conn.SetWriteDeadline(time.Time{})
+			}
+		}
+		middleware.CORS(mux).ServeHTTP(w, r)
+	})
+
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
-		Handler:      middleware.CORS(mux),
+		Handler:      wrappedHandler,
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 120 * time.Second,
 		IdleTimeout:  180 * time.Second,
