@@ -1,3 +1,30 @@
+# [2.0.0](https://github.com/gatanasi/video-converter/compare/v1.4.0...v2.0.0) (2025-10-10)
+
+
+### Bug Fixes
+
+* **ci:** correct go.sum path for cache key ([054521f](https://github.com/gatanasi/video-converter/commit/054521fb924fb1f821a9014fcff440b744f5d35a))
+* **ci:** remove invalid working-directory from setup-go action ([1c9d392](https://github.com/gatanasi/video-converter/commit/1c9d39200e837f5876bd647349781c9a14a7c8c7))
+* **ci:** resolve workflow warnings ([3b34a63](https://github.com/gatanasi/video-converter/commit/3b34a63129bf3562d5d863e65c5bae4dd5ab57b8))
+* **ci:** specify working directory for Go setup step ([f5a6804](https://github.com/gatanasi/video-converter/commit/f5a680426e76b1f65dba599cd93a91d45f16f3b1))
+* **ci:** use built-in Go cache from setup-go action ([b5fccb0](https://github.com/gatanasi/video-converter/commit/b5fccb0e4e32a87bd1d7b6def2012b2a2aa5ed4a))
+* disable write timeout for SSE stream endpoint ([802a4dc](https://github.com/gatanasi/video-converter/commit/802a4dcd2e854516afc10e30e97747ae9301c193))
+* handle error when setting write deadline for SSE stream ([eeeb9f9](https://github.com/gatanasi/video-converter/commit/eeeb9f9b2f595810ddabaff255c0f73f1496d626))
+* update conversion quality option description from 'slow' to 'medium' ([de11837](https://github.com/gatanasi/video-converter/commit/de11837be8c61c521c7a7ecfb4abf317b7388300))
+* update default go_lint_version to 'latest' ([3d3a361](https://github.com/gatanasi/video-converter/commit/3d3a361e1ed3c009ccc5a40f45bd6531769d72e2))
+* update default go_lint_version to v2.2.0 ([d252a2c](https://github.com/gatanasi/video-converter/commit/d252a2c3f6293ba327793168691cc0badd495e15))
+* update npm configuration to use security minimum release age ([9d03891](https://github.com/gatanasi/video-converter/commit/9d03891e3d968492e1b02b74a44ad3310afdd2b5))
+
+
+### Features
+
+* containerize application with Docker and migrate to GHCR deployment ([092ec88](https://github.com/gatanasi/video-converter/commit/092ec88c3aff1235c583ac354311a49b458c39be))
+
+
+### BREAKING CHANGES
+
+* Deployment method changed from binary artifacts to Docker images. Previous releases with backend binary and frontend zip are no longer produced. Use Docker images from ghcr.io/gatanasi/video-converter instead.
+
 # [1.4.0](https://github.com/gatanasi/video-converter/compare/v1.3.1...v1.4.0) (2025-09-28)
 
 
