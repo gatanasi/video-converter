@@ -5,13 +5,20 @@ on:
     paths:
       - 'frontend/**'
       - 'backend/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.dockerignore'
       - '.github/workflows/ci.yml'
       - '.github/workflows/build-jobs.yml'
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build:
-    name: Full Build
+    name: Lint, Test & Build Docker
     uses: ./.github/workflows/build-jobs.yml
+    with:
+      build_docker: true
+      push_docker: false

@@ -16,13 +16,33 @@ A simple web application that allows users to fetch videos from a specified Goog
 -   Configuration primarily through environment variables for security and flexibility.
 -   Uses a backend worker pool to manage concurrent conversions efficiently.
 -   Automatic cleanup of old uploaded and converted files.
+-   Containerized deployment with Docker for easy setup and consistent environments.
+
+## Quick Start with Docker (Recommended)
+
+The easiest way to run the application is using Docker:
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Edit .env and add your Google Drive API key
+# GOOGLE_DRIVE_API_KEY=your_key_here
+
+# 3. Run with docker-compose
+docker-compose up -d
+
+# 4. Access at http://localhost:3000
+```
+
+For Docker-specific commands and troubleshooting, see [DOCKER.md](DOCKER.md).
 
 ## Prerequisites
 
-Before running the application or deploying, make sure you have the following installed:
+**For Docker Deployment (Recommended):**
+-   [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
 
-**For Running the Application:**
-
+**For Local Development:**
 -   [Go](https://golang.org/dl/) (v1.18 or newer recommended, tested with v1.24)
 -   [Node.js](https://nodejs.org/) and [pnpm](https://pnpm.io/installation) (for building the frontend)
 -   [FFmpeg](https://ffmpeg.org/download.html) - Must be installed and accessible in your system's `PATH`. `ffprobe` (usually included with FFmpeg) is also required for accurate progress calculation.
@@ -41,7 +61,7 @@ This application is configured primarily via environment variables for security 
     -   **Important:** Restrict the API key if possible. For this application's needs (listing files with `alt=media` and downloading `alt=media`), it primarily needs read access to the Drive files it will process. Consider restricting it to the Drive API and potentially by IP address if feasible.
     -   This key is used **only on the backend** for listing and downloading files from Google Drive.
 -   `ALLOWED_ORIGINS`: **(Required for Production)** A comma-separated list of frontend URLs (origins) that are allowed to access the backend API via CORS.
-    -   **Example:** `ALLOWED_ORIGINS=https://video-converter.example.com,https://video.home.example.com`
+    -   **Example:** `ALLOWED_ORIGINS=https://converter.example.com,https://converter.home.example.com`
     -   **For local development:** You might use `ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000` (adjust port if needed).
     -   **Security:** If this variable is **not set**, the backend will default to allowing **all** origins (`*`), which is **insecure** and should **not** be used in production.
 
@@ -54,155 +74,141 @@ This application is configured primarily via environment variables for security 
 -   `CONVERTED_DIR`: Directory path for storing successfully converted videos. (Default: `converted`)
 -   `DEFAULT_DRIVE_FOLDER_ID`: Pre-configures a default Google Drive folder ID for the application. When set, this folder ID will be automatically used as the default when the application loads, saving users from having to manually enter it. Users can still override this by entering a different folder ID in the UI. This is useful for deployments where most users will be accessing the same folder.
 
-## Running Locally (Development)
+## CI/CD and Releases
 
-1.  **Backend:**
-    *   Navigate to the `backend` directory: `cd backend`
-    *   Set required environment variables. For local development, you might use a `.env` file in the `backend` directory or export them directly:
-        ```bash
-        export GOOGLE_DRIVE_API_KEY="YOUR_DEV_API_KEY"
-        # Adjust port if your frontend server runs elsewhere
-        # Optional: Set other variables like WORKER_COUNT, UPLOADS_DIR etc.
-        #export ALLOWED_ORIGINS="http://localhost:8080"
-        #export PORT="3000" # Or your preferred backend port
-        ```
-    *   Run the backend server: `go run ./cmd/server/main.go`
-    *   The backend will be accessible at `http://localhost:3000` (or the port you set).
+This project uses GitHub Actions for continuous integration and deployment:
 
-2.  **Frontend:**
-    *   Navigate to the `frontend` directory: `cd ../frontend`
-    *   Install dependencies: `pnpm install`
-    *   Build the frontend assets: `pnpm run build` (This creates the `dist` directory)
-    *   Serve the `dist` directory using a simple HTTP server. For example:
-        ```bash
-        # Make sure you are in the frontend/ directory
-        npx serve dist -l 8080
-        ```
-    *   Open your browser to `http://localhost:8080`.
+### Automated Workflows
 
-## Building for Production
+- **CI**: Runs on every push - lints, tests, and builds Docker image (validates only, doesn't push)
+- **Release**: Creates versioned releases with Docker images pushed to GitHub Container Registry
 
-1.  **Build Frontend:**
-    *   Navigate to the `frontend` directory: `cd frontend`
-    *   Install dependencies: `pnpm install`
-    *   Build the production assets: `pnpm run build`
-    *   The static frontend files will be generated in the `frontend/dist` directory.
-    *   **For Release:** The release workflow zips this directory into `frontend-dist.zip`.
+### Creating a Release
 
-2.  **Build Backend:**
-    *   Navigate to the `backend` directory: `cd ../backend`
-    *   Build the Go executable:
-        ```bash
-        # For local testing
-        go build -ldflags="-s -w" -o ../video-converter-app ./cmd/server/main.go
-        # The release workflow injects the version:
-        # go build -ldflags="-X main.version=$VERSION -s -w" -o ../video-converter-app ./cmd/server/main.go
-        ```
-        This creates an optimized executable named `video-converter-app` in the project `root` directory.
+Releases are created via GitHub Actions workflow:
+
+1. Go to **Actions** → **Video Converter - Release** → **Run workflow**
+2. Choose options:
+   - **Branch**: Branch to release from (default: `main`)
+   - **Force release**: Override semantic versioning
+   - **Manual version**: Specify version manually (e.g., `1.0.0`, `1.0.0-beta1`)
+
+The workflow will:
+- Determine version using semantic-release (or use manual version)
+- Run all tests and linting
+- Build multi-platform Docker image (amd64, arm64)
+- Push to GitHub Container Registry with multiple tags
+- Create GitHub Release with Docker pull instructions
+
+### Version Tags
+
+Each release creates multiple Docker image tags:
+- `ghcr.io/gatanasi/video-converter:latest` - Latest stable release
+- `ghcr.io/gatanasi/video-converter:1.0.0` - Specific version
+- `ghcr.io/gatanasi/video-converter:1.0` - Latest 1.0.x patch
+- `ghcr.io/gatanasi/video-converter:1` - Latest 1.x.x minor/patch
+
+See [.github/workflows/README.md](.github/workflows/README.md) for detailed workflow documentation.
 
 ## Deploying to Production
 
-Deployment involves getting the built backend executable and the frontend assets onto your server, configuring the environment, and running the backend as a service.
+### Docker Deployment (Recommended)
 
-### Using the Deployment Script (Recommended)
+The application is distributed as a Docker image via GitHub Container Registry (GHCR). This is the recommended deployment method as it includes all dependencies (FFmpeg, ExifTool) and ensures consistent behavior across environments.
 
-A deployment script (`deploy-video-converter.sh`) is provided to automate the process of deploying a specific release version from GitHub Releases.
+#### Using Pre-built Images
 
 **Prerequisites:**
+- Docker and Docker Compose installed on your server
+- A `.env` file with your configuration (see [Configuration](#configuration-environment-variables))
 
-*   The systemd service (`video-converter.service`) must be pre-configured (see [Systemd Setup](#run-backend-example-using-systemd)).
-*   The user and group specified in the script (`SERVICE_USER`, `SERVICE_GROUP`) must exist on the server.
-*   The installation directory (`INSTALL_DIR`) must exist and be writable by the user running the script (initially, then permissions are set).
+**Quick Deploy:**
 
-**Steps:**
+```bash
+# 1. Create docker-compose.yml and .env files on your server
+# 2. Set your environment variables in .env
+# 3. Pull and run the latest release
+docker-compose pull
+docker-compose up -d
 
-1.  **Copy the Script:** Copy `deploy-video-converter.sh` to your server.
-2.  **Configure Script (Optional):** Edit the script's `Configuration` section if your paths or service details differ from the defaults:
-    *   `INSTALL_DIR`: Where the application binary and frontend files will be placed (Default: `/opt/video-converter`).
-    *   `BINARY_NAME`: Expected name of the backend executable in the release (Default: `video-converter-app`).
-    *   `FRONTEND_ZIP_NAME`: Expected name of the frontend zip archive in the release (Default: `frontend-dist.zip`).
-    *   `SERVICE_NAME`: Name of the systemd service (Default: `video-converter.service`).
-    *   `SERVICE_USER`/`SERVICE_GROUP`: User/group the service runs as (Default: `converter`).
-3.  **Run the Script:** Execute the script with the desired GitHub release tag (e.g., `v1.0.1`):
-    ```bash
-    chmod +x deploy-video-converter.sh
-    ./deploy-video-converter.sh <version_tag>
-    # Example: ./deploy-video-converter.sh v1.0.1
-    ```
+# Check logs
+docker-compose logs -f
 
-**What the script does:**
+# Stop the application
+docker-compose down
+```
 
-*   Creates a temporary directory for downloads.
-*   Downloads the specified backend binary (`video-converter-app`) and frontend zip (`frontend-dist.zip`) from the GitHub release assets.
-*   Stops the systemd service.
-*   Replaces the old backend binary with the downloaded one.
-*   Sets appropriate ownership (`SERVICE_USER:SERVICE_GROUP`) and permissions (`755`) for the binary.
-*   Clears the old frontend assets directory (`$INSTALL_DIR/static`).
-*   Unzips the new frontend assets into the directory.
-*   Sets appropriate ownership and permissions for the frontend files.
-*   Starts the systemd service.
-*   Checks the service status.
-*   Cleans up the temporary download directory.
+**Deploy Specific Version:**
 
-### Manual Deployment Steps
+```bash
+VERSION=1.0.0 docker-compose up -d
+```
 
-If you prefer not to use the script, these are the general steps involved:
+**Available Image Tags:**
+- `latest` - Latest stable release
+- `1.0.0` - Specific version
+- `1.0` - Latest patch version of 1.0.x
+- `1` - Latest minor version of 1.x.x
 
-1.  **Build Artifacts:** Build the backend executable (`video-converter-app`) and the frontend assets (`frontend/dist/*`) as described in [Building for Production](#building-for-production).
-2.  **Copy Files:**
-    *   Copy the backend executable (`video-converter-app`) to your server (e.g., `/opt/video-converter/`).
-    *   Create the static directory (e.g., `/opt/video-converter/static`).
-    *   Copy the entire contents of the frontend build output directory (`frontend/dist/*`) to the static directory on your server (e.g., `/opt/video-converter/static/`).
-3.  **Configure Backend Environment:**
-    *   Create a `.env` file on the server in the same directory as the executable (e.g., `/opt/video-converter/.env`) with your production settings:
-        ```dotenv
-        # /opt/video-converter/.env
-        GOOGLE_DRIVE_API_KEY=YOUR_PRODUCTION_API_KEY_HERE
-        ALLOWED_ORIGINS=https://your-frontend-domain.com # Replace with your actual frontend URL
-        PORT=3000 # Or the port the backend should listen on internally
-        UPLOADS_DIR=/opt/video-converter/uploads # Ensure this dir exists and is writable by the service user
-        CONVERTED_DIR=/opt/video-converter/converted # Ensure this dir exists and is writable by the service user
-        # Add other variables as needed (WORKER_COUNT, MAX_FILE_SIZE_MB, etc.)
-        ```
-    *   **Important:** Ensure this file has secure permissions (e.g., `chmod 600 .env`) and is owned by the user running the service.
-4.  **Set Permissions:**
-    *   Ensure the executable has execute permissions (`chmod +x /opt/video-converter/video-converter-app`).
-    *   Ensure the `UPLOADS_DIR` and `CONVERTED_DIR` exist and are writable by the user/group the service will run as.
-    *   Set appropriate ownership for all files (e.g., `sudo chown -R converter:converter /opt/video-converter`).
-5.  **Run Backend (Example using systemd):**
-    *   Create a systemd service file (e.g., `/etc/systemd/system/video-converter.service`):
-        ```ini
-        [Unit]
-        Description=Video Converter Service
-        After=network.target
+### Alternative: Direct Docker Run
 
-        [Service]
-        Type=simple
-        # Replace 'converter' with the actual user running the service
-        User=converter
-        Group=converter
-        # Path to the executable and its directory
-        WorkingDirectory=/opt/video-converter
-        # Load environment variables from .env file
-        EnvironmentFile=/opt/video-converter/.env
-        ExecStart=/opt/video-converter/video-converter-app
-        Restart=on-failure
-        RestartSec=5
-        # Recommended security settings
-        PrivateTmp=true
-        ProtectSystem=full
-        NoNewPrivileges=true
-        # Ensure uploads/converted directories are accessible if outside WorkingDirectory
-        # ReadWritePaths=/path/to/uploads /path/to/converted
+```bash
+docker run -d \
+  --name video-converter \
+  -p 3000:3000 \
+  -e GOOGLE_DRIVE_API_KEY="your_api_key" \
+  -e ALLOWED_ORIGINS="https://yourdomain.com" \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/converted:/app/converted \
+  ghcr.io/gatanasi/video-converter:latest
+```
 
-        [Install]
-        WantedBy=multi-user.target
-        ```
-    *   Enable and start the service:
+## Local Development
+
+### Running Locally (Without Docker)
+
+1.  **Set up environment variables:**
+    *   Copy the example file: `cp .env.example .env`
+    *   Edit `.env` and set your `GOOGLE_DRIVE_API_KEY` and other configuration
+
+2.  **Backend:**
+    *   Navigate to the `backend` directory: `cd backend`
+    *   Load environment variables from the root `.env` file:
         ```bash
-        sudo systemctl daemon-reload
-        sudo systemctl enable video-converter.service
-        sudo systemctl start video-converter.service
-        # Check status: sudo systemctl status video-converter.service
-        # View logs: sudo journalctl -u video-converter.service -f
+        # Option 1: Export variables from .env (zsh/bash)
+        export $(grep -v '^#' ../.env | xargs)
+        
+        # Option 2: Use env command
+        env $(cat ../.env | grep -v '^#' | xargs) go run ./cmd/server/main.go
         ```
+    *   Or set them manually:
+        ```bash
+        export GOOGLE_DRIVE_API_KEY="YOUR_DEV_API_KEY"
+        export ALLOWED_ORIGINS="http://localhost:8080"
+        export PORT="3000"
+        ```
+    *   Run the backend server: `go run ./cmd/server/main.go`
+    *   The backend will be accessible at `http://localhost:3000`
+
+3.  **Frontend:**
+    *   Navigate to the `frontend` directory: `cd frontend`
+    *   Install dependencies: `pnpm install`
+    *   Build the frontend assets: `pnpm run build`
+    *   Serve the `dist` directory:
+        ```bash
+        npx serve dist -l 8080
+        ```
+    *   Open your browser to `http://localhost:8080`
+
+### Building Docker Image Locally
+
+```bash
+# Build the image
+docker build -t video-converter:local .
+
+# Run it
+docker run -d -p 3000:3000 \
+  -e GOOGLE_DRIVE_API_KEY="your_key" \
+  -e ALLOWED_ORIGINS="*" \
+  video-converter:local
+```

@@ -1,5 +1,5 @@
 # Environment variables
-.env.mine
+.env
 
 # Editor/OS specific
 .vscode/

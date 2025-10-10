@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  video-converter:
+    # Use pre-built image from GitHub Container Registry
+    # To build locally instead, uncomment the 'build' section below
+    image: ghcr.io/gatanasi/video-converter:${VERSION:-latest}
+    
+    # Uncomment to build locally instead of using pre-built images
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   args:
+    #     VERSION: ${VERSION:-latest}
+    
+    container_name: video-converter
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    environment:
+      # Required: Google Drive API Key
+      - GOOGLE_DRIVE_API_KEY=${GOOGLE_DRIVE_API_KEY}
+      
+      # Required for Production: CORS allowed origins (comma-separated)
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      
+      # Optional: Port (internal container port)
+      - PORT=3000
+      
+      # Optional: Worker configuration
+      - WORKER_COUNT=${WORKER_COUNT:-}
+      
+      # Optional: File size limit in MB
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-2000}
+      
+      # Optional: Storage directories (inside container)
+      - UPLOADS_DIR=/app/uploads
+      - CONVERTED_DIR=/app/converted
+      
+      # Optional: Default Drive folder ID
+      - DEFAULT_DRIVE_FOLDER_ID=${DEFAULT_DRIVE_FOLDER_ID:-}
+    volumes:
+      # Persist uploads and converted files
+      - ./uploads:/app/uploads
+      - ./converted:/app/converted
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/config"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - video-converter-network
+
+networks:
+  video-converter-network:
+    driver: bridge

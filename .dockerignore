@@ -1,0 +1,43 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+
+# Build artifacts
+backend/uploads/
+backend/converted/
+frontend/dist/
+frontend/node_modules/
+uploads/
+converted/
+
+# Environment files (these should be configured at runtime)
+.env
+.env.mine
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Deployment scripts
+deploy-video-converter.sh
+
+# Lock files we want to keep for reproducible builds are NOT ignored
+# pnpm-lock.yaml
+# go.sum
+
+# CI/CD files
+renovate.json
+commitlint.config.js
