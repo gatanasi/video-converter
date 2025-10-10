@@ -29,8 +29,8 @@ cp .env.example .env
 # 2. Edit .env and add your Google Drive API key
 # GOOGLE_DRIVE_API_KEY=your_key_here
 
-# 3. Run with docker-compose
-docker-compose up -d
+# 3. Run with docker compose
+docker compose up -d
 
 # 4. Access at http://localhost:3000
 ```
@@ -128,20 +128,20 @@ The application is distributed as a Docker image via GitHub Container Registry (
 # 1. Create docker-compose.yml and .env files on your server
 # 2. Set your environment variables in .env
 # 3. Pull and run the latest release
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 
 # Check logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop the application
-docker-compose down
+docker compose down
 ```
 
 **Deploy Specific Version:**
 
 ```bash
-VERSION=1.0.0 docker-compose up -d
+VERSION=1.0.0 docker compose up -d
 ```
 
 **Available Image Tags:**

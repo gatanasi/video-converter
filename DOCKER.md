@@ -11,19 +11,19 @@ docker build -t video-converter:local .
 # Build with specific version
 docker build --build-arg VERSION=1.0.0 -t video-converter:1.0.0 .
 
-# Build with docker-compose
-docker-compose build
+# Build with docker compose
+docker compose build
 ```
 
 ## Running Containers
 
 ```bash
-# Using docker-compose (recommended)
-docker-compose up -d          # Start in background
-docker-compose logs -f        # View logs
-docker-compose ps             # Check status
-docker-compose down           # Stop and remove
-docker-compose down -v        # Stop and remove with volumes
+# Using docker compose (recommended)
+docker compose up -d          # Start in background
+docker compose logs -f        # View logs
+docker compose ps             # Check status
+docker compose down           # Stop and remove
+docker compose down -v        # Stop and remove with volumes
 
 # Using docker directly
 docker run -d \
@@ -40,14 +40,14 @@ docker run -d \
 
 ### View Container Logs
 ```bash
-docker-compose logs -f video-converter
+docker compose logs -f video-converter
 # or
 docker logs -f video-converter
 ```
 
 ### Execute Commands Inside Container
 ```bash
-docker-compose exec video-converter sh
+docker compose exec video-converter sh
 # or
 docker exec -it video-converter sh
 ```
@@ -55,35 +55,35 @@ docker exec -it video-converter sh
 ### Verify Dependencies
 ```bash
 # Check FFmpeg
-docker-compose exec video-converter ffmpeg -version
+docker compose exec video-converter ffmpeg -version
 
 # Check ExifTool
-docker-compose exec video-converter exiftool -ver
+docker compose exec video-converter exiftool -ver
 ```
 
 ### Check Health Status
 ```bash
 docker ps                     # Shows health status
-docker-compose ps             # Shows health status
+docker compose ps             # Shows health status
 docker inspect video-converter --format='{{.State.Health.Status}}'
 ```
 
 ### Restart Application
 ```bash
-docker-compose restart
+docker compose restart
 # or
 docker restart video-converter
 ```
 
 ### Rebuild After Code Changes
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Clean Up
 ```bash
 # Remove container and volumes
-docker-compose down -v
+docker compose down -v
 
 # Remove unused images
 docker image prune -a

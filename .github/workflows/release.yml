@@ -189,9 +189,9 @@ jobs:
           echo "docker pull $DOCKER_IMAGE" >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
-          echo "## Run with docker-compose:" >> release_notes.md
+          echo "## Run with docker compose:" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo "VERSION=$NEXT_VERSION docker-compose up -d" >> release_notes.md
+          echo "VERSION=$NEXT_VERSION docker compose up -d" >> release_notes.md
           echo '```' >> release_notes.md
           
           gh release create "$TAG_NAME" \
@@ -215,5 +215,5 @@ jobs:
           echo "### 📦 Pull and Run" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "docker pull ghcr.io/${{ github.repository }}:${{ needs.determine-version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "VERSION=${{ needs.determine-version.outputs.next_version }} docker-compose up -d" >> $GITHUB_STEP_SUMMARY
+          echo "VERSION=${{ needs.determine-version.outputs.next_version }} docker compose up -d" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
