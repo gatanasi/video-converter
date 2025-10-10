@@ -70,7 +70,6 @@ jobs:
         with:
           go-version: ${{ inputs.go_version }}
           check-latest: true
-          working-directory: ./backend
 
       - name: Cache Go modules
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
