@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/gatanasi/video-converter/internal/models"
 )
 
@@ -39,7 +40,7 @@ func NewStore() *Store {
 
 // Subscribe registers a new listener for store events.
 func (s *Store) Subscribe() chan StoreEvent {
-	ch := make(chan StoreEvent, 16)
+	ch := make(chan StoreEvent, constants.SSESubscriberBufferSize)
 	s.subscribersMutex.Lock()
 	s.subscribers[ch] = struct{}{}
 	s.subscribersMutex.Unlock()
@@ -234,8 +235,8 @@ func (s *Store) SetProgressPercentage(id string, percentage float64) {
 			progress := percentage
 			if progress < 0 {
 				progress = 0
-			} else if progress > 99.0 {
-				progress = 99.0
+			} else if progress > constants.ProgressMaxBeforeCompletion {
+				progress = constants.ProgressMaxBeforeCompletion
 			}
 			status.Progress = progress
 			updated = true

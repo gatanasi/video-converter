@@ -13,6 +13,7 @@ import (
 
 	"github.com/gatanasi/video-converter/internal/api"
 	"github.com/gatanasi/video-converter/internal/config"
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/gatanasi/video-converter/internal/conversion"
 	"github.com/gatanasi/video-converter/internal/filestore"
 	"github.com/gatanasi/video-converter/internal/middleware"
@@ -48,7 +49,7 @@ func main() {
 
 	// Wrap handler to disable write timeout for SSE stream endpoint
 	wrappedHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/conversions/stream" {
+		if r.URL.Path == api.RouteActiveConversionsStream {
 			// Disable write timeout for SSE stream
 			if conn, ok := w.(interface{ SetWriteDeadline(time.Time) error }); ok {
 				conn.SetWriteDeadline(time.Time{})
@@ -60,9 +61,9 @@ func main() {
 	server := &http.Server{
 		Addr:         ":" + conf.Port,
 		Handler:      wrappedHandler,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 120 * time.Second,
-		IdleTimeout:  180 * time.Second,
+		ReadTimeout:  constants.HTTPReadTimeout,
+		WriteTimeout: constants.HTTPWriteTimeout,
+		IdleTimeout:  constants.HTTPIdleTimeout,
 	}
 
 	go setupFileCleanup(conf)
@@ -85,7 +86,7 @@ func main() {
 	<-stop // Wait for interrupt signal
 
 	// Initiate graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.ShutdownTimeout)
 	defer cancel()
 
 	fmt.Println("Server shutting down...")
@@ -98,8 +99,8 @@ func main() {
 // setupFileCleanup schedules periodic cleanup of old files.
 func setupFileCleanup(conf models.Config) {
 	// Run cleanup shortly after start and then periodically
-	initialDelay := 5 * time.Minute
-	cleanupInterval := 4 * time.Hour
+	initialDelay := constants.FileCleanupInitialDelay
+	cleanupInterval := constants.FileCleanupInterval
 
 	log.Printf("Scheduling initial file cleanup in %v...", initialDelay)
 	time.AfterFunc(initialDelay, func() {
@@ -117,7 +118,7 @@ func setupFileCleanup(conf models.Config) {
 
 // cleanupFiles removes old files from configured directories.
 func cleanupFiles(conf models.Config) {
-	maxAge := 24 * time.Hour * 3 // Files older than 3 days
+	maxAge := constants.FileMaxAge
 	log.Println("Running cleanup for old files...")
 
 	uploadsRemoved := filestore.CleanupOldFiles(conf.UploadsDir, maxAge)

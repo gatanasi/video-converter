@@ -9,15 +9,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/gatanasi/video-converter/internal/utils"
 )
 
 const (
 	driveAPIBaseURL = "https://www.googleapis.com/drive/v3/files"
-	requestTimeout  = 30 * time.Second
-	downloadTimeout = 20 * time.Minute // Longer timeout for potentially large file downloads
 )
 
 // DownloadFile downloads a file from Google Drive, respecting size limits.
@@ -30,7 +28,7 @@ func DownloadFile(fileID, apiKey, destinationPath string, maxFileSize int64) err
 		return fmt.Errorf("failed to create download request for file ID %s: %w", fileID, err)
 	}
 
-	client := &http.Client{Timeout: downloadTimeout}
+	client := &http.Client{Timeout: constants.DriveAPIDownloadTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("download request failed for file ID %s: %w", fileID, err)
@@ -105,7 +103,7 @@ func ListVideos(folderID string, apiKey string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create list request for folder %s: %w", folderID, err)
 	}
 
-	client := &http.Client{Timeout: requestTimeout}
+	client := &http.Client{Timeout: constants.DriveAPIRequestTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("list request failed for folder %s: %w", folderID, err)

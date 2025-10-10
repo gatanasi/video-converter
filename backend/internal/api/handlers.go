@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/gatanasi/video-converter/internal/conversion"
 	"github.com/gatanasi/video-converter/internal/drive"
 	"github.com/gatanasi/video-converter/internal/filestore"
@@ -43,17 +44,17 @@ func NewHandler(config models.Config, converter *conversion.VideoConverter, stor
 // SetupRoutes configures the HTTP routes.
 func (h *Handler) SetupRoutes(mux *http.ServeMux) {
 	// API Routes
-	mux.HandleFunc("/api/config", h.ConfigHandler)
-	mux.HandleFunc("/api/videos/drive", h.ListDriveVideosHandler)
-	mux.HandleFunc("/api/convert/drive", h.ConvertFromDriveHandler)
-	mux.HandleFunc("/api/convert/upload", h.UploadConvertHandler)
-	mux.HandleFunc("/api/conversions/active", h.ActiveConversionsHandler)
-	mux.HandleFunc("/api/conversions/stream", h.ActiveConversionsStreamHandler)
-	mux.HandleFunc("/api/conversion/status/", h.StatusHandler)
-	mux.HandleFunc("/api/conversion/abort/", h.AbortConversionHandler)
-	mux.HandleFunc("/api/files", h.ListFilesHandler)
-	mux.HandleFunc("/api/file/delete/", h.DeleteFileHandler)
-	mux.HandleFunc("/download/", h.DownloadHandler)
+	mux.HandleFunc(RouteConfig, h.ConfigHandler)
+	mux.HandleFunc(RouteListDriveVideos, h.ListDriveVideosHandler)
+	mux.HandleFunc(RouteConvertFromDrive, h.ConvertFromDriveHandler)
+	mux.HandleFunc(RouteConvertUpload, h.UploadConvertHandler)
+	mux.HandleFunc(RouteActiveConversions, h.ActiveConversionsHandler)
+	mux.HandleFunc(RouteActiveConversionsStream, h.ActiveConversionsStreamHandler)
+	mux.HandleFunc(RouteConversionStatus, h.StatusHandler)
+	mux.HandleFunc(RouteConversionAbort, h.AbortConversionHandler)
+	mux.HandleFunc(RouteListFiles, h.ListFilesHandler)
+	mux.HandleFunc(RouteDeleteFile, h.DeleteFileHandler)
+	mux.HandleFunc(RouteDownload, h.DownloadHandler)
 
 	// --- Static File Serving ---
 	staticDir := "static"
@@ -349,7 +350,7 @@ func (h *Handler) ConvertFromDriveHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var request models.DriveConversionRequest
-	r.Body = http.MaxBytesReader(w, r.Body, 1*1024*1024)
+	r.Body = http.MaxBytesReader(w, r.Body, constants.MaxJSONRequestSize)
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		errMsg := fmt.Sprintf("Failed to parse request: %v", err)
 		log.Printf("WARN: %s", errMsg)
@@ -457,12 +458,12 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Set max upload size using MaxFileSize from config (ensure it's reasonable for uploads)
 	// Add a buffer for other form fields
-	maxUploadSize := h.Config.MaxFileSize + (1 * 1024 * 1024) // Add 1MB buffer
+	maxUploadSize := h.Config.MaxFileSize + constants.UploadSizeBuffer
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
 	// Parse the multipart form data
 	// Use a reasonable limit for memory usage during parsing (e.g., 32MB)
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+	if err := r.ParseMultipartForm(constants.MultipartMemoryLimit); err != nil {
 		if errors.Is(err, http.ErrMissingBoundary) {
 			h.sendErrorResponse(w, "Invalid request: Missing multipart boundary", http.StatusBadRequest)
 		} else if errors.Is(err, http.ErrNotMultipart) {
@@ -629,7 +630,7 @@ func (h *Handler) UploadConvertHandler(w http.ResponseWriter, r *http.Request) {
 
 // StatusHandler returns the status of a conversion job.
 func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/conversion/status/")
+	id := strings.TrimPrefix(r.URL.Path, RouteConversionStatus)
 	if id == "" {
 		h.sendErrorResponse(w, "Conversion ID not specified", http.StatusBadRequest)
 		return
@@ -648,7 +649,7 @@ func (h *Handler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 // DownloadHandler serves the converted file.
 func (h *Handler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
-	filePath, filename, err := h.resolveAndValidateConvertedFilePath(r, "/download/")
+	filePath, filename, err := h.resolveAndValidateConvertedFilePath(r, RouteDownload)
 	if err != nil {
 		if err.Error() == "internal server configuration error" {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -722,7 +723,7 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 				Name:    entry.Name(),
 				Size:    info.Size(),
 				ModTime: info.ModTime(),
-				URL:     fmt.Sprintf("/download/%s", entry.Name()),
+				URL:     fmt.Sprintf("%s%s", RouteDownload, entry.Name()),
 			})
 		}
 	}
@@ -741,7 +742,7 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath, filename, err := h.resolveAndValidateConvertedFilePath(r, "/api/file/delete/")
+	filePath, filename, err := h.resolveAndValidateConvertedFilePath(r, RouteDeleteFile)
 	if err != nil {
 		if err.Error() == "internal server configuration error" {
 			h.sendErrorResponse(w, err.Error(), http.StatusInternalServerError)
@@ -764,7 +765,7 @@ func (h *Handler) DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 
 // AbortConversionHandler handles requests to abort a conversion job.
 func (h *Handler) AbortConversionHandler(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/api/conversion/abort/")
+	id := strings.TrimPrefix(r.URL.Path, RouteConversionAbort)
 	if r.Method != http.MethodPost {
 		h.sendErrorResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -885,7 +886,7 @@ func (h *Handler) ActiveConversionsStreamHandler(w http.ResponseWriter, r *http.
 		}
 	}
 
-	heartbeat := time.NewTicker(30 * time.Second)
+	heartbeat := time.NewTicker(constants.SSEHeartbeatInterval)
 	defer heartbeat.Stop()
 
 	for {
@@ -948,7 +949,7 @@ func buildStatusResponse(id string, status models.ConversionStatus) models.Conve
 	}
 
 	if status.Complete && status.Error == "" && status.OutputPath != "" {
-		response.DownloadURL = fmt.Sprintf("/download/%s", filepath.Base(status.OutputPath))
+		response.DownloadURL = fmt.Sprintf("%s%s", RouteDownload, filepath.Base(status.OutputPath))
 	}
 
 	return response

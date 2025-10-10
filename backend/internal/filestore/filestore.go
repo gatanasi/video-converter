@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/gatanasi/video-converter/internal/constants"
 )
 
 var filenameSanitizeRegex = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
@@ -19,7 +21,7 @@ func EnsureDirectoryExists(dirPath string) error {
 		return fmt.Errorf("empty directory path")
 	}
 	// Use MkdirAll which is idempotent and creates parent dirs if needed
-	if err := os.MkdirAll(dirPath, 0755); err != nil {
+	if err := os.MkdirAll(dirPath, constants.DirectoryPermissions); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dirPath, err)
 	}
 	return nil
@@ -37,12 +39,11 @@ func SanitizeFilename(fileName string) string {
 	sanitized = strings.Trim(sanitized, "._")
 
 	// Limit length
-	const maxLength = 100
-	if len(sanitized) > maxLength {
+	if len(sanitized) > constants.MaxFilenameLength {
 		ext := filepath.Ext(sanitized)
 		// Ensure base name length calculation handles multibyte characters correctly
 		baseRunes := []rune(strings.TrimSuffix(sanitized, ext))
-		maxBaseLen := maxLength - len(ext)
+		maxBaseLen := constants.MaxFilenameLength - len(ext)
 		if len(baseRunes) > maxBaseLen {
 			sanitized = string(baseRunes[:maxBaseLen]) + ext
 		}

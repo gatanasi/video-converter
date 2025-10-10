@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/gatanasi/video-converter/internal/models"
 	"github.com/gatanasi/video-converter/internal/utils"
 )
@@ -82,7 +83,7 @@ func (c *VideoConverter) QueueJob(job models.ConversionJob) error {
 // getVideoDuration uses ffprobe to get the duration of a video file in seconds.
 func getVideoDuration(filePath string) (float64, error) {
 	// Use a context with timeout for ffprobe
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // 15-second timeout for ffprobe
+	ctx, cancel := context.WithTimeout(context.Background(), constants.FFprobeTimeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "ffprobe",
@@ -147,9 +148,9 @@ func (c *VideoConverter) convertVideo(job models.ConversionJob) {
 	}
 
 	// Determine optimal thread count (can be adjusted)
-	threadCount := runtime.NumCPU() - 2
-	if threadCount < 1 {
-		threadCount = 1
+	threadCount := runtime.NumCPU() - constants.ThreadCountReserve
+	if threadCount < constants.MinThreadCount {
+		threadCount = constants.MinThreadCount
 	}
 
 	// Build FFmpeg arguments
@@ -408,12 +409,12 @@ func (c *VideoConverter) processFFmpegProgress(stdout io.ReadCloser, conversionI
 			}
 		} else if !hasDuration && (key == "out_time_us" || key == "frame") {
 			// Fallback: Increment progress periodically if duration is unknown
-			if time.Since(lastProgressUpdate) > 500*time.Millisecond {
+			if time.Since(lastProgressUpdate) > constants.ProgressUpdateThrottle {
 				// Fetch current progress to increment it
 				// Handle the 'exists' boolean correctly
 				currentStatus, exists := c.store.GetStatus(conversionID)
 				if exists {
-					newProgress := currentStatus.Progress + 0.5 // Simple increment
+					newProgress := currentStatus.Progress + constants.ProgressIncrementStep // Simple increment
 					c.store.SetProgressPercentage(conversionID, newProgress)
 					lastProgressUpdate = time.Now() // Corrected typo: Now() instead of now()
 				} else {

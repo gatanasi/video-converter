@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/gatanasi/video-converter/internal/models"
 )
 
@@ -15,13 +16,13 @@ import (
 func New() models.Config {
 	var config models.Config
 
-	config.Port = getEnv("PORT", "3000")
+	config.Port = getEnv("PORT", constants.DefaultPort)
 
-	maxFileSizeMB := parseIntEnv("MAX_FILE_SIZE_MB", 2000)
+	maxFileSizeMB := parseIntEnv("MAX_FILE_SIZE_MB", constants.DefaultMaxFileSizeMB)
 	config.MaxFileSize = int64(maxFileSizeMB) * 1024 * 1024 // Convert MB to bytes
 
-	config.UploadsDir = getEnv("UPLOADS_DIR", "uploads")
-	config.ConvertedDir = getEnv("CONVERTED_DIR", "converted")
+	config.UploadsDir = getEnv("UPLOADS_DIR", constants.DefaultUploadsDir)
+	config.ConvertedDir = getEnv("CONVERTED_DIR", constants.DefaultConvertedDir)
 
 	defaultWorkers := runtime.NumCPU()
 	workerCountStr := getEnv("WORKER_COUNT", strconv.Itoa(defaultWorkers)) // Get string for logging
