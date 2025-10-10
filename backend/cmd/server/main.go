@@ -52,7 +52,9 @@ func main() {
 		if r.URL.Path == api.RouteActiveConversionsStream {
 			// Disable write timeout for SSE stream
 			if conn, ok := w.(interface{ SetWriteDeadline(time.Time) error }); ok {
-				conn.SetWriteDeadline(time.Time{})
+				if err := conn.SetWriteDeadline(time.Time{}); err != nil {
+					log.Printf("Warning: Failed to set write deadline: %v", err)
+				}
 			}
 		}
 		middleware.CORS(mux).ServeHTTP(w, r)
