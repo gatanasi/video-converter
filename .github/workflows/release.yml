@@ -24,7 +24,7 @@ permissions:
 
 env:
   NODE_VERSION: '22.x'
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.25'
 
 jobs:
   determine-version:
