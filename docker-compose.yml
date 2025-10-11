@@ -1,7 +1,10 @@
 services:
   video-converter:
     container_name: video-converter
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-docker}
     restart: unless-stopped
     ports:
       - "${HOST_PORT:-3000}:3000"

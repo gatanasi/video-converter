@@ -5,7 +5,7 @@
 FROM node:22-alpine@sha256:dbcedd8aeab47fbc0f4dd4bffa55b7c3c729a707875968d467aaaea42d6225af AS frontend-builder
 
 # ARG is scoped to this build stage for clarity
-ARG PNPM_VERSION="10.18.1"
+ARG PNPM_VERSION="10.18.2"
 
 WORKDIR /app/frontend
 
@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 pnpm install --fr
 COPY frontend/ ./
 
 # Build frontend
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 pnpm run build
+RUN pnpm run build
 
 # Stage 2: Build Backend
 FROM golang:1.25-alpine@sha256:06cdd34bd531b810650e47762c01e025eb9b1c7eadd191553b91c9f2d549fae8 AS backend-builder

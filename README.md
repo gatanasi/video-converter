@@ -66,7 +66,7 @@ This application is configured primarily via environment variables for security 
     -   **Security:** If this variable is **not set**, the backend will default to allowing **all** origins (`*`), which is **insecure** and should **not** be used in production.
 
 **Optional (Defaults Provided):**
--   `VERSION`: The Docker image tag to use. (Default: latest)
+-   `VERSION`: A version string to bake into the application binary during the Docker build. (Default: `docker`)
 -   `PORT`: The port the Go backend server will listen on. (Default: `3000`)
 -   `WORKER_COUNT`: The number of concurrent FFmpeg conversion processes allowed. (Default: Number of CPU cores reported by `runtime.NumCPU()`)
 -   `MAX_FILE_SIZE_MB`: Maximum allowed size (in Megabytes) for a video file downloaded from Google Drive or uploaded directly. (Default: `2000`)
