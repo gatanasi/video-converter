@@ -65,13 +65,10 @@ cd backend
 go mod download
 
 # Option 1: Load environment variables and run
-export $(grep -v '^#' ../.env | xargs)
+set -a; source ../.env; set +a
 go run ./cmd/server/main.go
 
-# Option 2: Use env command
-env $(cat ../.env | grep -v '^#' | xargs) go run ./cmd/server/main.go
-
-# Option 3: Set variables manually (for testing)
+# Option 2: Set variables manually (for testing)
 export GOOGLE_DRIVE_API_KEY="YOUR_DEV_API_KEY"
 export ALLOWED_ORIGINS="http://localhost:8080"
 export PORT="3000"

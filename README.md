@@ -27,7 +27,7 @@ Convert videos from Google Drive to different formats with a simple web interfac
 mkdir video-converter && cd video-converter
 
 # 2. Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/gatanasi/video-converter/main/docker-compose.yml
+curl -LO https://github.com/gatanasi/video-converter/releases/latest/download/docker-compose.yml
 
 # 3. Create .env file with your settings
 cat > .env << 'EOF'

@@ -32,9 +32,6 @@ docker compose up -d
 For development or customization:
 
 ```bash
-For development or customization:
-
-```bash
 # Use the development compose file (recommended for developers)
 docker compose -f docker-compose.dev.yml up -d --build
 
