@@ -1,3 +1,12 @@
+## [2.1.2](https://github.com/gatanasi/video-converter/compare/v2.1.1...v2.1.2) (2025-10-11)
+
+
+### Bug Fixes
+
+* **docker:** add SYS_NICE capability to video-converter service in docker-compose.yml ([0693f6b](https://github.com/gatanasi/video-converter/commit/0693f6b27ae6410a901e45a5030d5c7899587672))
+* **docs:** update allowed origins in .env.example and README for local development ([2b729f2](https://github.com/gatanasi/video-converter/commit/2b729f2475e9a087fc034a4bf3a7a2673d0993b5))
+* **docs:** update environment variable loading instructions and improve Docker setup documentation ([ae01c04](https://github.com/gatanasi/video-converter/commit/ae01c048d3636d809798be8232cd31ff754f6a3b))
+
 ## [2.1.1](https://github.com/gatanasi/video-converter/compare/v2.1.0...v2.1.1) (2025-10-11)
 
 
