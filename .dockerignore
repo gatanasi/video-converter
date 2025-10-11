@@ -41,3 +41,6 @@ deploy-video-converter.sh
 # CI/CD files
 renovate.json
 commitlint.config.js
+
+# Secrets (mounted at runtime via Docker secrets)
+secrets/

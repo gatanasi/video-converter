@@ -1,19 +1,26 @@
 # Multi-stage Dockerfile for Video Converter Application
-# This builds both frontend and backend in a single container
+# This builds both frontend and backend in a single container leveraging BuildKit caching
 
 # Stage 1: Build Frontend
 FROM node:22-alpine@sha256:dbcedd8aeab47fbc0f4dd4bffa55b7c3c729a707875968d467aaaea42d6225af AS frontend-builder
 
+# ARG is scoped to this build stage for clarity
+ARG PNPM_VERSION="10.18.2"
+
 WORKDIR /app/frontend
 
 # Install pnpm
-RUN npm install -g pnpm@10.18.1
+RUN --mount=type=cache,target=/root/.npm npm install -g pnpm@${PNPM_VERSION}
 
-# Copy frontend package files
+# Cache directory used by pnpm to avoid re-downloading packages across builds
+ENV PNPM_HOME=/root/.local/share/pnpm
+ENV PATH="${PNPM_HOME}:${PATH}"
+
+# Copy frontend package files to leverage Docker layer caching
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies using the lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 pnpm install --frozen-lockfile
 
 # Copy frontend source
 COPY frontend/ ./
@@ -24,44 +31,53 @@ RUN pnpm run build
 # Stage 2: Build Backend
 FROM golang:1.25-alpine@sha256:06cdd34bd531b810650e47762c01e025eb9b1c7eadd191553b91c9f2d549fae8 AS backend-builder
 
+# ARG is scoped to this build stage
+ARG VERSION="docker"
+
 WORKDIR /app/backend
 
-# Install build dependencies
-RUN apk add --no-cache git
+# Set build environment for a static binary
+ENV CGO_ENABLED=0
+ENV GOOS=linux
 
-# Copy go mod files
+# Copy go mod files to leverage layer caching
 COPY backend/go.mod backend/go.sum* ./
 
 # Download dependencies
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
 # Copy backend source
 COPY backend/ ./
 
-# Build the Go binary
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags="-s -w -X main.version=${VERSION:-docker}" \
+# Build the Go binary, stripping debug info for a smaller size
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build \
+    -ldflags="-s -w -X main.version=${VERSION}" \
     -o /video-converter-app \
     ./cmd/server/main.go
 
 # Stage 3: Final Runtime Image
 FROM alpine:latest@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
 
-# Install runtime dependencies: FFmpeg, ExifTool, and CA certificates
+# Install only necessary runtime dependencies
 RUN apk add --no-cache \
     ffmpeg \
     exiftool \
     ca-certificates \
-    tzdata
+    tzdata \
+    wget \
+    su-exec
 
-# Create a non-root user for running the application
+# Create a non-root user and group for running the application
 RUN addgroup -g 1000 converter && \
     adduser -D -u 1000 -G converter converter
 
-# Set working directory
 WORKDIR /app
 
-# Create necessary directories
+# Create necessary directories and set permissions in a single layer
 RUN mkdir -p /app/static /app/uploads /app/converted && \
     chown -R converter:converter /app
 
@@ -71,10 +87,11 @@ COPY --from=backend-builder --chown=converter:converter /video-converter-app /ap
 # Copy the built frontend assets from frontend-builder stage
 COPY --from=frontend-builder --chown=converter:converter /app/frontend/dist /app/static
 
-# Switch to non-root user
-USER converter
+# Copy entrypoint script with explicit root ownership for security
+COPY --chown=root:root docker/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh
 
-# Expose the application port (default 3000)
+# Expose the application port
 EXPOSE 3000
 
 # Set default environment variables
@@ -82,9 +99,6 @@ ENV PORT=3000 \
     UPLOADS_DIR=/app/uploads \
     CONVERTED_DIR=/app/converted
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/api/config || exit 1
-
-# Run the application
+# Run the application via entrypoint (drops privileges to converter)
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/app/video-converter-app"]

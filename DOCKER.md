@@ -38,6 +38,23 @@ docker run -d \
 
 ## Troubleshooting
 
+### Volume Permissions
+
+The application runs as a non-root user (`converter`, UID 1000) for security. The entrypoint script automatically ensures the volume directories have the correct ownership.
+
+**You don't need to manually create directories** - the entrypoint will handle this automatically when the container starts.
+
+If you've manually created the `uploads` or `converted` directories and encounter permission errors:
+
+```bash
+# Fix ownership (Linux/macOS)
+sudo chown -R 1000:1000 uploads converted
+
+# Or let Docker recreate them
+docker compose down -v
+docker compose up -d
+```
+
 ### View Container Logs
 ```bash
 docker compose logs -f video-converter
@@ -104,26 +121,6 @@ services:
         limits:
           cpus: '4'
           memory: 4G
-        reservations:
-          cpus: '2'
-          memory: 2G
-```
-
-### Using Docker Secrets
-Instead of environment variables in `.env`:
-```bash
-echo "your_api_key" | docker secret create google_drive_api_key -
-```
-
-Then in docker-compose.yml:
-```yaml
-services:
-  video-converter:
-    secrets:
-      - google_drive_api_key
-secrets:
-  google_drive_api_key:
-    external: true
 ```
 
 ### Reverse Proxy Setup
@@ -139,16 +136,6 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 }
-```
-
-### Data Persistence
-The following volumes should be backed up regularly:
-- `./uploads` - Temporary uploaded files
-- `./converted` - Converted video files
-
-```bash
-# Backup example
-tar -czf backup-$(date +%Y%m%d).tar.gz uploads converted
 ```
 
 ## Multi-Platform Images
