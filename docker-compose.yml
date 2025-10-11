@@ -17,6 +17,8 @@ services:
     volumes:
       - ./uploads:/app/uploads
       - ./converted:/app/converted
+    cap_add:
+      - SYS_NICE
     security_opt:
       - no-new-privileges:true
     healthcheck:
