@@ -1,3 +1,18 @@
+# [2.1.0](https://github.com/gatanasi/video-converter/compare/v2.0.1...v2.1.0) (2025-10-11)
+
+
+### Bug Fixes
+
+* **docker:** enhance Dockerfile and docker-compose.yml ([#86](https://github.com/gatanasi/video-converter/issues/86)) ([1c31776](https://github.com/gatanasi/video-converter/commit/1c3177697037d9e6af1a7c6c05c1ab1c16909e64))
+* **docker:** enhance Dockerfile and docker-compose.yml for improved caching and security ([6b5356e](https://github.com/gatanasi/video-converter/commit/6b5356ea138ac1c9d8098f0955ebbc5b3abd5ed8))
+* **docker:** enhance entrypoint script for directory validation and ownership management ([644dfa3](https://github.com/gatanasi/video-converter/commit/644dfa3f0f98014b63743d5d5c83d582fa1cfe46))
+* **docker:** update PNPM version and improve Dockerfile and docker-compose.yml structure ([bc1a73f](https://github.com/gatanasi/video-converter/commit/bc1a73f6a34f2b85efad4d2f2ebdde5c081751ce))
+
+
+### Features
+
+* **docker:** add entrypoint script and update Dockerfile for improved user permissions ([1ca807a](https://github.com/gatanasi/video-converter/commit/1ca807ab1fd382b58d9d0529f8c4a1559f836379))
+
 # [2.0.0](https://github.com/gatanasi/video-converter/compare/v1.4.0...v2.0.0) (2025-10-10)
 
 
