@@ -68,7 +68,7 @@ RUN apk add --no-cache \
     exiftool \
     ca-certificates \
     tzdata \
-    wget \
+    curl \
     su-exec
 
 # Create a non-root user and group for running the application

@@ -20,7 +20,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/config"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/config"]
       interval: 30s
       timeout: 3s
       retries: 3
