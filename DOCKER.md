@@ -1,19 +1,74 @@
 # Docker Reference
 
-This document provides Docker-specific commands and troubleshooting tips. For deployment instructions, see the main [README.md](README.md).
+This document provides Docker-specific commands and troubleshooting tips for the Video Converter application.
+
+## For End Users
+
+If you're just looking to run the application, see the [README.md](README.md) for simple deployment instructions.
+
+## For Developers
+
+If you're contributing to the project, see [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup.
+
+---
+
+## Using Pre-built Images
+
+The application is distributed via GitHub Container Registry (GHCR). Images are available for `linux/amd64` and `linux/arm64` platforms.
+
+```bash
+# Pull latest version
+docker pull ghcr.io/gatanasi/video-converter:latest
+
+# Pull specific version
+docker pull ghcr.io/gatanasi/video-converter:1.2.3
+
+# Run with docker compose (recommended)
+docker compose up -d
+```
 
 ## Building Images Locally
 
+For development or customization:
+
 ```bash
-# Build with default settings
+# Use the development compose file (recommended for developers)
+docker compose -f docker-compose.dev.yml up -d --build
+
+# Or build manually
 docker build -t video-converter:local .
 
 # Build with specific version
 docker build --build-arg VERSION=1.0.0 -t video-converter:1.0.0 .
 
 # Build with docker compose
+# First, edit docker-compose.yml to uncomment the 'build' section
 docker compose build
+
+# Or use the --build flag
+docker compose up -d --build
 ```
+
+## Switching Between Pre-built and Local Images
+
+The `docker-compose.yml` file is configured to use pre-built images by default. To build locally:
+
+1. **Edit `docker-compose.yml`**:
+   ```yaml
+   # Comment out the image line
+   # image: ghcr.io/gatanasi/video-converter:${VERSION:-latest}
+   
+   # Uncomment the build section
+   build:
+     context: .
+     args:
+       VERSION: ${VERSION:-docker}
+   ```
+
+2. **Build and run**:
+   ```bash
+   docker compose up -d --build
+   ```
 
 ## Running Containers
 

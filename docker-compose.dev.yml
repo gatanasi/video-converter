@@ -1,22 +1,23 @@
+# Docker Compose configuration for local development
+# Usage: docker compose -f docker-compose.dev.yml up -d --build
+
 services:
   video-converter:
-    container_name: video-converter
-    # Use pre-built image from GitHub Container Registry
-    # Comment this out and uncomment 'build' section for local development
-    image: ghcr.io/gatanasi/video-converter:${VERSION:-latest}
-    # Uncomment below for local development builds
-    # build:
-    #   context: .
-    #   args:
-    #     VERSION: ${VERSION:-docker}
+    container_name: video-converter-dev
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
     restart: unless-stopped
     ports:
       - "${HOST_PORT:-3000}:3000"
     environment:
       GOOGLE_DRIVE_API_KEY: ${GOOGLE_DRIVE_API_KEY}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      WORKER_COUNT: ${WORKER_COUNT:-}
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-*}"
+      WORKER_COUNT: ${WORKER_COUNT:-2}
       DEFAULT_DRIVE_FOLDER_ID: "${DEFAULT_DRIVE_FOLDER_ID:-}"
+      PORT: ${PORT:-3000}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-500}
     init: true
     volumes:
       - ./uploads:/app/uploads
