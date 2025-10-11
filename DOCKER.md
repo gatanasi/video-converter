@@ -121,11 +121,6 @@ server {
 }
 ```
 
-### Data Persistence
-The following volumes should be backed up regularly:
-- `./uploads` - Temporary uploaded files
-- `./converted` - Converted video files
-
 ## Multi-Platform Images
 
 Images are built for:

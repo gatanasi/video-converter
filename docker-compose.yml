@@ -14,7 +14,6 @@ services:
       WORKER_COUNT: ${WORKER_COUNT:-}
       DEFAULT_DRIVE_FOLDER_ID: "${DEFAULT_DRIVE_FOLDER_ID:-}"
     init: true
-    user: "1000:1000"
     volumes:
       - ./uploads:/app/uploads
       - ./converted:/app/converted
