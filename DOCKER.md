@@ -38,6 +38,23 @@ docker run -d \
 
 ## Troubleshooting
 
+### Volume Permissions
+
+The application runs as a non-root user (`converter`, UID 1000) for security. The entrypoint script automatically ensures the volume directories have the correct ownership.
+
+**You don't need to manually create directories** - the entrypoint will handle this automatically when the container starts.
+
+If you've manually created the `uploads` or `converted` directories and encounter permission errors:
+
+```bash
+# Fix ownership (Linux/macOS)
+sudo chown -R 1000:1000 uploads converted
+
+# Or let Docker recreate them
+docker compose down -v
+docker compose up -d
+```
+
 ### View Container Logs
 ```bash
 docker compose logs -f video-converter

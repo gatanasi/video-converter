@@ -87,9 +87,9 @@ COPY --from=backend-builder --chown=converter:converter /video-converter-app /ap
 # Copy the built frontend assets from frontend-builder stage
 COPY --from=frontend-builder --chown=converter:converter /app/frontend/dist /app/static
 
-# Copy entrypoint script
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Copy entrypoint script with explicit root ownership for security
+COPY --chown=root:root docker/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh
 
 # Expose the application port
 EXPOSE 3000
