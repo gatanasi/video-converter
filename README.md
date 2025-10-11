@@ -36,6 +36,8 @@ ALLOWED_ORIGINS=http://your-server-ip:3000
 VERSION=latest
 EOF
 
+# Note: ALLOWED_ORIGINS should match the URL where you'll access the web interface
+
 # 4. Start the application
 docker compose up -d
 
