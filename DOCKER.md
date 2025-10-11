@@ -104,26 +104,6 @@ services:
         limits:
           cpus: '4'
           memory: 4G
-        reservations:
-          cpus: '2'
-          memory: 2G
-```
-
-### Using Docker Secrets
-Instead of environment variables in `.env`:
-```bash
-echo "your_api_key" | docker secret create google_drive_api_key -
-```
-
-Then in docker-compose.yml:
-```yaml
-services:
-  video-converter:
-    secrets:
-      - google_drive_api_key
-secrets:
-  google_drive_api_key:
-    external: true
 ```
 
 ### Reverse Proxy Setup
@@ -145,11 +125,6 @@ server {
 The following volumes should be backed up regularly:
 - `./uploads` - Temporary uploaded files
 - `./converted` - Converted video files
-
-```bash
-# Backup example
-tar -czf backup-$(date +%Y%m%d).tar.gz uploads converted
-```
 
 ## Multi-Platform Images
 

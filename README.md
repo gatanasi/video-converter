@@ -28,6 +28,7 @@ cp .env.example .env
 
 # 2. Edit .env and add your Google Drive API key
 # GOOGLE_DRIVE_API_KEY=your_key_here
+# VERSION=latest # You can specify a version like 1.2.3
 
 # 3. Run with docker compose
 docker compose up -d
@@ -62,11 +63,10 @@ This application is configured primarily via environment variables for security 
     -   This key is used **only on the backend** for listing and downloading files from Google Drive.
 -   `ALLOWED_ORIGINS`: **(Required for Production)** A comma-separated list of frontend URLs (origins) that are allowed to access the backend API via CORS.
     -   **Example:** `ALLOWED_ORIGINS=https://converter.example.com,https://converter.home.example.com`
-    -   **For local development:** You might use `ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000` (adjust port if needed).
     -   **Security:** If this variable is **not set**, the backend will default to allowing **all** origins (`*`), which is **insecure** and should **not** be used in production.
 
 **Optional (Defaults Provided):**
-
+-   `VERSION`: The Docker image tag to use. (Default: latest)
 -   `PORT`: The port the Go backend server will listen on. (Default: `3000`)
 -   `WORKER_COUNT`: The number of concurrent FFmpeg conversion processes allowed. (Default: Number of CPU cores reported by `runtime.NumCPU()`)
 -   `MAX_FILE_SIZE_MB`: Maximum allowed size (in Megabytes) for a video file downloaded from Google Drive or uploaded directly. (Default: `2000`)
@@ -141,14 +141,12 @@ docker compose down
 **Deploy Specific Version:**
 
 ```bash
-VERSION=1.0.0 docker compose up -d
-```
+# In your .env file
+# VERSION=1.2.3
 
-**Available Image Tags:**
-- `latest` - Latest stable release
-- `1.0.0` - Specific version
-- `1.0` - Latest patch version of 1.0.x
-- `1` - Latest minor version of 1.x.x
+# Or on the command line
+VERSION=1.2.3 docker compose up -d
+```
 
 ### Alternative: Direct Docker Run
 
