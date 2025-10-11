@@ -1,212 +1,186 @@
-# Video Converter Web App
+# Video Converter
 
-A simple web application that allows users to fetch videos from a specified Google Drive folder, convert them to different formats using FFmpeg, and download the converted files.
+Convert videos from Google Drive to different formats with a simple web interface.
 
-## Features
+> 📖 **[User Guide](#)** (you're here) · **[Development Setup](CONTRIBUTING.md)** · **[Docker Reference](DOCKER.md)**
 
--   Lists videos from a Google Drive folder using the Google Drive API.
--   Converts videos to various formats (MOV, MP4) using FFmpeg.
--   Special video processing options:
-    -   **Reverse video**: Play the video in reverse.
-    -   **Remove sound**: Strip audio from the output video (enabled by default).
-    -   **Quality presets**: Choose between Default (CRF 22 · slow), High (CRF 20 · slower), or Fast (CRF 23 · medium) encoding profiles.
--   Preserves metadata from original files using exiftool.
--   Displays currently running conversions with accurate progress and abort option.
--   Includes a tab to browse and manage previously converted videos (download or delete).
--   Configuration primarily through environment variables for security and flexibility.
--   Uses a backend worker pool to manage concurrent conversions efficiently.
--   Automatic cleanup of old uploaded and converted files.
--   Containerized deployment with Docker for easy setup and consistent environments.
+## ✨ Features
 
-## Quick Start with Docker (Recommended)
+- 📁 Browse and select videos from Google Drive folders
+- 🎬 Convert to MP4 or MOV formats with quality presets
+- 🔄 Reverse videos and remove audio
+- 📊 Real-time conversion progress tracking
+- 💾 Download and manage converted files
+- 🐳 Ready-to-deploy Docker images
 
-The easiest way to run the application is using Docker:
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker and Docker Compose ([install here](https://docs.docker.com/get-docker/))
+- Google Drive API key ([get one here](#getting-a-google-drive-api-key))
+
+### Deploy on Your Server
 
 ```bash
-# 1. Copy environment template
-cp .env.example .env
+# 1. Create a directory for the app
+mkdir video-converter && cd video-converter
 
-# 2. Edit .env and add your Google Drive API key
-# GOOGLE_DRIVE_API_KEY=your_key_here
-# VERSION=latest # You can specify a version like 1.2.3
+# 2. Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/gatanasi/video-converter/main/docker-compose.yml
 
-# 3. Run with docker compose
+# 3. Create .env file with your settings
+cat > .env << 'EOF'
+GOOGLE_DRIVE_API_KEY=your_api_key_here
+ALLOWED_ORIGINS=http://your-server-ip:3000
+VERSION=latest
+EOF
+
+# 4. Start the application
 docker compose up -d
 
-# 4. Access at http://localhost:3000
+# 5. Access at http://your-server-ip:3000
 ```
 
-For Docker-specific commands and troubleshooting, see [DOCKER.md](DOCKER.md).
-
-## Prerequisites
-
-**For Docker Deployment (Recommended):**
--   [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
-
-**For Local Development:**
--   [Go](https://golang.org/dl/) (v1.18 or newer recommended, tested with v1.25)
--   [Node.js](https://nodejs.org/) and [pnpm](https://pnpm.io/installation) (for building the frontend)
--   [FFmpeg](https://ffmpeg.org/download.html) - Must be installed and accessible in your system's `PATH`. `ffprobe` (usually included with FFmpeg) is also required for accurate progress calculation.
--   [ExifTool](https://exiftool.org/install.html) - Required for metadata preservation. Must be installed and accessible in your system's `PATH`.
-
-## Configuration (Environment Variables)
-
-This application is configured primarily via environment variables for security and ease of deployment. You can set these directly in your environment or use a `.env` file (see examples below).
-
-**Required:**
-
--   `GOOGLE_DRIVE_API_KEY`: **(Required)** Your Google Drive API Key.
-    -   Create a project in the [Google Cloud Console](https://console.cloud.google.com/).
-    -   Enable the **Google Drive API**.
-    -   Create an **API Key** under "APIs & Services" -> "Credentials".
-    -   **Important:** Restrict the API key if possible. For this application's needs (listing files with `alt=media` and downloading `alt=media`), it primarily needs read access to the Drive files it will process. Consider restricting it to the Drive API and potentially by IP address if feasible.
-    -   This key is used **only on the backend** for listing and downloading files from Google Drive.
--   `ALLOWED_ORIGINS`: **(Required for Production)** A comma-separated list of frontend URLs (origins) that are allowed to access the backend API via CORS.
-    -   **Example:** `ALLOWED_ORIGINS=https://converter.example.com,https://converter.home.example.com`
-    -   **Security:** If this variable is **not set**, the backend will default to allowing **all** origins (`*`), which is **insecure** and should **not** be used in production.
-
-**Optional (Defaults Provided):**
--   `VERSION`: A version string to bake into the application binary during the Docker build. (Default: `docker`)
--   `PORT`: The port the Go backend server will listen on. (Default: `3000`)
--   `WORKER_COUNT`: The number of concurrent FFmpeg conversion processes allowed. (Default: Number of CPU cores reported by `runtime.NumCPU()`)
--   `MAX_FILE_SIZE_MB`: Maximum allowed size (in Megabytes) for a video file downloaded from Google Drive or uploaded directly. (Default: `2000`)
--   `UPLOADS_DIR`: Directory path for temporary storage of downloaded/uploaded videos before conversion. (Default: `uploads`)
--   `CONVERTED_DIR`: Directory path for storing successfully converted videos. (Default: `converted`)
--   `DEFAULT_DRIVE_FOLDER_ID`: Pre-configures a default Google Drive folder ID for the application. When set, this folder ID will be automatically used as the default when the application loads, saving users from having to manually enter it. Users can still override this by entering a different folder ID in the UI. This is useful for deployments where most users will be accessing the same folder.
-
-## CI/CD and Releases
-
-This project uses GitHub Actions for continuous integration and deployment:
-
-### Automated Workflows
-
-- **CI**: Runs on every push - lints, tests, and builds Docker image (validates only, doesn't push)
-- **Release**: Creates versioned releases with Docker images pushed to GitHub Container Registry
-
-### Creating a Release
-
-Releases are created via GitHub Actions workflow:
-
-1. Go to **Actions** → **Video Converter - Release** → **Run workflow**
-2. Choose options:
-   - **Branch**: Branch to release from (default: `main`)
-   - **Force release**: Override semantic versioning
-   - **Manual version**: Specify version manually (e.g., `1.0.0`, `1.0.0-beta1`)
-
-The workflow will:
-- Determine version using semantic-release (or use manual version)
-- Run all tests and linting
-- Build multi-platform Docker image (amd64, arm64)
-- Push to GitHub Container Registry with multiple tags
-- Create GitHub Release with Docker pull instructions
-
-### Version Tags
-
-Each release creates multiple Docker image tags:
-- `ghcr.io/gatanasi/video-converter:latest` - Latest stable release
-- `ghcr.io/gatanasi/video-converter:1.0.0` - Specific version
-- `ghcr.io/gatanasi/video-converter:1.0` - Latest 1.0.x patch
-- `ghcr.io/gatanasi/video-converter:1` - Latest 1.x.x minor/patch
-
-See [.github/workflows/README.md](.github/workflows/README.md) for detailed workflow documentation.
-
-## Deploying to Production
-
-### Docker Deployment (Recommended)
-
-The application is distributed as a Docker image via GitHub Container Registry (GHCR). This is the recommended deployment method as it includes all dependencies (FFmpeg, ExifTool) and ensures consistent behavior across environments.
-
-#### Using Pre-built Images
-
-**Prerequisites:**
-- Docker and Docker Compose installed on your server
-- A `.env` file with your configuration (see [Configuration](#configuration-environment-variables))
-
-**Quick Deploy:**
+### View Logs
 
 ```bash
-# 1. Create docker-compose.yml and .env files on your server
-# 2. Set your environment variables in .env
-# 3. Pull and run the latest release
-docker compose pull
-docker compose up -d
-
-# Check logs
 docker compose logs -f
+```
 
-# Stop the application
+### Stop the Application
+
+```bash
 docker compose down
 ```
 
-**Deploy Specific Version:**
+### Update to Latest Version
 
 ```bash
-# In your .env file
-# VERSION=1.2.3
+docker compose pull
+docker compose up -d
+```
 
-# Or on the command line
+## ⚙️ Configuration
+
+Create a `.env` file with these settings:
+
+### Required
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_DRIVE_API_KEY` | Your Google Drive API key (see below) |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed URLs (e.g., `http://localhost:3000,https://converter.example.com`) |
+
+### Optional
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VERSION` | `latest` | Docker image version (e.g., `1.2.3`) |
+| `HOST_PORT` | `3000` | Port to expose on host machine |
+| `WORKER_COUNT` | CPU cores | Number of concurrent conversions |
+| `MAX_FILE_SIZE_MB` | `2000` | Maximum file size in MB |
+| `DEFAULT_DRIVE_FOLDER_ID` | - | Pre-fill a default Google Drive folder |
+
+### Example .env
+
+```bash
+GOOGLE_DRIVE_API_KEY=AIzaSyD...your-key-here
+ALLOWED_ORIGINS=https://converter.example.com
+VERSION=latest
+WORKER_COUNT=4
+```
+
+## 🔑 Getting a Google Drive API Key
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable the **Google Drive API**:
+   - Go to "APIs & Services" → "Library"
+   - Search for "Google Drive API"
+   - Click "Enable"
+4. Create credentials:
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "API Key"
+   - Copy the generated key
+5. **(Recommended)** Restrict the API key:
+   - Click on the key to edit
+   - Under "API restrictions", select "Restrict key"
+   - Choose "Google Drive API"
+   - Optionally add IP restrictions
+
+## 🌐 Production Deployment
+
+### With HTTPS (Recommended)
+
+For production, use a reverse proxy like nginx or Caddy:
+
+**Example nginx config:**
+```nginx
+server {
+    listen 443 ssl;
+    server_name converter.example.com;
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Then update your `.env`:
+```bash
+ALLOWED_ORIGINS=https://converter.example.com
+```
+
+### Specify Version
+
+Instead of `latest`, pin to a specific version:
+
+```bash
 VERSION=1.2.3 docker compose up -d
 ```
 
-### Alternative: Direct Docker Run
+View all versions: [Releases](https://github.com/gatanasi/video-converter/releases)
+
+## 🛠️ Advanced Usage
+
+### Using Docker Directly (without compose)
 
 ```bash
 docker run -d \
   --name video-converter \
   -p 3000:3000 \
   -e GOOGLE_DRIVE_API_KEY="your_api_key" \
-  -e ALLOWED_ORIGINS="https://yourdomain.com" \
-  -v $(pwd)/uploads:/app/uploads \
-  -v $(pwd)/converted:/app/converted \
+  -e ALLOWED_ORIGINS="http://localhost:3000" \
+  -v ./uploads:/app/uploads \
+  -v ./converted:/app/converted \
   ghcr.io/gatanasi/video-converter:latest
 ```
 
-## Local Development
+## 📚 Additional Documentation
 
-### Running Locally (Without Docker)
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup, building from source, submitting PRs
+- **[DOCKER.md](DOCKER.md)** - Advanced Docker commands and troubleshooting
+- **[Releases](https://github.com/gatanasi/video-converter/releases)** - Version history and changelogs
 
-1.  **Set up environment variables:**
-    *   Copy the example file: `cp .env.example .env`
-    *   Edit `.env` and set your `GOOGLE_DRIVE_API_KEY` and other configuration
+## 🤝 Contributing
 
-2.  **Backend:**
-    *   Navigate to the `backend` directory: `cd backend`
-    *   Load environment variables from the root `.env` file:
-        ```bash
-        # Option 1: Export variables from .env (zsh/bash)
-        export $(grep -v '^#' ../.env | xargs)
-        
-        # Option 2: Use env command
-        env $(cat ../.env | grep -v '^#' | xargs) go run ./cmd/server/main.go
-        ```
-    *   Or set them manually:
-        ```bash
-        export GOOGLE_DRIVE_API_KEY="YOUR_DEV_API_KEY"
-        export ALLOWED_ORIGINS="http://localhost:8080"
-        export PORT="3000"
-        ```
-    *   Run the backend server: `go run ./cmd/server/main.go`
-    *   The backend will be accessible at `http://localhost:3000`
+Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Local development setup
+- Building from source
+- Testing and code style
+- Submitting pull requests
 
-3.  **Frontend:**
-    *   Navigate to the `frontend` directory: `cd frontend`
-    *   Install dependencies: `pnpm install`
-    *   Build the frontend assets: `pnpm run build`
-    *   Serve the `dist` directory:
-        ```bash
-        npx serve dist -l 8080
-        ```
-    *   Open your browser to `http://localhost:8080`
+## 📄 License
 
-### Building Docker Image Locally
+MIT License - see [LICENSE](LICENSE) file for details.
 
-```bash
-# Build the image
-docker build -t video-converter:local .
+## 🔗 Links
 
-# Run it
-docker run -d -p 3000:3000 \
-  -e GOOGLE_DRIVE_API_KEY="your_key" \
-  -e ALLOWED_ORIGINS="*" \
-  video-converter:local
-```
+- **Issues**: [Report bugs or request features](https://github.com/gatanasi/video-converter/issues)
+- **Docker Images**: [ghcr.io/gatanasi/video-converter](https://github.com/gatanasi/video-converter/pkgs/container/video-converter)
