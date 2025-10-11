@@ -67,7 +67,9 @@ RUN apk add --no-cache \
     ffmpeg \
     exiftool \
     ca-certificates \
-    tzdata
+    tzdata \
+    wget \
+    su-exec
 
 # Create a non-root user and group for running the application
 RUN addgroup -g 1000 converter && \
@@ -85,8 +87,9 @@ COPY --from=backend-builder --chown=converter:converter /video-converter-app /ap
 # Copy the built frontend assets from frontend-builder stage
 COPY --from=frontend-builder --chown=converter:converter /app/frontend/dist /app/static
 
-# Switch to the non-root user
-USER converter
+# Copy entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose the application port
 EXPOSE 3000
@@ -96,5 +99,6 @@ ENV PORT=3000 \
     UPLOADS_DIR=/app/uploads \
     CONVERTED_DIR=/app/converted
 
-# Run the application
+# Run the application via entrypoint (drops privileges to converter)
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/app/video-converter-app"]
