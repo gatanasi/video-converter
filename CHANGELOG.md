@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/gatanasi/video-converter/compare/v2.1.0...v2.1.1) (2025-10-11)
+
+
+### Bug Fixes
+
+* **docker:** replace wget with curl in healthcheck and Dockerfile ([7a2fcf5](https://github.com/gatanasi/video-converter/commit/7a2fcf58f85de3bbfaca673fe2f458711f6ab877))
+
 # [2.1.0](https://github.com/gatanasi/video-converter/compare/v2.0.1...v2.1.0) (2025-10-11)
 
 
