@@ -70,7 +70,7 @@ Create a `.env` file with these settings:
 | Variable | Description |
 |----------|-------------|
 | `GOOGLE_DRIVE_API_KEY` | Your Google Drive API key (see below) |
-| `ALLOWED_ORIGINS` | Comma-separated list of allowed URLs (e.g., `http://localhost:3000,https://converter.example.com`) |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed URLs (e.g., `https://converter.example.com,https://converter.home.example.com`) |
 
 ### Optional
 
@@ -156,7 +156,7 @@ docker run -d \
   --name video-converter \
   -p 3000:3000 \
   -e GOOGLE_DRIVE_API_KEY="your_api_key" \
-  -e ALLOWED_ORIGINS="http://localhost:3000" \
+  -e ALLOWED_ORIGINS="http://localhost:8080" \
   -v ./uploads:/app/uploads \
   -v ./converted:/app/converted \
   ghcr.io/gatanasi/video-converter:latest
