@@ -29,7 +29,7 @@ export class VideoListComponent {
 
     displayVideos(videos: Video[] | null): void {
         this.videoList = videos || [];
-        this.container.innerHTML = ''; // Clear previous content
+        this.container.innerHTML = '';
         this.selectedVideos.clear();
 
         // Create a single wrapper for all content to avoid breaking flexbox/grid layouts
@@ -46,8 +46,8 @@ export class VideoListComponent {
             return;
         }
 
-        this.createControls(wrapper); // Pass wrapper as parent
-        this.createTable(this.videoList, wrapper); // Pass wrapper as parent
+        this.createControls(wrapper);
+        this.createTable(this.videoList, wrapper);
         this.updateSelectionUI();
     }
 

@@ -34,7 +34,7 @@ export class FileListComponent {
     }
 
     displayFiles(): void {
-        this.container.innerHTML = ''; // Clear previous list
+        this.container.innerHTML = '';
 
         if (this.fileList.length === 0) {
             const emptyMessage = document.createElement('div');
