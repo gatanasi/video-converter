@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gatanasi/video-converter/internal/models"
 	"github.com/stretchr/testify/assert"
@@ -89,8 +90,18 @@ func TestAbortConversionHandler(t *testing.T) {
 		assert.True(t, response.Success)
 
 		// Verify that the process was actually terminated by the handler
-		// Wait() will return an error because the process was killed by a signal
-		waitErr := mockCmd.Wait()
-		assert.Error(t, waitErr, "Expected an error from Wait() because the process should have been killed")
+		// Use a channel with a timeout to ensure the test doesn't hang if the process isn't killed
+		waitCh := make(chan error, 1)
+		go func() {
+			waitCh <- mockCmd.Wait()
+		}()
+
+		select {
+		case waitErr := <-waitCh:
+			// Wait() will return an error because the process was killed by a signal
+			assert.Error(t, waitErr, "Expected an error from Wait() because the process should have been killed")
+		case <-time.After(2 * time.Second):
+			t.Fatal("process was not killed by the handler within the timeout")
+		}
 	})
 }
