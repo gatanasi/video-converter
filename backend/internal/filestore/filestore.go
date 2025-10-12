@@ -30,7 +30,7 @@ func EnsureDirectoryExists(dirPath string) error {
 // SanitizeFilename sanitizes a filename to be safe for file system operations
 func SanitizeFilename(fileName string) string {
 	if fileName == "" {
-		return ""
+		return fallbackFilename()
 	}
 
 	baseName := filepath.Base(fileName)
@@ -51,9 +51,13 @@ func SanitizeFilename(fileName string) string {
 
 	if sanitized == "" || sanitized == "." || sanitized == ".." {
 		// Fallback for edge cases where sanitization results in an invalid name
-		return fmt.Sprintf("sanitized_fallback_%d", time.Now().UnixNano())
+		return fallbackFilename()
 	}
 	return sanitized
+}
+
+func fallbackFilename() string {
+	return fmt.Sprintf("sanitized_fallback_%d", time.Now().UnixNano())
 }
 
 // CleanupOldFiles removes files older than maxAge from the specified directory
