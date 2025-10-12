@@ -32,21 +32,26 @@ export class VideoListComponent {
         this.container.innerHTML = '';
         this.selectedVideos.clear();
 
+        // Create a single wrapper for all content to avoid breaking flexbox/grid layouts
+        const wrapper = document.createElement('div');
+        wrapper.className = 'video-list-inner';
+        this.container.appendChild(wrapper);
+
         if (this.videoList.length === 0) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
             emptyMessage.textContent = 'No videos found in this folder.';
-            this.container.appendChild(emptyMessage);
+            wrapper.appendChild(emptyMessage);
             this.updateSelectionUI(); // Ensure controls are hidden/disabled
             return;
         }
 
-        this.createControls();
-        this.createTable(this.videoList);
+        this.createControls(wrapper);
+        this.createTable(this.videoList, wrapper);
         this.updateSelectionUI();
     }
 
-    createControls(): void {
+    createControls(parent: HTMLElement): void {
         const controlsDiv = document.createElement('div');
         controlsDiv.className = 'selection-controls';
         controlsDiv.innerHTML = `
@@ -54,7 +59,7 @@ export class VideoListComponent {
             <button id="deselect-all-btn" class="btn small">Deselect All</button>
             <div class="selection-counter">0 videos selected</div>
         `;
-        this.container.appendChild(controlsDiv);
+        parent.appendChild(controlsDiv);
 
         const selectAllBtn = controlsDiv.querySelector<HTMLButtonElement>('#select-all-btn');
         this.deselectAllBtn = controlsDiv.querySelector<HTMLButtonElement>('#deselect-all-btn');
@@ -64,7 +69,7 @@ export class VideoListComponent {
         this.deselectAllBtn?.addEventListener('click', () => this.deselectAllVideos());
     }
 
-    createTable(videos: Video[]): void {
+    createTable(videos: Video[], parent: HTMLElement): void {
         const table = document.createElement('table');
         table.className = 'video-table';
 
@@ -95,7 +100,7 @@ export class VideoListComponent {
             tbody.appendChild(row);
         });
         table.appendChild(tbody);
-        this.container.appendChild(table);
+        parent.appendChild(table);
     }
 
     createTableRow(video: Video): HTMLTableRowElement {

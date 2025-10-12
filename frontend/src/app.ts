@@ -13,6 +13,7 @@ import { showMessage, clearMessages, formatBytes } from './utils/utils.js';
 import { Video, ConversionOptions } from './types';
 
 class App {
+    private static readonly THEME_STORAGE_KEY = 'vc-theme';
     // DOM Element References
     private messageArea: HTMLElement;
     private activeConversionsContainer: HTMLElement;
@@ -49,6 +50,10 @@ class App {
     // Drive conversion button (created dynamically)
     private driveConvertBtn: HTMLButtonElement | null;
 
+    // Theme toggle
+    private themeToggleButton: HTMLButtonElement | null;
+    private currentTheme: 'light' | 'dark' = 'light';
+
     // Component Instances
     private activeConversionsComponent!: ActiveConversionsComponent;
     private fileListComponent!: FileListComponent;
@@ -60,6 +65,7 @@ class App {
     private selectedUploadFile: File | null;
     private currentVideoSource: 'drive' | 'upload';
     private currentTab: string | null = null;
+    private themeAbortController: AbortController = new AbortController();
 
     constructor() {
         // DOM Element References - Use type assertions for non-null elements
@@ -98,6 +104,9 @@ class App {
         // Drive conversion button (created dynamically)
         this.driveConvertBtn = null;
 
+        // Theme toggle button
+        this.themeToggleButton = document.getElementById('theme-toggle') as HTMLButtonElement | null;
+
         this.selectedDriveVideos = []; // Keep track of selected Drive videos
         this.selectedUploadFile = null; // Keep track of the selected file for upload
         this.currentVideoSource = 'upload'; // Default source
@@ -107,6 +116,7 @@ class App {
         this.loadConfigAndInitialData();
         this.activateTab('convert'); // Start on the convert tab
         this.updateSourceVisibility(); // Set initial visibility based on default source
+        this.initializeTheme();
     }
 
     initComponents(): void {
@@ -187,6 +197,49 @@ class App {
 
         // Drive conversion listener
         this.driveConvertBtn?.addEventListener('click', () => this.submitDriveConversion());
+
+        if (this.themeToggleButton) {
+            this.themeToggleButton.addEventListener('click', () => this.toggleTheme());
+        }
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event: MediaQueryListEvent) => {
+            // Only apply system theme if no theme is explicitly set by the user
+            if (!localStorage.getItem(App.THEME_STORAGE_KEY)) {
+                const updatedTheme: 'light' | 'dark' = event.matches ? 'dark' : 'light';
+                this.applyTheme(updatedTheme);
+            }
+        }, { signal: this.themeAbortController.signal });
+    }
+
+    private initializeTheme(): void {
+        const storedTheme = localStorage.getItem(App.THEME_STORAGE_KEY);
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+            this.applyTheme(storedTheme);
+            return;
+        }
+
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.applyTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    private toggleTheme(): void {
+        const nextTheme: 'light' | 'dark' = this.currentTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem(App.THEME_STORAGE_KEY, nextTheme);
+        this.applyTheme(nextTheme);
+    }
+
+    private applyTheme(theme: 'light' | 'dark'): void {
+        this.currentTheme = theme;
+        document.body.dataset.theme = theme;
+        if (this.themeToggleButton) {
+            const label = theme === 'dark' ? 'Light mode' : 'Dark mode';
+            const labelNode = this.themeToggleButton.querySelector('.theme-toggle-text');
+            if (labelNode) {
+                labelNode.textContent = label;
+            }
+            this.themeToggleButton.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        }
     }
 
     // Handle change in video source selection
@@ -545,9 +598,16 @@ class App {
             this.updateSourceVisibility();
         }
     }
+
+    destroy(): void {
+        this.themeAbortController.abort();
+    }
 }
 
 // Initialize the application once the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     const app = new App();
+    window.addEventListener('beforeunload', () => {
+        app.destroy();
+    });
 });
