@@ -291,7 +291,7 @@ p {
 
 .video-list-inner {
   overflow-x: auto;
-  /* Enable horizontal scrolling for the table */
+  /* Enable horizontal scrolling for content (e.g., tables) inside this container */
   max-width: 100%;
 }
 

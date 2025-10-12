@@ -65,6 +65,7 @@ class App {
     private selectedUploadFile: File | null;
     private currentVideoSource: 'drive' | 'upload';
     private currentTab: string | null = null;
+    private themeAbortController: AbortController = new AbortController();
 
     constructor() {
         // DOM Element References - Use type assertions for non-null elements
@@ -217,7 +218,7 @@ class App {
             if (!localStorage.getItem(App.THEME_STORAGE_KEY)) {
                 this.applyTheme(updatedTheme);
             }
-        });
+        }, { signal: this.themeAbortController.signal });
     }
 
     private toggleTheme(): void {
@@ -594,6 +595,10 @@ class App {
             // Ensure correct source sections are visible when switching TO convert tab
             this.updateSourceVisibility();
         }
+    }
+
+    destroy(): void {
+        this.themeAbortController.abort();
     }
 }
 
