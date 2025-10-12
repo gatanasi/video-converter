@@ -19,10 +19,15 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const TIMEOUT = 10000; // 10 seconds timeout for requests
 
 // Test Results
+interface TestFailure {
+  test: string;
+  error: string;
+}
+
 let totalTests = 0;
 let passedTests = 0;
 let failedTests = 0;
-const failures: Array<{ test: string; error: string }> = [];
+const failures: TestFailure[] = [];
 
 // ANSI color codes for output
 const colors = {
@@ -36,7 +41,16 @@ const colors = {
 } as const;
 
 /**
- * Utility function to make HTTP requests with timeout
+ * Makes an HTTP request with a configurable timeout.
+ * 
+ * @param {string} url - The URL to fetch.
+ * @param {RequestInit} options - Optional fetch options (method, headers, body, etc.).
+ * @param {number} timeout - Request timeout in milliseconds. Defaults to TIMEOUT constant.
+ * @returns {Promise<Response>} The fetch Response object.
+ * @throws {Error} Throws an error if the request times out or if the fetch fails.
+ * 
+ * The timeout behavior uses AbortController to cancel the request if it exceeds
+ * the specified duration. This ensures requests don't hang indefinitely.
  */
 async function fetchWithTimeout(
   url: string, 
@@ -70,7 +84,14 @@ function log(message: string, color: string = colors.reset): void {
 }
 
 /**
- * Test runner function
+ * Runs a single test case, logs the result, and tracks test statistics.
+ *
+ * @param {string} testName - The name of the test to display in output and failure logs.
+ * @param {() => Promise<void>} testFn - An async function containing the test logic. Should throw on failure.
+ * @returns {Promise<boolean>} Resolves to true if the test passes, false if it fails.
+ *
+ * On failure, increments the failed test counter, logs the error, and records the failure details.
+ * On success, increments the passed test counter and logs a success message.
  */
 async function runTest(testName: string, testFn: () => Promise<void>): Promise<boolean> {
   totalTests++;
@@ -92,11 +113,15 @@ async function runTest(testName: string, testFn: () => Promise<void>): Promise<b
 }
 
 /**
- * Assert function
+ * Assert function with TypeScript type narrowing.
+ * 
+ * @param {boolean} condition - The condition to assert.
+ * @param {string} message - Optional error message to display if assertion fails.
+ * @throws {Error} Throws an error if the condition is false.
  */
-function assert(condition: boolean, message: string): void {
+function assert(condition: boolean, message?: string): asserts condition {
   if (!condition) {
-    throw new Error(message || 'Assertion failed');
+    throw new Error(message ?? 'Assertion failed');
   }
 }
 

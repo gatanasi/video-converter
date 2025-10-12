@@ -3,7 +3,7 @@
 # Smoke Test Runner Script
 # This script manages the Docker container lifecycle and runs smoke tests
 
-set -e
+set -euo pipefail
 
 # Resolve repository root to keep path handling consistent
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +42,7 @@ log_error() {
 cleanup() {
   if [ "$CLEANUP" = "true" ]; then
     log_info "Cleaning up Docker resources..."
-    docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+    docker compose -f "$COMPOSE_FILE" down -v || true
     log_success "Cleanup complete"
   else
     log_warn "Skipping cleanup (CLEANUP=false)"
@@ -75,7 +75,7 @@ main() {
 
   # Stop any existing containers
   log_info "Stopping any existing containers..."
-  docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+  docker compose -f "$COMPOSE_FILE" down -v || true
 
   # Build and start the container
   log_info "Building and starting Docker container..."
@@ -108,7 +108,7 @@ main() {
   echo ""
 
   # Check if container is running
-  if ! docker ps --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then
+  if ! docker ps -q --filter "name=^/${CONTAINER_NAME}$" | grep -q .; then
     log_error "Container is not running"
     log_info "Container logs:"
     docker compose -f "$COMPOSE_FILE" logs
