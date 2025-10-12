@@ -4,6 +4,7 @@
 # Editor/OS specific
 .vscode/
 .DS_Store
+Thumbs.db
 
 # Go build artifact
 video-converter-app
@@ -16,10 +17,15 @@ nohup.out
 
 # Node / pnpm dependencies
 node_modules/
+package-lock.json
 
 # TypeScript build output
 dist/
 *.tsbuildinfo
+
+# Test artifacts
+test-results/
+coverage/
 
 # Local secret files
 secrets/

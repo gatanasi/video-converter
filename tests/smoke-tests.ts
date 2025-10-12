@@ -53,26 +53,26 @@ const colors = {
  * the specified duration. This ensures requests don't hang indefinitely.
  */
 async function fetchWithTimeout(
-  url: string, 
-  options: RequestInit = {}, 
+  url: string,
+  options: RequestInit = {},
   timeout: number = TIMEOUT
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
     return response;
   } catch (error) {
-    clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error(`Request timeout after ${timeout}ms`);
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -96,7 +96,7 @@ function log(message: string, color: string = colors.reset): void {
 async function runTest(testName: string, testFn: () => Promise<void>): Promise<boolean> {
   totalTests++;
   process.stdout.write(`  ${colors.cyan}Testing:${colors.reset} ${testName}... `);
-  
+
   try {
     await testFn();
     passedTests++;
@@ -131,7 +131,7 @@ function assert(condition: boolean, message?: string): asserts condition {
 async function testGetConfig(): Promise<void> {
   const response = await fetchWithTimeout(`${BASE_URL}/api/config`);
   assert(response.ok, `Expected 200, got ${response.status}`);
-  
+
   const data = await response.json() as Record<string, unknown>;
   assert(typeof data === 'object', 'Response should be an object');
   assert('defaultDriveFolderId' in data, 'Response should contain defaultDriveFolderId');
@@ -143,7 +143,7 @@ async function testGetConfig(): Promise<void> {
 async function testListFiles(): Promise<void> {
   const response = await fetchWithTimeout(`${BASE_URL}/api/files`);
   assert(response.ok, `Expected 200, got ${response.status}`);
-  
+
   const data = await response.json();
   assert(Array.isArray(data), 'Response should be an array');
 }
@@ -154,7 +154,7 @@ async function testListFiles(): Promise<void> {
 async function testActiveConversions(): Promise<void> {
   const response = await fetchWithTimeout(`${BASE_URL}/api/conversions/active`);
   assert(response.ok, `Expected 200, got ${response.status}`);
-  
+
   const data = await response.json();
   assert(Array.isArray(data), 'Response should be an array');
 }
@@ -169,19 +169,19 @@ async function testSSEStream(): Promise<void> {
     timedOut = true;
     controller.abort();
   }, 5000);
-  
+
   try {
     const response = await fetch(`${BASE_URL}/api/conversions/stream`, {
       signal: controller.signal,
     });
-    
+
     assert(response.ok, `Expected 200, got ${response.status}`);
     const contentType = response.headers.get('content-type') || '';
     assert(
       contentType.toLowerCase().startsWith('text/event-stream'),
       `Expected Content-Type to start with text/event-stream, received '${contentType}'`
     );
-    
+
     // Successfully connected to SSE stream, now abort.
     controller.abort();
   } catch (error) {
@@ -233,7 +233,7 @@ async function testDeleteFileNotFound(): Promise<void> {
   });
   // DELETE is idempotent - returns 200 even if file doesn't exist
   assert(response.ok, `Expected 200, got ${response.status}`);
-  
+
   const data = await response.json() as { success?: boolean };
   assert(data.success === true, 'Response should indicate success');
 }
@@ -257,7 +257,7 @@ async function testConvertDriveMissingParams(): Promise<void> {
     body: JSON.stringify({}),
   });
   assert(response.status === 400, `Expected 400, got ${response.status}`);
-  
+
   const data = await response.json() as { error?: string };
   assert(!!data.error, 'Response should contain error message');
 }
@@ -276,7 +276,7 @@ async function testConvertDriveInvalidFormat(): Promise<void> {
     }),
   });
   assert(response.status === 400, `Expected 400, got ${response.status}`);
-  
+
   const data = await response.json() as { error?: string };
   assert(!!data.error, 'Response should contain error message');
 }
@@ -301,7 +301,7 @@ async function testUploadConvertMissingFile(): Promise<void> {
 async function testListDriveVideosMissingFolderId(): Promise<void> {
   const response = await fetchWithTimeout(`${BASE_URL}/api/videos/drive`);
   assert(response.status === 400, `Expected 400, got ${response.status}`);
-  
+
   const data = await response.json() as { error?: string };
   assert(!!data.error, 'Response should contain error message');
 }
@@ -323,7 +323,7 @@ async function testMethodNotAllowed(): Promise<void> {
 async function testStaticFiles(): Promise<void> {
   const response = await fetchWithTimeout(`${BASE_URL}/`);
   assert(response.ok, `Expected 200, got ${response.status}`);
-  
+
   const html = await response.text();
   assert(html.length > 0, 'Should return HTML content');
   assert(html.includes('<!DOCTYPE html>') || html.includes('<html'), 'Should be valid HTML');
@@ -339,37 +339,37 @@ async function testPathTraversalProtection(): Promise<void> {
     '..passwd',
     'file..mp4',
   ];
-  
+
   for (const filename of maliciousFilenames) {
     const response = await fetchWithTimeout(`${BASE_URL}/api/file/delete/${filename}`, {
       method: 'DELETE',
     });
     // The backend detects ".." in filename and returns 400 Bad Request
-    assert(response.status === 400, 
+    assert(response.status === 400,
       `Path traversal protection failed for filename: ${filename} (expected: 400, got: ${response.status})`);
-    
+
     const data = await response.json() as { error?: string };
-    assert(!!data.error && data.error.includes('invalid'), 
+    assert(!!data.error && data.error.includes('invalid'),
       `Expected error message about invalid filename for: ${filename}`);
   }
-  
+
   // Test path traversal with slashes (these also get caught)
   const pathsWithSlashes = [
     'subdir/file.mp4',
     '../file.mp4',
     'file\\test.mp4',
   ];
-  
+
   for (const filename of pathsWithSlashes) {
     const response = await fetchWithTimeout(`${BASE_URL}/api/file/delete/${encodeURIComponent(filename)}`, {
       method: 'DELETE',
     });
     // The backend detects "/" or "\" in filename and returns 400 Bad Request
-    assert(response.status === 400, 
+    assert(response.status === 400,
       `Path traversal protection failed for filename with slashes: ${filename} (expected: 400, got: ${response.status})`);
-    
+
     const data = await response.json() as { error?: string };
-    assert(!!data.error && data.error.includes('invalid'), 
+    assert(!!data.error && data.error.includes('invalid'),
       `Expected error message about invalid filename for: ${filename}`);
   }
 }
