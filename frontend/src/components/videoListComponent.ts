@@ -34,7 +34,7 @@ export class VideoListComponent {
 
         // Create a single wrapper for all content to avoid breaking flexbox/grid layouts
         const wrapper = document.createElement('div');
-        wrapper.className = 'video-list-wrapper';
+        wrapper.className = 'video-list-inner';
         this.container.appendChild(wrapper);
 
         if (this.videoList.length === 0) {
