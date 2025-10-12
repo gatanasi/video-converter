@@ -92,7 +92,7 @@ main() {
   MAX_WAIT=120
   INTERVAL=2
   ELAPSED=0
-  while ! curl -sf "$BASE_URL/api/config" > /dev/null; do
+  until [ "$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null)" = "healthy" ]; do
     if [ $ELAPSED -ge $MAX_WAIT ]; then
       log_error "Container did not become healthy within $MAX_WAIT seconds."
       log_info "Container logs:"

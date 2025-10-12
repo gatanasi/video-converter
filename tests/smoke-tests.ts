@@ -164,7 +164,11 @@ async function testActiveConversions(): Promise<void> {
  */
 async function testSSEStream(): Promise<void> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 5000);
   
   try {
     const response = await fetch(`${BASE_URL}/api/conversions/stream`, {
@@ -183,6 +187,9 @@ async function testSSEStream(): Promise<void> {
     controller.abort(); // Close connection
   } catch (error) {
     clearTimeout(timeout);
+    if (timedOut) {
+      throw new Error('Request timed out after 5000ms');
+    }
     if (error instanceof Error && error.name === 'AbortError') {
       // Expected - we aborted after verifying connection
       return;
