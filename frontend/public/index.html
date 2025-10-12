@@ -10,110 +10,157 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>Video Converter</h1>
-        </header>
-
-        <!-- Tab Navigation -->
-        <div class="tabs">
-            <button data-tab="convert" class="tab-button active">Convert Videos</button>
-            <button data-tab="files" class="tab-button">Previous Conversions</button>
-        </div>
-
-        <!-- Active Conversions Section - Always visible below tabs -->
-        <div id="active-conversions" class="active-conversions-section">
-            <!-- Content managed by ActiveConversionsComponent -->
-        </div>
-
-        <!-- Messages Area - Shared between tabs -->
-        <div id="message-area" class="messages hidden">
-            <!-- Content managed by showMessage/clearMessages -->
-        </div>
-
-        <!-- Convert Tab Content -->
-        <div id="convert-panel" class="tab-panel">
-            <div class="source-selection-section">
-                <h2>1. Choose Video Source</h2>
-                <div class="source-options">
-                    <label class="radio-container">
-                        <input type="radio" name="videoSource" value="upload" id="source-upload" checked>
-                        Upload File
-                    </label>
-                    <label class="radio-container">
-                        <input type="radio" name="videoSource" value="drive" id="source-drive">
-                        Google Drive Folder
-                    </label>
+    <div class="app-shell">
+        <header class="hero">
+            <div class="container hero-content">
+                <div class="hero-text">
+                    <h1>Video Converter</h1>
+                    <p class="hero-subtitle">Convert videos from your device or Google Drive with streamlined controls and live progress.</p>
+                </div>
+                <div class="hero-actions">
+                    <button id="theme-toggle" class="btn ghost" aria-label="Toggle dark mode">
+                        <span class="theme-toggle-text">Dark mode</span>
+                    </button>
                 </div>
             </div>
+        </header>
 
-            <div id="upload-source-section" class="upload-section">
-                <h2>2. Upload Video File</h2>
-                <div class="upload-input">
-                    <label for="file-upload">Select Video File:</label>
-                    <div class="input-group">
-                        <input type="file" id="file-upload" accept="video/*">
-                        <button id="upload-convert-btn" class="btn primary" disabled>Upload & Convert</button>
+        <main class="container main-content">
+            <section class="tabs-card">
+                <div class="tabs">
+                    <button data-tab="convert" class="tab-button active">Convert Videos</button>
+                    <button data-tab="files" class="tab-button">Previous Conversions</button>
+                </div>
+            </section>
+
+            <!-- Active Conversions Section - Always visible below tabs -->
+            <section id="active-conversions" class="active-conversions-section surface-card">
+                <!-- Content managed by ActiveConversionsComponent -->
+            </section>
+
+            <!-- Messages Area - Shared between tabs -->
+            <section id="message-area" class="messages surface-card hidden">
+                <!-- Content managed by showMessage/clearMessages -->
+            </section>
+
+            <!-- Convert Tab Content -->
+            <section id="convert-panel" class="tab-panel surface-card">
+                <div class="convert-grid">
+                    <div class="source-selection-section step-card">
+                        <div class="step-header">
+                            <span class="step-number">1</span>
+                            <div>
+                                <h2>Choose Video Source</h2>
+                                <p>Select where your videos live so we can tailor the next steps.</p>
+                            </div>
+                        </div>
+                        <div class="source-options">
+                            <label class="radio-container">
+                                <input type="radio" name="videoSource" value="upload" id="source-upload" checked>
+                                Upload File
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="videoSource" value="drive" id="source-drive">
+                                Google Drive Folder
+                            </label>
+                        </div>
                     </div>
-                    <p class="note">Select a video file from your computer to convert.</p>
-                    <div id="upload-file-info" class="upload-file-info hidden">
-                        Selected: <span id="upload-file-name"></span> (<span id="upload-file-size"></span>)
+
+                    <div id="upload-source-section" class="upload-section step-card">
+                        <div class="step-header">
+                            <span class="step-number">2</span>
+                            <div>
+                                <h2>Upload Video File</h2>
+                                <p>Pick a local video and start the conversion instantly.</p>
+                            </div>
+                        </div>
+                        <div class="upload-input">
+                            <label for="file-upload">Select Video File</label>
+                            <div class="input-group">
+                                <input type="file" id="file-upload" accept="video/*">
+                                <button id="upload-convert-btn" class="btn primary" disabled>Upload & Convert</button>
+                            </div>
+                            <p class="note">Your upload stays private and is only used for the requested conversion.</p>
+                            <div id="upload-file-info" class="upload-file-info hidden">
+                                Selected: <span id="upload-file-name"></span> (<span id="upload-file-size"></span>)
+                            </div>
+                            <div id="upload-progress-container" class="progress-container hidden">
+                                <div class="progress-label">Upload Progress <span id="upload-progress-percent">0%</span></div>
+                                <div class="progress-bar">
+                                    <div id="upload-progress-bar" class="progress-bar-fill"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- Add upload progress bar -->
-                    <div id="upload-progress-container" class="progress-container hidden">
-                        <div class="progress-label">Upload Progress: <span id="upload-progress-percent">0%</span></div>
-                        <div class="progress-bar">
-                            <div id="upload-progress-bar" class="progress-bar-fill"></div>
+
+                    <div id="drive-source-section" class="folder-input-section step-card hidden">
+                        <div class="step-header">
+                            <span class="step-number">2</span>
+                            <div>
+                                <h2>Google Drive Video Source</h2>
+                                <p>Paste a shared folder link or ID to fetch your Drive videos.</p>
+                            </div>
+                        </div>
+                        <div class="folder-input">
+                            <label for="folder-id">Google Drive Folder ID or URL</label>
+                            <div class="input-group">
+                                <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
+                                <button id="load-videos-btn" class="btn">Load Videos</button>
+                                <button id="reset-folder-id-btn" class="btn secondary small" title="Clear stored folder ID and input">Reset</button>
+                            </div>
+                            <p class="note">Make sure the folder is shared with "Anyone with the link can view".</p>
+                        </div>
+                    </div>
+
+                    <div id="conversion-options-section" class="conversion-form-section step-card">
+                        <div class="step-header">
+                            <span class="step-number">3</span>
+                            <div>
+                                <h2>Conversion Options</h2>
+                                <p>Choose your target format and optional enhancements.</p>
+                            </div>
+                        </div>
+                        <!-- Content managed by ConversionFormComponent -->
+                    </div>
+
+                    <div id="drive-video-list-section" class="video-list-section step-card">
+                        <div class="step-header">
+                            <span class="step-number">4</span>
+                            <div>
+                                <h2>Select Drive Videos</h2>
+                                <p>Highlight one or many videos to launch simultaneous conversions.</p>
+                            </div>
+                        </div>
+                        <div class="video-list-container">
+                            <div class="video-list-inner">
+                                <div id="video-list">
+                                <!-- Content managed by VideoListComponent -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div id="drive-source-section" class="folder-input-section hidden">
-                <h2>2. Google Drive Video Source</h2>
-                <div class="folder-input">
-                    <label for="folder-id">Google Drive Folder ID or URL:</label>
-                    <div class="input-group">
-                        <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
-                        <button id="load-videos-btn" class="btn">Load Videos</button>
-                        <button id="reset-folder-id-btn" class="btn secondary small" title="Clear stored folder ID and input">Reset</button> <!-- Added small class -->
+            <!-- Files Tab Content -->
+            <section id="files-panel" class="tab-panel hidden surface-card">
+                <div class="files-section">
+                    <div class="section-heading">
+                        <h2>Previously Converted Files</h2>
+                        <p>Download finished conversions or remove files you no longer need.</p>
                     </div>
-                    <p class="note">Enter the ID of a Google Drive folder shared with "Anyone with the link can view".
-                    </p>
-                </div>
-            </div>
-
-            <div id="conversion-options-section" class="conversion-form-section">
-                <h3>3. Conversion Options</h3>
-                <!-- Content managed by ConversionFormComponent -->
-            </div>
-
-            <div id="drive-video-list-section" class="video-list-section">
-                <!-- Renamed h2 to h3 and added step number -->
-                <h3>4. Select Drive Videos (if applicable)</h3>
-                <!-- Add a wrapper div for the video list table for consistent overflow handling -->
-                <div class="video-list-container">
-                    <div id="video-list">
-                        <!-- Content managed by VideoListComponent -->
+                    <div id="file-list" class="file-list-container">
+                        <!-- Content managed by FileListComponent -->
                     </div>
                 </div>
-                <!-- The dynamically added button will appear after this div -->
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="container footer-inner">
+                <p>&copy; 2025 Video Converter</p>
+                <p class="footer-note">Built for creators who need quick, reliable media transformations.</p>
             </div>
-
-        </div>
-
-        <!-- Files Tab Content -->
-        <div id="files-panel" class="tab-panel hidden">
-            <div class="files-section">
-                <h2>Previously Converted Files</h2>
-                <div id="file-list" class="file-list-container">
-                    <!-- Content managed by FileListComponent -->
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>&copy; 2025 Video Converter</p>
         </footer>
     </div>
 

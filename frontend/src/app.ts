@@ -49,6 +49,10 @@ class App {
     // Drive conversion button (created dynamically)
     private driveConvertBtn: HTMLButtonElement | null;
 
+    // Theme toggle
+    private themeToggleButton: HTMLButtonElement | null;
+    private currentTheme: 'light' | 'dark' = 'light';
+
     // Component Instances
     private activeConversionsComponent!: ActiveConversionsComponent;
     private fileListComponent!: FileListComponent;
@@ -98,6 +102,9 @@ class App {
         // Drive conversion button (created dynamically)
         this.driveConvertBtn = null;
 
+        // Theme toggle button
+        this.themeToggleButton = document.getElementById('theme-toggle') as HTMLButtonElement | null;
+
         this.selectedDriveVideos = []; // Keep track of selected Drive videos
         this.selectedUploadFile = null; // Keep track of the selected file for upload
         this.currentVideoSource = 'upload'; // Default source
@@ -107,6 +114,7 @@ class App {
         this.loadConfigAndInitialData();
         this.activateTab('convert'); // Start on the convert tab
         this.updateSourceVisibility(); // Set initial visibility based on default source
+        this.initializeTheme();
     }
 
     initComponents(): void {
@@ -187,6 +195,47 @@ class App {
 
         // Drive conversion listener
         this.driveConvertBtn?.addEventListener('click', () => this.submitDriveConversion());
+
+        if (this.themeToggleButton) {
+            this.themeToggleButton.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+
+    private initializeTheme(): void {
+        const storedTheme = localStorage.getItem('vc-theme');
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+            this.applyTheme(storedTheme);
+            return;
+        }
+
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.applyTheme(prefersDark ? 'dark' : 'light');
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event: MediaQueryListEvent) => {
+            const updatedTheme: 'light' | 'dark' = event.matches ? 'dark' : 'light';
+            if (!localStorage.getItem('vc-theme')) {
+                this.applyTheme(updatedTheme);
+            }
+        });
+    }
+
+    private toggleTheme(): void {
+        const nextTheme: 'light' | 'dark' = this.currentTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('vc-theme', nextTheme);
+        this.applyTheme(nextTheme);
+    }
+
+    private applyTheme(theme: 'light' | 'dark'): void {
+        this.currentTheme = theme;
+        document.body.dataset.theme = theme;
+        if (this.themeToggleButton) {
+            const label = theme === 'dark' ? 'Light mode' : 'Dark mode';
+            const labelNode = this.themeToggleButton.querySelector('.theme-toggle-text');
+            if (labelNode) {
+                labelNode.textContent = label;
+            }
+            this.themeToggleButton.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        }
     }
 
     // Handle change in video source selection
