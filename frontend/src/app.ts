@@ -607,4 +607,7 @@ class App {
 // Initialize the application once the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
     const app = new App();
+    window.addEventListener('beforeunload', () => {
+        app.destroy();
+    });
 });
