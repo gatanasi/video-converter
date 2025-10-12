@@ -3,9 +3,11 @@ package filestore
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/gatanasi/video-converter/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -92,6 +94,17 @@ func TestSanitizeFilename(t *testing.T) {
 		sanitized := SanitizeFilename(builder)
 		assert.LessOrEqual(t, len(sanitized), 100)
 		assert.Greater(t, len(sanitized), 0)
+	})
+
+	t.Run("handles extension longer than max length", func(t *testing.T) {
+		t.Parallel()
+		longExt := "." + strings.Repeat("b", constants.MaxFilenameLength)
+		input := "short" + longExt
+
+		assert.NotPanics(t, func() {
+			sanitized := SanitizeFilename(input)
+			assert.LessOrEqual(t, len(sanitized), constants.MaxFilenameLength)
+		})
 	})
 }
 
