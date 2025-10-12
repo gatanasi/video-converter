@@ -1,5 +1,8 @@
 # Video Converter
 
+[![CI](https://github.com/gatanasi/video-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/gatanasi/video-converter/actions/workflows/ci.yml)
+[![Smoke Tests](https://github.com/gatanasi/video-converter/actions/workflows/smoke-tests.yml/badge.svg)](https://github.com/gatanasi/video-converter/actions/workflows/smoke-tests.yml)
+
 Convert videos from Google Drive to different formats with a simple web interface.
 
 > 📖 **[User Guide](#)** (you're here) · **[Development Setup](CONTRIBUTING.md)** · **[Docker Reference](DOCKER.md)**
@@ -168,6 +171,7 @@ docker run -d \
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup, building from source, submitting PRs
 - **[DOCKER.md](DOCKER.md)** - Advanced Docker commands and troubleshooting
+- **[tests/README.md](tests/README.md)** - Smoke tests and end-to-end testing
 - **[Releases](https://github.com/gatanasi/video-converter/releases)** - Version history and changelogs
 
 ## 🤝 Contributing

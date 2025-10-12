@@ -7,9 +7,12 @@ on:
       - 'backend/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
+      - 'docker-compose.dev.yml'
       - '.dockerignore'
+      - 'tests/**'
       - '.github/workflows/ci.yml'
       - '.github/workflows/build-jobs.yml'
+      - '.github/workflows/smoke-tests.yml'
 
 permissions:
   contents: read
@@ -22,3 +25,8 @@ jobs:
     with:
       build_docker: true
       push_docker: false
+
+  smoke-tests:
+    name: Smoke Tests
+    needs: build
+    uses: ./.github/workflows/smoke-tests.yml
