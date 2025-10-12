@@ -87,9 +87,25 @@ main() {
   log_success "Docker container started"
   echo ""
 
-  # Wait a moment for the container to initialize
-  log_info "Waiting for container to initialize..."
-  sleep 3
+  # Wait for the container to be healthy
+  log_info "Waiting for container to become healthy..."
+  MAX_WAIT=60
+  INTERVAL=2
+  ELAPSED=0
+  while ! curl -sf "$BASE_URL/api/config" > /dev/null; do
+    if [ $ELAPSED -ge $MAX_WAIT ]; then
+      log_error "Container did not become healthy within $MAX_WAIT seconds."
+      log_info "Container logs:"
+      docker compose -f "$COMPOSE_FILE" logs --tail=50
+      exit 1
+    fi
+    sleep $INTERVAL
+    ELAPSED=$((ELAPSED + INTERVAL))
+    echo -n "."
+  done
+  echo ""
+  log_success "Container is healthy and ready for tests."
+  echo ""
 
   # Check if container is running
   if ! docker ps --filter "name=$CONTAINER_NAME" --format "{{.Names}}" | grep -q "$CONTAINER_NAME"; then

@@ -17,8 +17,6 @@
 // Configuration
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const TIMEOUT = 10000; // 10 seconds timeout for requests
-const MAX_RETRIES = 30; // Max retries for service availability
-const RETRY_DELAY = 2000; // 2 seconds between retries
 
 // Test Results
 let totalTests = 0;
@@ -65,13 +63,6 @@ async function fetchWithTimeout(
 }
 
 /**
- * Sleep utility
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
  * Log with color
  */
 function log(message: string, color: string = colors.reset): void {
@@ -107,28 +98,6 @@ function assert(condition: boolean, message: string): void {
   if (!condition) {
     throw new Error(message || 'Assertion failed');
   }
-}
-
-/**
- * Wait for service to be ready
- */
-async function waitForService(): Promise<void> {
-  log(`\n${colors.bright}Waiting for service to be ready...${colors.reset}`, colors.yellow);
-  
-  for (let i = 0; i < MAX_RETRIES; i++) {
-    try {
-      const response = await fetchWithTimeout(`${BASE_URL}/api/config`, {}, 5000);
-      if (response.ok) {
-        log(`Service is ready!`, colors.green);
-        return;
-      }
-    } catch (error) {
-      process.stdout.write('.');
-    }
-    await sleep(RETRY_DELAY);
-  }
-  
-  throw new Error(`Service not ready after ${MAX_RETRIES * RETRY_DELAY / 1000} seconds`);
 }
 
 /**
@@ -379,9 +348,6 @@ async function runSmokeTests(): Promise<void> {
   log(`Base URL: ${BASE_URL}\n`);
 
   try {
-    // Wait for service to be available
-    await waitForService();
-
     log(`\n${colors.bright}Running Smoke Tests...${colors.reset}`, colors.cyan);
     log('─────────────────────────────────────────────────────\n');
 
