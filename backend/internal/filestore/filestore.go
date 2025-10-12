@@ -41,20 +41,17 @@ func SanitizeFilename(fileName string) string {
 	sanitized = multipleUnderscoreRegex.ReplaceAllString(sanitized, "_")
 	sanitized = strings.Trim(sanitized, "._")
 
-	// Limit length
-	if len(sanitized) > constants.MaxFilenameLength {
+	// Limit length using rune count for Unicode safety
+	sanitizedRunes := []rune(sanitized)
+	if len(sanitizedRunes) > constants.MaxFilenameLength {
 		ext := filepath.Ext(sanitized)
+		extRuneCount := len([]rune(ext))
 		baseRunes := []rune(strings.TrimSuffix(sanitized, ext))
-		maxBaseLen := constants.MaxFilenameLength - len(ext)
+		maxBaseLen := constants.MaxFilenameLength - extRuneCount
 
 		if maxBaseLen < 0 {
 			// Extension is longer than max length, truncate the whole string
-			sanitizedRunes := []rune(sanitized)
-			maxLen := constants.MaxFilenameLength
-			if len(sanitizedRunes) < maxLen {
-				maxLen = len(sanitizedRunes)
-			}
-			sanitized = string(sanitizedRunes[:maxLen])
+			sanitized = string(sanitizedRunes[:constants.MaxFilenameLength])
 		} else if len(baseRunes) > maxBaseLen {
 			// Base name is too long, truncate it and append extension
 			sanitized = string(baseRunes[:maxBaseLen]) + ext
