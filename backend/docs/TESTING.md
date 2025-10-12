@@ -4,19 +4,6 @@
 
 This document describes the comprehensive test suite for the video converter backend, following Go testing best practices with the testify framework.
 
-## Test Coverage Snapshot
-
-The following numbers were captured with `go test ./... -cover` on October 12, 2025:
-
-- `internal/api`: **38.2%** — all HTTP handlers tested via table-driven cases with shared helpers
-- `internal/utils`: **100.0%** — byte conversion helpers and formatting functions
-- `internal/filestore`: **82.2%** — directory creation, filename sanitization, old-file cleanup
-- `internal/conversion`: **2.5%** — quality configuration lookups
-- `internal/middleware`: **97.4%** — CORS initialisation and request handling
-- `internal/config`, `internal/drive`, `internal/models`: **0.0%** — candidates for future work
-
-Coverage fluctuates as code evolves, so re-run the command above when reporting numbers.
-
 ### Go Testing Conventions
 
 - ✅ Test files are named `*_test.go` and remain in the same package for white-box access
