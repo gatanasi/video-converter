@@ -10,6 +10,7 @@ import (
 
 	"github.com/gatanasi/video-converter/internal/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAbortConversionHandler(t *testing.T) {
@@ -53,10 +54,17 @@ func TestAbortConversionHandler(t *testing.T) {
 		env := newHandlerTestEnv(t)
 
 		conversionID := "active-conversion"
-		// Create a mock command that won't actually run
+		// Create a mock command that will be terminated by the handler
 		mockCmd := exec.Command("sleep", "1000")
 		err := mockCmd.Start()
-		assert.NoError(t, err)
+		require.NoError(t, err, "mock command should start without error")
+
+		// Defer cleanup to ensure it runs even if assertions fail
+		defer func() {
+			if mockCmd.Process != nil {
+				_ = mockCmd.Process.Kill()
+			}
+		}()
 
 		// Register the active command in the store
 		env.store.RegisterActiveCmd(conversionID, mockCmd)
@@ -80,9 +88,9 @@ func TestAbortConversionHandler(t *testing.T) {
 		assert.NoError(t, decodeErr)
 		assert.True(t, response.Success)
 
-		// Clean up the process
-		if mockCmd.Process != nil {
-			_ = mockCmd.Process.Kill()
-		}
+		// Verify that the process was actually terminated by the handler
+		// Wait() will return an error because the process was killed by a signal
+		waitErr := mockCmd.Wait()
+		assert.Error(t, waitErr, "Expected an error from Wait() because the process should have been killed")
 	})
 }

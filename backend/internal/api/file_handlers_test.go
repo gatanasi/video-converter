@@ -22,7 +22,10 @@ func TestListFilesHandler(t *testing.T) {
 
 		writeErr := os.WriteFile(first, []byte("test content 1"), 0o644)
 		assert.NoError(t, writeErr)
-		time.Sleep(10 * time.Millisecond)
+		// Set an explicit, older timestamp for the first file to guarantee sort order
+		firstTime := time.Now().Add(-1 * time.Minute)
+		assert.NoError(t, os.Chtimes(first, firstTime, firstTime))
+
 		writeErr = os.WriteFile(second, []byte("test content 2"), 0o644)
 		assert.NoError(t, writeErr)
 

@@ -1,5 +1,7 @@
 # Backend Testing Guide
 
+> **Quick Reference** - For comprehensive testing documentation including coverage metrics and detailed patterns, see [`docs/TESTING.md`](docs/TESTING.md).
+
 ## Quick Start
 
 ```bash
