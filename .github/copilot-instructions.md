@@ -30,11 +30,11 @@ API Request (Upload/Drive) → File saved to /uploads → Job queued in conversi
 
 | Task | Command |
 | :---- | :---- |
-| **Run Backend Locally** | \`cd backend && export $(grep \-v '^\#' ../.env |
-| **Run Frontend Locally** | cd frontend && pnpm install && pnpm run build \-- \--watch |
-| **Serve Frontend** | cd frontend && npx serve dist \-l 8080 (requires backend to be running) |
-| **Run with Docker (Dev)** | docker compose \-f docker-compose.dev.yml up \-d \--build |
-| **Run Backend Tests** | cd backend && go test \-v ./... |
+| **Run Backend Locally** | `cd backend && export $(grep -v '^\#' ../.env | xargs) && go run ./cmd/server/main.go` |
+| **Run Frontend Locally** | `cd frontend && pnpm install && pnpm run build -- --watch` |
+| **Serve Frontend** | `cd frontend && npx serve dist -l 8080 (requires backend to be running)` |
+| **Run with Docker (Dev)** | `docker compose -f docker-compose.dev.yml up -d --build` |
+| **Run Backend Tests** | `cd backend && go test -v ./...` |
 
 ### **4\. API Contract & Examples**
 
@@ -42,18 +42,19 @@ Always use these exact endpoints.
 
 * POST /api/convert/upload (multipart/form-data)  
   * **Description:** Upload a local video file for conversion.  
-  * **Example:** curl \-F "videoFile=@/path/to/video.mp4" \-F "targetFormat=mp4" http://localhost:3000/api/convert/upload  
+  * **Example:** curl -F "videoFile=@/path/to/video.mp4" -F "targetFormat=mp4" http://localhost:3000/api/convert/upload  
 * POST /api/convert/drive (application/json)  
   * **Description:** Start a conversion from a Google Drive file.  
-  * **Example:** curl \-X POST \-H "Content-Type: application/json" \-d '{"fileId":"...","fileName":"video.mov","targetFormat":"mp4"}' http://localhost:3000/api/convert/drive  
+  * **Example:** curl -X POST -H "Content-Type: application/json" -d '{"fileId":"...","fileName":"video.mov","targetFormat":"mp4"}' http://localhost:3000/api/convert/drive  
 * GET /api/conversions/stream (text/event-stream)  
   * **Description:** A long-lived SSE connection for real-time status updates.  
-  * **Example:** curl \-N http://localhost:3000/api/conversions/stream  
+  * **Example:** curl -N http://localhost:3000/api/conversions/stream  
 * POST /api/conversion/abort/{id}  
   * **Description:** Abort an in-progress conversion.  
-  * **Example:** curl \-X POST http://localhost:3000/api/conversion/abort/\<conversionId\>  
+  * **Example:** curl -X POST http://localhost:3000/api/conversion/abort/<conversionId>  
 * GET /api/conversion/status/{id}  
   * **Description:** Get the status of a single conversion.
+  * **Example:** curl http://localhost:3000/api/conversion/status/<conversionId>
 
 ### **5\. Critical Patterns & Invariants**
 
@@ -64,7 +65,7 @@ Always use these exact endpoints.
 * **Error Handling:** The backend returns errors as { "error": "message" }. All public Go functions should return an error. Use fmt.Errorf with %w for wrapping.  
 * **File Safety:** Always use filestore.SanitizeFilename() for user-provided filenames and validateFileSafety helpers in handlers to prevent path traversal vulnerabilities.  
 * **SSE Heartbeats:** The SSE stream sends periodic heartbeats to keep connections alive. The server write deadline is disabled for this endpoint.  
-* **Progress Clamping:** The server clamps progress updates to a maximum of 99.0 during conversion. Only upon successful completion is the status set to 100.0. Do not assume incremental updates will ever exceed 99\.
+* **Progress Clamping:** The server clamps progress updates to a maximum of 99.0 during conversion. Only upon successful completion is the status set to 100.0. Do not assume incremental updates will ever exceed 99.
 
 ### **6\. Known Gaps & Gotchas**
 
