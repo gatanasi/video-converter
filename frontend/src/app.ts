@@ -201,6 +201,15 @@ class App {
         if (this.themeToggleButton) {
             this.themeToggleButton.addEventListener('click', () => this.toggleTheme());
         }
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event: MediaQueryListEvent) => {
+            // Only apply system theme if no theme is explicitly set by the user
+            if (!localStorage.getItem(App.THEME_STORAGE_KEY)) {
+                const updatedTheme: 'light' | 'dark' = event.matches ? 'dark' : 'light';
+                this.applyTheme(updatedTheme);
+            }
+        }, { signal: this.themeAbortController.signal });
     }
 
     private initializeTheme(): void {
@@ -212,13 +221,6 @@ class App {
 
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         this.applyTheme(prefersDark ? 'dark' : 'light');
-
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event: MediaQueryListEvent) => {
-            const updatedTheme: 'light' | 'dark' = event.matches ? 'dark' : 'light';
-            if (!localStorage.getItem(App.THEME_STORAGE_KEY)) {
-                this.applyTheme(updatedTheme);
-            }
-        }, { signal: this.themeAbortController.signal });
     }
 
     private toggleTheme(): void {
