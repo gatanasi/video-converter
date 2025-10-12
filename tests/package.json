@@ -1,0 +1,15 @@
+{
+  "name": "smoke-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx smoke-tests.ts",
+    "build": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "24.7.1",
+    "tsx": "^4.19.2",
+    "typescript": "5.9.3"
+  }
+}

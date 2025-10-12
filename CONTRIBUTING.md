@@ -386,6 +386,9 @@ docker build -t video-converter:ci-test .
    
    # Run frontend tests
    cd frontend && pnpm test
+  
+   # Run smoke tests (requires Docker)
+   cd .. && pnpm test:smoke
    
    # Build and test Docker image
    docker build -t video-converter:test .

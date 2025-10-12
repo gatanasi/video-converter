@@ -13,6 +13,7 @@
     "semantic-release": "24.2.9"
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:smoke": "bash tests/run-smoke-tests.sh"
   }
 }
