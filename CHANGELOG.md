@@ -1,3 +1,18 @@
+# [2.2.0](https://github.com/gatanasi/video-converter/compare/v2.1.2...v2.2.0) (2025-10-12)
+
+
+### Bug Fixes
+
+* adjust filename sanitization to handle cases where extension exceeds max length ([eac3139](https://github.com/gatanasi/video-converter/commit/eac3139d7d2036d38f316c6c46745b5f9d370db3))
+* **sse:** add connection confirmation event to SSE stream handler ([c652a28](https://github.com/gatanasi/video-converter/commit/c652a288b62c275896c05dece0b123a6a4146ae8))
+* **tests:** address critical timeout and health check issues ([d6fd658](https://github.com/gatanasi/video-converter/commit/d6fd6586b5c172cf91615953c987a8b26081772f))
+
+
+### Features
+
+* **tests:** add smoke tests for Video Converter application ([f817de4](https://github.com/gatanasi/video-converter/commit/f817de4db50b3092808c1ebcc7942fe71b8c6910))
+* **tests:** add smoke tests for Video Converter application ([#90](https://github.com/gatanasi/video-converter/issues/90)) ([7ab3b4a](https://github.com/gatanasi/video-converter/commit/7ab3b4a853abbe93591aea467c7372131ef3dff8))
+
 ## [2.1.2](https://github.com/gatanasi/video-converter/compare/v2.1.1...v2.1.2) (2025-10-11)
 
 
