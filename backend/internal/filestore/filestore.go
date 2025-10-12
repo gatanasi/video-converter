@@ -13,7 +13,10 @@ import (
 	"github.com/gatanasi/video-converter/internal/constants"
 )
 
-var filenameSanitizeRegex = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+var (
+	filenameSanitizeRegex   = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+	multipleUnderscoreRegex = regexp.MustCompile(`_+`)
+)
 
 // EnsureDirectoryExists ensures the specified directory exists
 func EnsureDirectoryExists(dirPath string) error {
@@ -30,30 +33,40 @@ func EnsureDirectoryExists(dirPath string) error {
 // SanitizeFilename sanitizes a filename to be safe for file system operations
 func SanitizeFilename(fileName string) string {
 	if fileName == "" {
-		return ""
+		return fallbackFilename()
 	}
 
 	baseName := filepath.Base(fileName)
 	sanitized := filenameSanitizeRegex.ReplaceAllString(baseName, "_")
-	sanitized = regexp.MustCompile(`_+`).ReplaceAllString(sanitized, "_")
+	sanitized = multipleUnderscoreRegex.ReplaceAllString(sanitized, "_")
 	sanitized = strings.Trim(sanitized, "._")
 
-	// Limit length
-	if len(sanitized) > constants.MaxFilenameLength {
+	// Limit length using rune count for Unicode safety
+	sanitizedRunes := []rune(sanitized)
+	if len(sanitizedRunes) > constants.MaxFilenameLength {
 		ext := filepath.Ext(sanitized)
-		// Ensure base name length calculation handles multibyte characters correctly
+		extRuneCount := len([]rune(ext))
 		baseRunes := []rune(strings.TrimSuffix(sanitized, ext))
-		maxBaseLen := constants.MaxFilenameLength - len(ext)
-		if len(baseRunes) > maxBaseLen {
+		maxBaseLen := constants.MaxFilenameLength - extRuneCount
+
+		if maxBaseLen < 0 {
+			// Extension is longer than max length, truncate the whole string
+			sanitized = string(sanitizedRunes[:constants.MaxFilenameLength])
+		} else if len(baseRunes) > maxBaseLen {
+			// Base name is too long, truncate it and append extension
 			sanitized = string(baseRunes[:maxBaseLen]) + ext
 		}
 	}
 
 	if sanitized == "" || sanitized == "." || sanitized == ".." {
 		// Fallback for edge cases where sanitization results in an invalid name
-		return fmt.Sprintf("sanitized_fallback_%d", time.Now().UnixNano())
+		return fallbackFilename()
 	}
 	return sanitized
+}
+
+func fallbackFilename() string {
+	return fmt.Sprintf("sanitized_fallback_%d", time.Now().UnixNano())
 }
 
 // CleanupOldFiles removes files older than maxAge from the specified directory
