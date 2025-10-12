@@ -25,6 +25,7 @@
   min-width: 560px;
 }
 :root {
+  --color-primary-rgb: 79, 70, 229;
   --color-background: #eef2ff;
   --color-background-accent: #f9fafb;
   --color-primary: #4f46e5;
@@ -58,6 +59,7 @@
 }
 
 body[data-theme="dark"] {
+  --color-primary-rgb: 129, 140, 248;
   --color-background: #0f172a;
   --color-background-accent: #111c33;
   --color-primary: #818cf8;
@@ -232,9 +234,9 @@ p {
 }
 
 .tab-button.active {
-  background: linear-gradient(140deg, rgba(79, 70, 229, 0.16) 0%, rgba(79, 70, 229, 0.28) 100%);
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.42);
+  background: linear-gradient(140deg, rgba(var(--color-primary-rgb), 0.2) 0%, rgba(var(--color-primary-rgb), 0.3) 100%);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.45);
 }
 
 .tab-panel {
@@ -850,7 +852,6 @@ body[data-theme="dark"] .btn.ghost {
 .file-table .file-actions {
   display: flex;
   gap: 0.75rem;
-  flex-direction: column;
 }
 
 .file-table a.btn {
@@ -1000,6 +1001,7 @@ body::-webkit-scrollbar-thumb {
 
   .file-table .file-actions {
     width: auto;
+    flex-direction: column;
   }
 
   .file-table .file-actions .btn {
@@ -1007,6 +1009,7 @@ body::-webkit-scrollbar-thumb {
     min-width: auto;
     font-size: 0.85rem;
   }
+  
 }
 
 @media (max-width: 480px) {
@@ -1103,6 +1106,7 @@ body::-webkit-scrollbar-thumb {
 
   .file-table .file-actions {
     width: auto;
+    flex-direction: column;
   }
 
   .file-table .file-actions .btn {
@@ -1113,47 +1117,5 @@ body::-webkit-scrollbar-thumb {
 
   .multi-progress-info {
     gap: 0.4rem;
-  }
-}
-
-@media (min-width: 900px) {
-  .video-table,
-  .file-table {
-    min-width: 640px;
-  }
-
-  .tabs {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .tab-button {
-    width: 100%;
-  }
-
-  .input-group {
-    flex-direction: column;
-  }
-
-  .btn,
-  .btn.small {
-    width: 100%;
-  }
-
-  .multi-progress-info {
-    flex-direction: column;
-    align-items: flex-start;
-    padding-right: 0;
-    gap: 0.35rem;
-  }
-
-  .abort-button {
-    top: 12px;
-    right: 12px;
-  }
-
-  .video-table,
-  .file-table {
-    min-width: 520px;
   }
 }
