@@ -13,6 +13,7 @@ import { showMessage, clearMessages, formatBytes } from './utils/utils.js';
 import { Video, ConversionOptions } from './types';
 
 class App {
+    private static readonly THEME_STORAGE_KEY = 'vc-theme';
     // DOM Element References
     private messageArea: HTMLElement;
     private activeConversionsContainer: HTMLElement;
@@ -202,7 +203,7 @@ class App {
     }
 
     private initializeTheme(): void {
-        const storedTheme = localStorage.getItem('vc-theme');
+        const storedTheme = localStorage.getItem(App.THEME_STORAGE_KEY);
         if (storedTheme === 'light' || storedTheme === 'dark') {
             this.applyTheme(storedTheme);
             return;
@@ -213,7 +214,7 @@ class App {
 
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event: MediaQueryListEvent) => {
             const updatedTheme: 'light' | 'dark' = event.matches ? 'dark' : 'light';
-            if (!localStorage.getItem('vc-theme')) {
+            if (!localStorage.getItem(App.THEME_STORAGE_KEY)) {
                 this.applyTheme(updatedTheme);
             }
         });
@@ -221,7 +222,7 @@ class App {
 
     private toggleTheme(): void {
         const nextTheme: 'light' | 'dark' = this.currentTheme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('vc-theme', nextTheme);
+        localStorage.setItem(App.THEME_STORAGE_KEY, nextTheme);
         this.applyTheme(nextTheme);
     }
 

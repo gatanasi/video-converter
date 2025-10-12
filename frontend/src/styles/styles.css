@@ -25,6 +25,9 @@
   min-width: 560px;
 }
 :root {
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --color-primary-rgb: 79, 70, 229;
   --color-background: #eef2ff;
   --color-background-accent: #f9fafb;
