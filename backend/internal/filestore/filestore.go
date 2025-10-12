@@ -13,7 +13,10 @@ import (
 	"github.com/gatanasi/video-converter/internal/constants"
 )
 
-var filenameSanitizeRegex = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+var (
+	filenameSanitizeRegex   = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+	multipleUnderscoreRegex = regexp.MustCompile(`_+`)
+)
 
 // EnsureDirectoryExists ensures the specified directory exists
 func EnsureDirectoryExists(dirPath string) error {
@@ -35,7 +38,7 @@ func SanitizeFilename(fileName string) string {
 
 	baseName := filepath.Base(fileName)
 	sanitized := filenameSanitizeRegex.ReplaceAllString(baseName, "_")
-	sanitized = regexp.MustCompile(`_+`).ReplaceAllString(sanitized, "_")
+	sanitized = multipleUnderscoreRegex.ReplaceAllString(sanitized, "_")
 	sanitized = strings.Trim(sanitized, "._")
 
 	// Limit length
