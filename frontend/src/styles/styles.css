@@ -923,10 +923,6 @@ body[data-theme="dark"] .btn.ghost {
   color: inherit;
 }
 
-.hidden {
-  display: none;
-}
-
 body {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
