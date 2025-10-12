@@ -827,14 +827,30 @@ body[data-theme="dark"] .btn.ghost {
 }
 
 .video-select {
-  width: 48px;
+  width: 5%;
   text-align: center;
+}
+
+.video-name {
+  width: 40%;
+}
+
+.video-size {
+  width: 15%;
+}
+
+.video-type {
+  width: 10%;
+}
+
+.video-date {
+  width: 30%;
 }
 
 .file-table .file-actions {
   display: flex;
   gap: 0.75rem;
-  justify-content: flex-start;
+  flex-direction: column;
 }
 
 .file-table a.btn {
@@ -955,10 +971,43 @@ body::-webkit-scrollbar-thumb {
 
   .video-table,
   .file-table {
-    min-width: 100%;
-    table-layout: fixed;
+    width: 100%;
+    table-layout: auto;
+    min-width: 0;
   }
 
+  .video-table th,
+  .video-table td,
+  .file-table th,
+  .file-table td {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .file-table .file-name {
+    width: 40%;
+  }
+
+  .file-table .file-size {
+    width: 16%;
+  }
+
+  .file-table .file-date {
+    width: 28%;
+  }
+
+  .file-table .file-actions {
+    width: auto;
+  }
+
+  .file-table .file-actions .btn {
+    padding: 0.5rem;
+    min-width: auto;
+    font-size: 0.85rem;
+  }
+}
 
 @media (max-width: 480px) {
   .container {
@@ -1017,23 +1066,49 @@ body::-webkit-scrollbar-thumb {
     flex: 1 1 100%;
   }
 
+  .video-list-container,
+  .file-list-container {
+    margin: 0;
+  }
+
   .video-table,
   .file-table {
-    min-width: 100%;
+    width: 100%;
+    table-layout: auto;
+    min-width: 0;
   }
 
   .video-table th,
   .video-table td,
   .file-table th,
   .file-table td {
-    padding: 0.65rem 0.5rem;
-    font-size: 0.85rem;
+    padding: 0.6rem 0.35rem;
+    font-size: 0.8rem;
     word-break: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
-  .video-list-container,
-  .file-list-container {
-    margin: 0;
+  .file-table .file-name {
+    width: 38%;
+  }
+
+  .file-table .file-size {
+    width: 15%;
+  }
+
+  .file-table .file-date {
+    width: 30%;
+  }
+
+  .file-table .file-actions {
+    width: auto;
+  }
+
+  .file-table .file-actions .btn {
+    padding: 0.4rem;
+    font-size: 0.75rem;
+    min-width: auto;
   }
 
   .multi-progress-info {
@@ -1046,7 +1121,7 @@ body::-webkit-scrollbar-thumb {
   .file-table {
     min-width: 640px;
   }
-}
+
   .tabs {
     flex-direction: column;
     align-items: stretch;
