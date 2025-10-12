@@ -863,6 +863,12 @@ func (h *Handler) ActiveConversionsStreamHandler(w http.ResponseWriter, r *http.
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
 
+	// Send a connection confirmation event immediately
+	if err := writeSSEEvent(w, flusher, "connection_established", map[string]string{"message": "SSE connection established"}); err != nil {
+		log.Printf("WARN: Could not send SSE connection confirmation: %v", err)
+		return
+	}
+
 	events := h.Store.Subscribe()
 	defer h.Store.Unsubscribe(events)
 

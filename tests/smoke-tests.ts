@@ -182,19 +182,23 @@ async function testSSEStream(): Promise<void> {
       `Expected Content-Type to start with text/event-stream, received '${contentType}'`
     );
     
-    // Successfully connected to SSE stream
-    clearTimeout(timeout);
-    controller.abort(); // Close connection
+    // Successfully connected to SSE stream, now abort.
+    controller.abort();
   } catch (error) {
-    clearTimeout(timeout);
-    if (timedOut) {
-      throw new Error('Request timed out after 5000ms');
-    }
     if (error instanceof Error && error.name === 'AbortError') {
-      // Expected - we aborted after verifying connection
+      // This is the expected outcome for a successful connection test.
+      // We abort the connection as soon as we know it's established.
+      // If the timeout fired first, timedOut would be true.
+      if (timedOut) {
+        throw new Error('Request timed out after 5000ms');
+      }
+      // Otherwise, the abort was intentional, so we can safely return.
       return;
     }
+    // If it's a different error, re-throw it.
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
