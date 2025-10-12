@@ -50,7 +50,11 @@ func SanitizeFilename(fileName string) string {
 		if maxBaseLen < 0 {
 			// Extension is longer than max length, truncate the whole string
 			sanitizedRunes := []rune(sanitized)
-			sanitized = string(sanitizedRunes[:constants.MaxFilenameLength])
+			maxLen := constants.MaxFilenameLength
+			if len(sanitizedRunes) < maxLen {
+				maxLen = len(sanitizedRunes)
+			}
+			sanitized = string(sanitizedRunes[:maxLen])
 		} else if len(baseRunes) > maxBaseLen {
 			// Base name is too long, truncate it and append extension
 			sanitized = string(baseRunes[:maxBaseLen]) + ext
