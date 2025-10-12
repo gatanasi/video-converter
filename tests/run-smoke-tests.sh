@@ -89,7 +89,7 @@ main() {
 
   # Wait for the container to be healthy
   log_info "Waiting for container to become healthy..."
-  MAX_WAIT=60
+  MAX_WAIT=120
   INTERVAL=2
   ELAPSED=0
   while ! curl -sf "$BASE_URL/api/config" > /dev/null; do
@@ -118,13 +118,11 @@ main() {
   log_success "Container is running"
   echo ""
 
-  # Install test dependencies if needed
-  if [ ! -d "tests/node_modules" ]; then
-    log_info "Installing smoke test workspace dependencies..."
-    pnpm install --filter smoke-tests
-    log_success "Dependencies installed"
-    echo ""
-  fi
+  # Install test dependencies to match lockfile exactly
+  log_info "Installing smoke test workspace dependencies..."
+  pnpm install --filter smoke-tests --frozen-lockfile
+  log_success "Dependencies installed"
+  echo ""
 
   # Run smoke tests
   log_info "Running smoke tests..."

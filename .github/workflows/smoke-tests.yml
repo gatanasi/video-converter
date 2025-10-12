@@ -1,24 +1,6 @@
 name: Smoke Tests
 
 on:
-  push:
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'docker-compose.dev.yml'
-      - 'tests/**'
-      - '.github/workflows/smoke-tests.yml'
-  pull_request:
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - 'docker-compose.dev.yml'
-      - 'tests/**'
-      - '.github/workflows/smoke-tests.yml'
   workflow_dispatch:
   workflow_call:
 
@@ -46,7 +28,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install test dependencies
-        run: pnpm install --filter smoke-tests
+        run: pnpm install --filter smoke-tests --frozen-lockfile
 
       - name: Run smoke tests
         env:
