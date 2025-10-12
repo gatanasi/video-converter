@@ -1,3 +1,28 @@
+# [2.3.0](https://github.com/gatanasi/video-converter/compare/v2.2.0...v2.3.0) (2025-10-12)
+
+
+### Bug Fixes
+
+* **app:** add cleanup on window unload to prevent memory leaks ([83ecfc3](https://github.com/gatanasi/video-converter/commit/83ecfc36a7a69422378f0179d79f6f3c2712de9c))
+* **fileList:** remove redundant comment for clearing container ([a5f8807](https://github.com/gatanasi/video-converter/commit/a5f8807a8f7c0d824628844e42b5f14c32f9be16))
+* **styles:** clean up media queries and improve layout for responsiveness ([1b2e6ff](https://github.com/gatanasi/video-converter/commit/1b2e6ffeaf242511ffbb3525ba56f9e61a54bb57))
+* **styles:** enhance table layout and responsiveness for video and file tables ([692670a](https://github.com/gatanasi/video-converter/commit/692670af1b470399413adbf85c28749792a6beb4))
+* **styles:** enhance video and file list container styles for better layout and responsiveness ([625aa8d](https://github.com/gatanasi/video-converter/commit/625aa8db2608f7c8d70675ef235c2c78b0b6ff65))
+* **styles:** remove redundant overflow properties and clean up form options styles ([cd75e43](https://github.com/gatanasi/video-converter/commit/cd75e4322b6825754231dd0e94f59d33f68b893e))
+* **styles:** remove unused .hidden class to clean up CSS ([50f8eb3](https://github.com/gatanasi/video-converter/commit/50f8eb302dcbe4f3673e1656eb730127038672c7))
+* **styles:** update primary color variables and enhance button styles for better theming ([a647714](https://github.com/gatanasi/video-converter/commit/a647714adfd7e2b18decb5e47cd66cbb51716864))
+* **theme:** implement AbortController for theme management and cleanup on destroy ([3c73395](https://github.com/gatanasi/video-converter/commit/3c73395742b44567b5a62d5bd92b3c44d4f16243))
+* **theme:** update theme handling to listen for system theme changes and apply accordingly ([fd99387](https://github.com/gatanasi/video-converter/commit/fd99387e9383dc590d0c5d5647002a7771cef593))
+* **theme:** update theme toggle button aria-label for clarity ([00969a2](https://github.com/gatanasi/video-converter/commit/00969a241d9a9d59151e4cd0bebf67345d1bc6f5))
+* **videoList:** update wrapper class name to maintain layout integrity ([755f190](https://github.com/gatanasi/video-converter/commit/755f190c54d28d7ef9db1c46869b0f60f48dc4fc))
+
+
+### Features
+
+* **theme:** refactor theme storage key and enhance theme initialization logic ([b0b409a](https://github.com/gatanasi/video-converter/commit/b0b409aa92e72009d8a2c70452bbca7704f1345f))
+* **ui:** New look & feel ([2111d02](https://github.com/gatanasi/video-converter/commit/2111d02ab5a356a6d2ad92681c0bb11a8ea634a1))
+* **ui:** New look & feel ([#91](https://github.com/gatanasi/video-converter/issues/91)) ([77c8c76](https://github.com/gatanasi/video-converter/commit/77c8c7672925fda2cee59ca91ad0571344e7cf36))
+
 # [2.2.0](https://github.com/gatanasi/video-converter/compare/v2.1.2...v2.2.0) (2025-10-12)
 
 
