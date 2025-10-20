@@ -29,7 +29,7 @@ COPY frontend/ ./
 RUN pnpm run build
 
 # Stage 2: Build Backend
-FROM golang:1.25-alpine@sha256:06cdd34bd531b810650e47762c01e025eb9b1c7eadd191553b91c9f2d549fae8 AS backend-builder
+FROM golang:1.25-alpine@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS backend-builder
 
 # ARG is scoped to this build stage
 ARG VERSION="docker"
