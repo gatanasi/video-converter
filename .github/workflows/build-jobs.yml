@@ -59,6 +59,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify frontend lockfile
+        # The workspace install does not validate frontend/pnpm-lock.yaml, so run a scoped
+        # frozen install to fail fast when the nested lockfile drifts.
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
       - name: Run frontend tests
         run: pnpm --filter ./frontend run --if-present test
 
