@@ -59,6 +59,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify frontend lockfile
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile --ignore-scripts --prefer-offline
+
       - name: Run frontend tests
         run: pnpm --filter ./frontend run --if-present test
 

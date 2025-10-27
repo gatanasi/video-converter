@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+set -e
+
+# Run a frozen install when the frontend package manifest changes to keep the lockfile in sync.
+if git diff --cached --name-only | grep -Eq '^frontend/package\.json$'; then
+  pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+fi
