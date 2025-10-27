@@ -10,18 +10,25 @@ if git diff --cached --name-only | grep -Eq '^frontend/package\.json$'; then
     echo "Error: jq is required for this pre-commit hook to check dependency changes." >&2
     exit 1
   fi
-  # Extract staged and HEAD dependencies/devDependencies for comparison
-  STAGED_DEPS=$(git show :frontend/package.json | jq '{dependencies,devDependencies}')
+  # Extract staged dependencies/devDependencies once for downstream comparisons
+  STAGED_DEPS=$(git show :frontend/package.json | jq -c '{dependencies,devDependencies}')
+  NEED_INSTALL=false
+
   if git cat-file -e HEAD:frontend/package.json 2>/dev/null; then
-    HEAD_DEPS=$(git show HEAD:frontend/package.json | jq '{dependencies,devDependencies}')
+    HEAD_DEPS=$(git show HEAD:frontend/package.json | jq -c '{dependencies,devDependencies}')
     if [ "$STAGED_DEPS" != "$HEAD_DEPS" ]; then
-      pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+      NEED_INSTALL=true
     fi
   else
     # If the file is new, only run install if there are any dependencies or devDependencies
-    HAS_DEPS=$(git show :frontend/package.json | jq '(.dependencies // {} | length) + (.devDependencies // {} | length)')
+    HAS_DEPS=$(printf '%s' "$STAGED_DEPS" | jq '((.dependencies // {}) | length) + ((.devDependencies // {}) | length)')
     if [ "$HAS_DEPS" -gt 0 ]; then
-      pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+      NEED_INSTALL=true
     fi
+  fi
+
+  if [ "$NEED_INSTALL" = true ]; then
+    echo "Verifying frontend lockfile is up to date..."
+    pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
   fi
 fi
