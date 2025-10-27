@@ -3,7 +3,17 @@
 
 set -e
 
-# Run a frozen install when the frontend package manifest changes to keep the lockfile in sync.
+# Run a frozen install when the frontend package manifest changes to keep the lockfile in sync,
+# but only if dependencies or devDependencies actually changed.
 if git diff --cached --name-only | grep -Eq '^frontend/package\.json$'; then
-  pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is required for this pre-commit hook to check dependency changes." >&2
+    exit 1
+  fi
+  # Extract staged and HEAD dependencies/devDependencies for comparison
+  STAGED_DEPS=$(git show :frontend/package.json | jq '{dependencies,devDependencies}')
+  HEAD_DEPS=$(git show HEAD:frontend/package.json 2>/dev/null | jq '{dependencies,devDependencies}' 2>/dev/null || echo '{}')
+  if [ "$STAGED_DEPS" != "$HEAD_DEPS" ]; then
+    pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+  fi
 fi
