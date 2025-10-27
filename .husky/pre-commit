@@ -3,7 +3,7 @@
 
 set -e
 
-# Run a frozen install when the frontend package manifest changes to keep the lockfile in sync,
+# Run a frozen install when the frontend package manifest changes to verify the lockfile stays in sync,
 # but only if dependencies or devDependencies actually changed.
 if git diff --cached --name-only | grep -Eq '^frontend/package\.json$'; then
   if ! command -v jq >/dev/null 2>&1; then
