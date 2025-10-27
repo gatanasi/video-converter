@@ -12,8 +12,16 @@ if git diff --cached --name-only | grep -Eq '^frontend/package\.json$'; then
   fi
   # Extract staged and HEAD dependencies/devDependencies for comparison
   STAGED_DEPS=$(git show :frontend/package.json | jq '{dependencies,devDependencies}')
-  HEAD_DEPS=$(git show HEAD:frontend/package.json 2>/dev/null | jq '{dependencies,devDependencies}' 2>/dev/null || echo '{}')
-  if [ "$STAGED_DEPS" != "$HEAD_DEPS" ]; then
-    pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+  if git cat-file -e HEAD:frontend/package.json 2>/dev/null; then
+    HEAD_DEPS=$(git show HEAD:frontend/package.json | jq '{dependencies,devDependencies}')
+    if [ "$STAGED_DEPS" != "$HEAD_DEPS" ]; then
+      pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+    fi
+  else
+    # If the file is new, only run install if there are any dependencies or devDependencies
+    HAS_DEPS=$(git show :frontend/package.json | jq '(.dependencies // {} | length) + (.devDependencies // {} | length)')
+    if [ "$HAS_DEPS" -gt 0 ]; then
+      pnpm --dir frontend install --frozen-lockfile --ignore-scripts --prefer-offline
+    fi
   fi
 fi
