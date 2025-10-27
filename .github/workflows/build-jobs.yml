@@ -54,15 +54,13 @@ jobs:
         with:
           node-version: ${{ inputs.node_version }}
           cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run frontend tests
-        working-directory: ./frontend
-        run: pnpm test
+        run: pnpm --filter ./frontend run --if-present test
 
       # Backend linting/testing
       - name: Set up Go
