@@ -1,3 +1,10 @@
+## [2.3.3](https://github.com/gatanasi/video-converter/compare/v2.3.2...v2.3.3) (2025-11-16)
+
+
+### Bug Fixes
+
+* **Dockerfile:** correct pnpm filter syntax for frontend dependencies ([3a7c033](https://github.com/gatanasi/video-converter/commit/3a7c03375a724f66d4dbeebcd5cbfe1629f6bf4c))
+
 # [2.3.0](https://github.com/gatanasi/video-converter/compare/v2.2.0...v2.3.0) (2025-10-12)
 
 
