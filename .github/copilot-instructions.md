@@ -28,6 +28,8 @@ API Request (Upload/Drive) → File saved to /uploads → Job queued in conversi
 
 **External Dependencies:** ffmpeg, ffprobe, and exiftool must be in the system's PATH for local development.
 
+**pnpm Workspace Usage:** The repository relies on a single root `pnpm-lock.yaml`. Always run `pnpm install` from the repository root, and prefer workspace filters for package-level commands (e.g., `pnpm --filter ./frontend run build`). Avoid creating package-specific lockfiles.
+
 | Task | Command |
 | :---- | :---- |
 | **Run Backend Locally** | `cd backend && export $(grep -v '^\#' ../.env | xargs) && go run ./cmd/server/main.go` |
@@ -66,6 +68,7 @@ Always use these exact endpoints.
 * **File Safety:** Always use filestore.SanitizeFilename() for user-provided filenames and validateFileSafety helpers in handlers to prevent path traversal vulnerabilities.  
 * **SSE Heartbeats:** The SSE stream sends periodic heartbeats to keep connections alive. The server write deadline is disabled for this endpoint.  
 * **Progress Clamping:** The server clamps progress updates to a maximum of 99.0 during conversion. Only upon successful completion is the status set to 100.0. Do not assume incremental updates will ever exceed 99.
+* **Single pnpm Lock:** The Dockerfile and GitHub Actions workflows infer dependencies from the root lockfile. Never add a `frontend/pnpm-lock.yaml`; doing so will break CI/Docker builds that expect one authoritative workspace lock.
 
 ### **6\. Known Gaps & Gotchas**
 

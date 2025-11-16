@@ -5,7 +5,7 @@
 FROM node:24-alpine@sha256:2867d550cf9d8bb50059a0fff528741f11a84d985c732e60e19e8e75c7239c43 AS frontend-builder
 
 # ARG is scoped to this build stage for clarity
-ARG PNPM_VERSION="10.18.2"
+ARG PNPM_VERSION="10.19.0"
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ COPY frontend/package.json ./frontend/
 
 # Install only the frontend workspace dependencies using the single lockfile
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 \
-    pnpm install --filter ./frontend... --frozen-lockfile
+    pnpm install --filter ./frontend --frozen-lockfile
 
 # Copy frontend source
 COPY frontend/ ./frontend/
