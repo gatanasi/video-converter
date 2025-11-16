@@ -7,7 +7,7 @@ FROM node:24-alpine@sha256:2867d550cf9d8bb50059a0fff528741f11a84d985c732e60e19e8
 # ARG is scoped to this build stage for clarity
 ARG PNPM_VERSION="10.18.2"
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Install pnpm
 RUN --mount=type=cache,target=/root/.npm npm install -g pnpm@${PNPM_VERSION}
@@ -16,17 +16,19 @@ RUN --mount=type=cache,target=/root/.npm npm install -g pnpm@${PNPM_VERSION}
 ENV PNPM_HOME=/root/.local/share/pnpm
 ENV PATH="${PNPM_HOME}:${PATH}"
 
-# Copy frontend package files to leverage Docker layer caching
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+# Copy workspace manifests first to leverage Docker layer caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend/package.json ./frontend/
 
-# Install dependencies using the lockfile
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 pnpm install --frozen-lockfile
+# Install only the frontend workspace dependencies using the single lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 \
+    pnpm install --filter frontend... --frozen-lockfile
 
 # Copy frontend source
-COPY frontend/ ./
+COPY frontend/ ./frontend/
 
-# Build frontend
-RUN pnpm run build
+# Build frontend from the workspace root
+RUN pnpm --filter frontend run build
 
 # Stage 2: Build Backend
 FROM golang:1.25-alpine@sha256:d3f0cf7723f3429e3f9ed846243970b20a2de7bae6a5b66fc5914e228d831bbb AS backend-builder
