@@ -22,13 +22,13 @@ COPY frontend/package.json ./frontend/
 
 # Install only the frontend workspace dependencies using the single lockfile
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store/v3 \
-    pnpm install --filter frontend... --frozen-lockfile
+    pnpm install --filter ./frontend... --frozen-lockfile
 
 # Copy frontend source
 COPY frontend/ ./frontend/
 
 # Build frontend from the workspace root
-RUN pnpm --filter frontend run build
+RUN pnpm --filter ./frontend run build
 
 # Stage 2: Build Backend
 FROM golang:1.25-alpine@sha256:d3f0cf7723f3429e3f9ed846243970b20a2de7bae6a5b66fc5914e228d831bbb AS backend-builder
