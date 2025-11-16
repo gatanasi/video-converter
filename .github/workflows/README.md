@@ -19,6 +19,7 @@ Automated CI/CD workflows that build and publish Docker images to GitHub Contain
 
 ### Build Jobs (`build-jobs.yml`)
 Reusable workflow used by CI and Release workflows.
+It now verifies package installs via the root `pnpm-lock.yaml`, so every caller benefits from the single workspace lockfile and avoids drift from per-package installs.
 
 ## Docker Images
 

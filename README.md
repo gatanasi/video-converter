@@ -178,6 +178,11 @@ docker run -d \
 - **[tests/README.md](tests/README.md)** - Smoke tests and end-to-end testing
 - **[Releases](https://github.com/gatanasi/video-converter/releases)** - Version history and changelogs
 
+## 🧑‍💻 Development Notes
+
+- The repository uses a single workspace-level `pnpm-lock.yaml` in the project root. Always run `pnpm install` from the root directory to keep the shared lockfile authoritative—do not create package-level lockfiles inside `frontend/` or `tests/`.
+- Use workspace filters for package-specific scripts, e.g., `pnpm --filter ./frontend run build` or `pnpm --filter smoke-tests test`, so that every command still respects the shared dependency graph.
+
 ## 🤝 Contributing
 
 Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for:

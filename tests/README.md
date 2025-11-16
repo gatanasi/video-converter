@@ -11,6 +11,8 @@ frontend bundle can be served after a fresh build.
 pnpm test:smoke
 ```
 
+> ℹ️ Run `pnpm install` from the repository root before executing the smoke tests so that the shared workspace `pnpm-lock.yaml` stays authoritative. Avoid running `pnpm install` inside `tests/` directly—use workspace filters instead (e.g., `pnpm --filter smoke-tests test`).
+
 The command above wraps `tests/run-smoke-tests.sh`, which performs the
 following steps:
 

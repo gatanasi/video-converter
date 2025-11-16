@@ -77,36 +77,36 @@ go run ./cmd/server/main.go
 
 The backend server will start at `http://localhost:3000`.
 
-### 4. Frontend Setup
+### 4. Install JavaScript Dependencies
+
+```bash
+# From the repository root
+pnpm install
+```
+
+> ℹ️ The workspace uses a single root-level `pnpm-lock.yaml`. Always install dependencies from the repository root so that the shared lockfile stays authoritative. Avoid running `pnpm install` inside `frontend/` or `tests/`.
+
+### 5. Frontend Setup
 
 Open a new terminal:
 
 ```bash
-# Navigate to frontend directory
-cd frontend
+# Build the production bundle from the workspace root
+pnpm --filter ./frontend run build
 
-# Install dependencies
-pnpm install
-
-# Build frontend (for production mode)
-pnpm run build
-
-# Serve the built files
-npx serve dist -l 8080
+# Serve the built files (any static server works)
+pnpm --filter ./frontend exec npx serve dist -l 8080
 ```
 
 Open your browser to `http://localhost:8080`.
 
-### 5. Frontend Development Mode
+### 6. Frontend Development Mode
 
 For active development with hot reload:
 
 ```bash
-cd frontend
-
-# Start development server (if configured)
-# Or use watch mode to rebuild on changes
-pnpm run build -- --watch
+# Rebuild on changes from the workspace root
+pnpm --filter ./frontend run build -- --watch
 ```
 
 ## Project Structure
