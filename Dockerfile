@@ -5,7 +5,7 @@
 FROM node:24-alpine@sha256:2867d550cf9d8bb50059a0fff528741f11a84d985c732e60e19e8e75c7239c43 AS frontend-builder
 
 # ARG is scoped to this build stage for clarity
-ARG PNPM_VERSION="10.23.0"
+ARG PNPM_VERSION="10.24.0"
 
 WORKDIR /app
 
