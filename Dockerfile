@@ -2,7 +2,7 @@
 # This builds both frontend and backend in a single container leveraging BuildKit caching
 
 # Stage 1: Build Frontend
-FROM node:24-alpine3.23 AS frontend-builder
+FROM node:24-alpine3.23@sha256:7e0bd0460b26eb3854ea5b99b887a6a14d665d14cae694b78ae2936d14b2befb AS frontend-builder
 
 # ARG is scoped to this build stage for clarity
 ARG PNPM_VERSION="10.24.0"
@@ -62,7 +62,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     ./cmd/server/main.go
 
 # Stage 3: Final Runtime Image
-FROM alpine:3.22.2
+FROM alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
 
 # Install only necessary runtime dependencies
 RUN apk add --no-cache \
