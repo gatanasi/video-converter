@@ -1,3 +1,11 @@
+## [2.3.4](https://github.com/gatanasi/video-converter/compare/v2.3.3...v2.3.4) (2025-12-17)
+
+
+### Bug Fixes
+
+* **ci:** add setup-qemu-action for arm64 builds ([86ee410](https://github.com/gatanasi/video-converter/commit/86ee410b8b48f16bffba1f9859f9482141810255))
+* **docker:** enable community repo for alpine 3.23 support ([38addf6](https://github.com/gatanasi/video-converter/commit/38addf672c1cbd874bf8c31bef77df3abdf6af1c))
+
 ## [2.3.3](https://github.com/gatanasi/video-converter/compare/v2.3.2...v2.3.3) (2025-11-16)
 
 
