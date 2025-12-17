@@ -64,9 +64,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Stage 3: Final Runtime Image
 FROM alpine:3.23.0@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375
 
-# Ensure community repository is enabled (required for ffmpeg/exiftool in some alpine images)
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.23/community" >> /etc/apk/repositories
-
 # Install only necessary runtime dependencies
 RUN apk add --no-cache \
     ffmpeg \
