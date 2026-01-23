@@ -23,6 +23,10 @@ on:
         required: false
         type: boolean
         default: false
+      platforms:
+        required: false
+        type: string
+        default: 'linux/amd64'
       app_version:
         required: false
         type: string
@@ -37,15 +41,49 @@ permissions:
   packages: write
 
 jobs:
-  lint-and-test:
-    name: Lint and Test
+  # Detect which paths changed to conditionally run jobs
+  detect-changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
-    
+    outputs:
+      frontend: ${{ steps.changes.outputs.frontend }}
+      backend: ${{ steps.changes.outputs.backend }}
+      infrastructure: ${{ steps.changes.outputs.infrastructure }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@4512585405083f25c027a35db413c2b3b9006d50 # v2.12.0
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            backend:
+              - 'backend/**'
+              - 'go.mod'
+              - 'go.sum'
+            infrastructure:
+              - 'Dockerfile'
+              - 'docker-compose*.yml'
+              - '.dockerignore'
+              - '.github/workflows/**'
+
+  # Frontend linting/testing (runs in parallel with backend)
+  frontend-test:
+    name: Frontend Lint and Test
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.infrastructure == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      # Frontend linting/testing
       - name: Setup pnpm
         uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
 
@@ -59,13 +97,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify frontend dependencies
-        run: pnpm --filter ./frontend install --frozen-lockfile --ignore-scripts --prefer-offline
-
       - name: Run frontend tests
         run: pnpm --filter ./frontend run --if-present test
 
-      # Backend linting/testing
+  # Backend linting/testing (runs in parallel with frontend)
+  backend-test:
+    name: Backend Lint and Test
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.infrastructure == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
@@ -94,8 +138,13 @@ jobs:
   docker-build:
     name: Docker Build and Push
     runs-on: ubuntu-latest
-    needs: lint-and-test
-    if: inputs.build_docker == true
+    needs: [detect-changes, frontend-test, backend-test]
+    # Run if docker build requested AND (tests passed OR were skipped due to no changes)
+    if: |
+      always() &&
+      inputs.build_docker == true &&
+      (needs.frontend-test.result == 'success' || needs.frontend-test.result == 'skipped') &&
+      (needs.backend-test.result == 'success' || needs.backend-test.result == 'skipped')
     outputs:
       image_tag: ${{ steps.meta.outputs.tags }}
       
@@ -144,4 +193,4 @@ jobs:
             VERSION=${{ inputs.app_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.platforms }}
