@@ -115,6 +115,7 @@ jobs:
       build_docker: true
       push_docker: true
       app_version: ${{ needs.determine-version.outputs.next_version }}
+      platforms: 'linux/amd64,linux/arm64'
 
   release:
     name: Create Release
