@@ -437,7 +437,7 @@ h3 {
 
 /* Form Elements */
 .conversion-form {
-  @apply flex flex-col gap-2;
+  @apply flex flex-col gap-3;
 }
 
 .form-group {
