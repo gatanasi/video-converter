@@ -1,8 +1,7 @@
 /**
- * Google Drive Video Converter - Main Application Entry Point
+ * Video Converter - Main Application Entry Point
  */
-import './styles/styles.css';
-// Removed configManager import as it's unused
+// CSS is processed separately via Tailwind CLI - see package.json build:css
 import apiService from './api/apiService.js';
 // Import components from their individual files
 import { ActiveConversionsComponent } from './components/activeConversionsComponent.js';
@@ -52,7 +51,7 @@ class App {
 
     // Theme toggle
     private themeToggleButton: HTMLButtonElement | null;
-    private currentTheme: 'light' | 'dark' = 'light';
+    private currentTheme: 'light' | 'dark' = 'dark';
 
     // Component Instances
     private activeConversionsComponent!: ActiveConversionsComponent;
@@ -287,9 +286,9 @@ class App {
     handleFileSelection(event: Event): void { // Use Event type directly
         const target = event.target as HTMLInputElement; // Cast here is okay
         const file = target.files?.[0];
-        
+
         this.resetUploadProgress();
-        
+
         if (file) {
             this.selectedUploadFile = file;
             this.uploadFileName.textContent = file.name;
@@ -497,8 +496,8 @@ class App {
         try {
             // Pass progress callback function to update UI
             const response = await apiService.uploadAndConvert(
-                file, 
-                options, 
+                file,
+                options,
                 (percent) => {
                     this.uploadProgressBar.style.width = `${percent}%`;
                     this.uploadProgressPercent.textContent = `${percent}%`;
@@ -535,7 +534,7 @@ class App {
             console.error(`Upload/conversion start error for ${file.name}:`, error);
         } finally {
             this.resetUploadProgress();
-            
+
             // Restore button state
             this.uploadConvertBtn.classList.remove('button-pulse');
             this.uploadConvertBtn.textContent = 'Upload & Convert';
