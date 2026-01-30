@@ -385,6 +385,10 @@ h3 {
   box-shadow: none;
 }
 
+.btn.primary {
+  width: 100%;
+}
+
 .btn.secondary {
   background: var(--table-header-bg);
   @apply text-[var(--current-text)];
@@ -432,8 +436,12 @@ h3 {
 }
 
 /* Form Elements */
+.conversion-form {
+  @apply flex flex-col gap-3;
+}
+
 .form-group {
-  @apply flex flex-col gap-1;
+  @apply flex flex-col gap-2;
 }
 
 label {
@@ -442,12 +450,7 @@ label {
 }
 
 .input-group {
-  @apply flex gap-3 flex-wrap max-[480px]:gap-2.5;
-}
-
-.input-group input,
-.input-group button {
-  @apply flex-1 max-[480px]:w-full;
+  @apply flex gap-3 flex-wrap items-center max-[480px]:gap-2.5;
 }
 
 .form-control,
@@ -746,7 +749,7 @@ input[type="file"]::file-selector-button:hover {
   @apply w-[30%];
 }
 
-.file-table .file-actions {
+.file-table .file-actions-wrapper {
   @apply flex gap-3 max-[640px]:w-auto max-[640px]:flex-col;
 }
 
@@ -776,7 +779,7 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .step-header>div {
-  @apply max-[640px]:flex-1 max-[640px]:min-w-0;
+  @apply flex flex-col gap-1 max-[640px]:flex-1 max-[640px]:min-w-0;
 }
 
 /* Selection Controls */
@@ -842,5 +845,5 @@ input[type="file"]::file-selector-button:hover {
 
 .note {
   color: var(--current-muted);
-  @apply text-sm;
+  @apply text-sm mt-3;
 }
