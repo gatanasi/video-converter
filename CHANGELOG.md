@@ -1,3 +1,19 @@
+# [2.4.0](https://github.com/gatanasi/video-converter/compare/v2.3.7...v2.4.0) (2026-01-30)
+
+
+### Bug Fixes
+
+* **frontend:** address remaining PR review comments ([f967794](https://github.com/gatanasi/video-converter/commit/f96779409a590eb1f03a5204a290881671b23a6e))
+* **frontend:** use CSS variables for btn.secondary and btn.ghost dark mode ([467f4a2](https://github.com/gatanasi/video-converter/commit/467f4a2ab76e0b1b18922d5046a3ed359bf819dc))
+* **ui:** improve responsive layout and alignment ([#144](https://github.com/gatanasi/video-converter/issues/144)) ([7124163](https://github.com/gatanasi/video-converter/commit/71241633d3ccbb457dc67541ebc4a40f500c7a28))
+* **ui:** improve responsive layout and alignment issues ([ef01c42](https://github.com/gatanasi/video-converter/commit/ef01c42c7f6b6cad5081ea360f2387130eebe3d1))
+
+
+### Features
+
+* **frontend:** migrate CSS from vanilla to Tailwind CSS v4 ([8951397](https://github.com/gatanasi/video-converter/commit/89513978114e8d127a9a7bae8844ff3bd8f754e2))
+* **frontend:** migrate CSS from vanilla to Tailwind CSS v4 ([#143](https://github.com/gatanasi/video-converter/issues/143)) ([658e3e8](https://github.com/gatanasi/video-converter/commit/658e3e8850b94a173ca7f1fb5891ac01cfa34720))
+
 ## [2.3.4](https://github.com/gatanasi/video-converter/compare/v2.3.3...v2.3.4) (2025-12-17)
 
 
