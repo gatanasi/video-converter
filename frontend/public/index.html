@@ -15,7 +15,8 @@
             <div class="container hero-content">
                 <div class="hero-text">
                     <h1>Video Converter</h1>
-                    <p class="hero-subtitle">Convert videos from your device or Google Drive with streamlined controls and live progress.</p>
+                    <p class="hero-subtitle">Convert videos from your device or Google Drive with streamlined controls
+                        and live progress.</p>
                 </div>
                 <div class="hero-actions">
                     <button id="theme-toggle" class="btn ghost" aria-label="Toggle color theme">
@@ -49,7 +50,7 @@
                     <div class="source-selection-section step-card">
                         <div class="step-header">
                             <span class="step-number">1</span>
-                            <div class="flex flex-col gap-1">
+                            <div>
                                 <h2>Choose Video Source</h2>
                                 <p>Select where your videos live so we can tailor the next steps.</p>
                             </div>
@@ -69,7 +70,7 @@
                     <div id="upload-source-section" class="upload-section step-card">
                         <div class="step-header">
                             <span class="step-number">2</span>
-                            <div class="flex flex-col gap-1">
+                            <div>
                                 <h2>Upload Video File</h2>
                                 <p>Pick a local video and start the conversion instantly.</p>
                             </div>
@@ -85,7 +86,8 @@
                                 Selected: <span id="upload-file-name"></span> (<span id="upload-file-size"></span>)
                             </div>
                             <div id="upload-progress-container" class="progress-container hidden">
-                                <div class="progress-label">Upload Progress <span id="upload-progress-percent">0%</span></div>
+                                <div class="progress-label">Upload Progress <span id="upload-progress-percent">0%</span>
+                                </div>
                                 <div class="progress-bar">
                                     <div id="upload-progress-bar" class="progress-bar-fill"></div>
                                 </div>
@@ -96,7 +98,7 @@
                     <div id="drive-source-section" class="folder-input-section step-card hidden">
                         <div class="step-header">
                             <span class="step-number">2</span>
-                            <div class="flex flex-col gap-1">
+                            <div>
                                 <h2>Google Drive Video Source</h2>
                                 <p>Paste a shared folder link or ID to fetch your Drive videos.</p>
                             </div>
@@ -104,10 +106,12 @@
                         <div class="folder-input">
                             <label for="folder-id">Google Drive Folder ID or URL</label>
                             <div class="flex flex-col gap-3">
-                                <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
+                                <input type="text" id="folder-id"
+                                    placeholder="Enter folder ID or complete Google Drive URL">
                                 <div class="flex gap-3">
                                     <button id="load-videos-btn" class="btn flex-1">Load Videos</button>
-                                    <button id="reset-folder-id-btn" class="btn secondary flex-1" title="Clear stored folder ID and input">Reset</button>
+                                    <button id="reset-folder-id-btn" class="btn secondary flex-1"
+                                        title="Clear stored folder ID and input">Reset</button>
                                 </div>
                             </div>
                             <p class="note">Make sure the folder is shared with "Anyone with the link can view".</p>
@@ -117,7 +121,7 @@
                     <div id="conversion-options-section" class="conversion-form-section step-card">
                         <div class="step-header">
                             <span class="step-number">3</span>
-                            <div class="flex flex-col gap-1">
+                            <div>
                                 <h2>Conversion Options</h2>
                                 <p>Choose your target format and optional enhancements.</p>
                             </div>
@@ -128,7 +132,7 @@
                     <div id="drive-video-list-section" class="video-list-section step-card">
                         <div class="step-header">
                             <span class="step-number">4</span>
-                            <div class="flex flex-col gap-1">
+                            <div>
                                 <h2>Select Drive Videos</h2>
                                 <p>Highlight one or many videos to launch simultaneous conversions.</p>
                             </div>
@@ -136,7 +140,7 @@
                         <div class="video-list-container">
                             <div class="video-list-inner">
                                 <div id="video-list">
-                                <!-- Content managed by VideoListComponent -->
+                                    <!-- Content managed by VideoListComponent -->
                                 </div>
                             </div>
                         </div>
