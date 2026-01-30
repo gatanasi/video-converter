@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-/* ========================================
-   Custom Theme Configuration (Tailwind v4)
-   ========================================
-   Using CSS-first configuration approach.
-   Theme values are defined as CSS custom properties.
-*/
-
 @theme {
   /* Border Radius */
   --radius-sm: 8px;
@@ -45,6 +38,8 @@
   --color-slate-950: #111c33;
   --color-slate-800: #1e293b;
   --color-indigo-100: #c7d2fe;
+  --color-indigo-50: #eef2ff;
+  --color-slate-50: #f9fafb;
 
   /* Font Family */
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -69,74 +64,146 @@ body {
   overflow-x: hidden;
   scrollbar-width: thin;
 
-  /* Light mode (default) */
-  --color-primary-rgb: 79, 70, 229;
-  --color-background: #eef2ff;
-  --color-background-accent: #f9fafb;
-  --current-primary: var(--color-primary);
-  --current-primary-strong: var(--color-primary-strong);
-  --current-secondary: var(--color-secondary);
-  --current-text: var(--color-text);
-  --current-muted: var(--color-muted);
-  --current-surface: rgba(255, 255, 255, 0.92);
-  --current-surface-alt: rgba(255, 255, 255, 0.82);
-  --current-border: rgba(79, 70, 229, 0.18);
-  --current-border-strong: rgba(79, 70, 229, 0.35);
-  --current-input-bg: rgba(255, 255, 255, 0.96);
-  --current-input-border: rgba(148, 163, 184, 0.35);
-  --current-control-bg: rgba(15, 23, 42, 0.04);
-  --current-control-hover: rgba(79, 70, 229, 0.12);
-  --current-chip-border: rgba(79, 70, 229, 0.16);
-  --hero-gradient: linear-gradient(140deg, rgba(79, 70, 229, 0.92) 0%, rgba(6, 182, 212, 0.85) 100%);
-  --hero-overlay: radial-gradient(circle at top right, rgba(255, 255, 255, 0.4), transparent 55%);
-  --app-background: radial-gradient(circle at top, var(--color-indigo-100) 0%, #eef2ff 45%, #f9fafb 100%);
-  --table-header-bg: rgba(79, 70, 229, 0.08);
-  --table-row-hover: rgba(79, 70, 229, 0.08);
-  --table-row-selected: rgba(79, 70, 229, 0.14);
-  --progress-background: rgba(79, 70, 229, 0.12);
-  --progress-fill: linear-gradient(90deg, var(--current-primary) 0%, var(--current-secondary) 100%);
-  --scrollbar-track: rgba(79, 70, 229, 0.08);
-  --scrollbar-thumb: rgba(79, 70, 229, 0.35);
-  --shadow: 0 18px 50px rgba(var(--color-slate-900-rgb), 0.12);
-  --shadow-soft: 0 12px 30px rgba(var(--color-slate-900-rgb), 0.08);
-  --color-slate-900-rgb: 15, 23, 42;
+  /* Dark mode (Default) */
+  --color-background: var(--color-slate-900);
+  --color-background-accent: var(--color-slate-950);
+
+  --current-primary: var(--color-primary-dark);
+  --current-primary-strong: var(--color-primary-strong-dark);
+  --current-secondary: var(--color-secondary-dark);
+
+  --current-text: var(--color-text-dark);
+  --current-muted: var(--color-muted-dark);
+
+  --current-surface: color-mix(in srgb, var(--color-slate-900), transparent 8%);
+  --current-surface-alt: color-mix(in srgb, var(--color-slate-900), transparent 12%);
+
+  --current-border: color-mix(in srgb, var(--color-primary-dark), transparent 80%);
+  --current-border-strong: color-mix(in srgb, var(--color-primary-dark), transparent 65%);
+
+  --current-input-bg: color-mix(in srgb, var(--color-slate-900), transparent 8%);
+  --current-input-border: color-mix(in srgb, var(--color-primary-dark), transparent 65%);
+
+  --current-control-bg: color-mix(in srgb, var(--color-muted-light), transparent 88%);
+  --current-control-hover: color-mix(in srgb, var(--color-primary-dark), transparent 78%);
+
+  --current-chip-border: color-mix(in srgb, #6366f1, transparent 70%);
+
+  /* Hero */
+  --hero-gradient-start: color-mix(in srgb, var(--color-slate-800), transparent 5%);
+  --hero-gradient-mid: color-mix(in srgb, var(--color-slate-900), transparent 5%);
+  --hero-gradient-end: color-mix(in srgb, var(--color-primary), transparent 15%);
+  --hero-gradient: linear-gradient(140deg, var(--hero-gradient-start) 0%, var(--hero-gradient-mid) 60%, var(--hero-gradient-end) 100%);
+  --hero-overlay-color: color-mix(in srgb, var(--color-primary-dark), transparent 75%);
+  --hero-overlay: radial-gradient(circle at top right, var(--hero-overlay-color), transparent 60%);
+
+  --app-background: radial-gradient(circle at top, var(--color-slate-800) 0%, var(--color-slate-950) 45%, var(--color-slate-900) 100%);
+
+  /* Table */
+  --table-header-bg: color-mix(in srgb, var(--color-primary-dark), transparent 88%);
+  --table-row-hover: color-mix(in srgb, var(--color-primary-dark), transparent 88%);
+  --table-row-selected: color-mix(in srgb, var(--color-primary-dark), transparent 82%);
+
+  /* Progress */
+  --progress-background: color-mix(in srgb, #6366f1, transparent 84%);
+  --progress-fill: linear-gradient(90deg, #818cf8 0%, #22d3ee 100%);
+
+  /* Scrollbar */
+  --scrollbar-track: color-mix(in srgb, #6366f1, transparent 92%);
+  --scrollbar-thumb: color-mix(in srgb, #6366f1, transparent 65%);
+
+  /* Shadows */
+  --shadow-color: color-mix(in srgb, var(--color-slate-900), transparent 55%);
+  --shadow-color-soft: color-mix(in srgb, var(--color-slate-900), transparent 65%);
+  --shadow: 0 26px 60px var(--shadow-color);
+  --shadow-soft: 0 18px 42px var(--shadow-color-soft);
+
+  /* Component Semantics */
+  --bg-control-hover-strong: color-mix(in srgb, var(--current-primary), transparent 88%);
+  --bg-tab-active-start: color-mix(in srgb, var(--current-primary), transparent 80%);
+  --bg-tab-active-end: color-mix(in srgb, var(--current-primary), transparent 70%);
+  --border-tab-active: color-mix(in srgb, var(--current-primary), transparent 55%);
+
+  --shadow-btn-primary: color-mix(in srgb, var(--current-primary), transparent 75%);
+  --pulse-color-start: color-mix(in srgb, var(--current-primary), transparent 55%);
+
+  --shadow-input-inner: color-mix(in srgb, var(--color-slate-900), transparent 95%);
+  --border-focus: color-mix(in srgb, var(--current-primary), transparent 40%);
+  --ring-focus: color-mix(in srgb, var(--current-primary), transparent 82%);
+
+  --bg-danger-subtle: color-mix(in srgb, var(--color-danger), transparent 86%);
+  --bg-danger-subtle-hover: color-mix(in srgb, var(--color-danger), transparent 78%);
+
+  --bg-footer: color-mix(in srgb, var(--color-slate-900), transparent 90%);
+  --text-footer-muted: color-mix(in srgb, white, transparent 40%);
+
+  --shadow-step-card: color-mix(in srgb, var(--color-slate-900), transparent 94%);
+  --pulse-color-end: color-mix(in srgb, var(--current-primary), transparent 100%);
+  --shadow-success-soft: color-mix(in srgb, var(--color-success), transparent 75%);
 
   background: var(--app-background);
   color: var(--current-text);
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-/* Dark mode */
-body[data-theme="dark"] {
-  --color-primary-rgb: 129, 140, 248;
-  --color-background: var(--color-slate-900);
-  --color-background-accent: var(--color-slate-950);
-  --current-primary: var(--color-primary-dark);
-  --current-primary-strong: var(--color-primary-strong-dark);
-  --current-secondary: var(--color-secondary-dark);
-  --current-text: var(--color-text-dark);
-  --current-muted: var(--color-muted-dark);
-  --current-surface: rgba(15, 23, 42, 0.92);
-  --current-surface-alt: rgba(15, 23, 42, 0.88);
-  --current-border: rgba(129, 140, 248, 0.2);
-  --current-border-strong: rgba(129, 140, 248, 0.35);
-  --current-input-bg: rgba(15, 23, 42, 0.92);
-  --current-input-border: rgba(129, 140, 248, 0.35);
-  --current-control-bg: rgba(148, 163, 184, 0.12);
-  --current-control-hover: rgba(129, 140, 248, 0.22);
-  --current-chip-border: rgba(99, 102, 241, 0.3);
-  --hero-gradient: linear-gradient(140deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 60%, rgba(79, 70, 229, 0.85) 100%);
-  --hero-overlay: radial-gradient(circle at top right, rgba(129, 140, 248, 0.25), transparent 60%);
-  --app-background: radial-gradient(circle at top, var(--color-slate-800) 0%, var(--color-slate-950) 45%, var(--color-slate-900) 100%);
-  --table-header-bg: rgba(129, 140, 248, 0.12);
-  --table-row-hover: rgba(129, 140, 248, 0.12);
-  --table-row-selected: rgba(129, 140, 248, 0.18);
-  --progress-background: rgba(99, 102, 241, 0.16);
-  --progress-fill: linear-gradient(90deg, #818cf8 0%, #22d3ee 100%);
-  --scrollbar-track: rgba(99, 102, 241, 0.08);
-  --scrollbar-thumb: rgba(99, 102, 241, 0.35);
-  --shadow: 0 26px 60px rgba(var(--color-slate-900-rgb), 0.45);
-  --shadow-soft: 0 18px 42px rgba(var(--color-slate-900-rgb), 0.35);
+/* Light mode (Override) */
+body[data-theme="light"] {
+  --color-background: var(--color-indigo-50);
+  --color-background-accent: var(--color-slate-50);
+
+  --current-primary: var(--color-primary);
+  --current-primary-strong: var(--color-primary-strong);
+  --current-secondary: var(--color-secondary);
+
+  --current-text: var(--color-text);
+  --current-muted: var(--color-muted);
+
+  --current-surface: color-mix(in srgb, #ffffff, transparent 8%);
+  --current-surface-alt: color-mix(in srgb, #ffffff, transparent 18%);
+
+  --current-border: color-mix(in srgb, var(--color-primary), transparent 82%);
+  --current-border-strong: color-mix(in srgb, var(--color-primary), transparent 65%);
+
+  --current-input-bg: color-mix(in srgb, #ffffff, transparent 4%);
+  --current-input-border: color-mix(in srgb, var(--color-muted-light), transparent 65%);
+
+  --current-control-bg: color-mix(in srgb, var(--color-slate-900), transparent 96%);
+  --current-control-hover: color-mix(in srgb, var(--color-primary), transparent 88%);
+
+  --current-chip-border: color-mix(in srgb, var(--color-primary), transparent 84%);
+
+  /* Hero */
+  --hero-gradient-start: color-mix(in srgb, var(--color-primary), transparent 8%);
+  --hero-gradient-end: color-mix(in srgb, var(--color-secondary), transparent 15%);
+  --hero-gradient: linear-gradient(140deg, var(--hero-gradient-start) 0%, var(--hero-gradient-end) 100%);
+  --hero-overlay-color: color-mix(in srgb, #ffffff, transparent 60%);
+  --hero-overlay: radial-gradient(circle at top right, var(--hero-overlay-color), transparent 45%);
+
+  --app-background: radial-gradient(circle at top, var(--color-indigo-100) 0%, #eef2ff 45%, #f9fafb 100%);
+
+  /* Table */
+  --table-header-bg: color-mix(in srgb, var(--color-primary), transparent 92%);
+  --table-row-hover: color-mix(in srgb, var(--color-primary), transparent 92%);
+  --table-row-selected: color-mix(in srgb, var(--color-primary), transparent 86%);
+
+  /* Progress */
+  --progress-background: color-mix(in srgb, var(--color-primary), transparent 88%);
+  --progress-fill: linear-gradient(90deg, var(--current-primary) 0%, var(--current-secondary) 100%);
+
+  /* Scrollbar */
+  --scrollbar-track: color-mix(in srgb, var(--color-primary), transparent 92%);
+  --scrollbar-thumb: color-mix(in srgb, var(--color-primary), transparent 65%);
+
+  /* Shadows */
+  --shadow-color: color-mix(in srgb, var(--color-slate-900), transparent 88%);
+  --shadow-color-soft: color-mix(in srgb, var(--color-slate-900), transparent 92%);
+  --shadow: 0 18px 50px var(--shadow-color);
+  --shadow-soft: 0 12px 30px var(--shadow-color-soft);
+
+  /* Component Semantics Overrides */
+  --text-footer-muted: color-mix(in srgb, var(--color-slate-900), transparent 30%);
+
+  --shadow-step-card: color-mix(in srgb, var(--color-slate-900), transparent 94%);
 }
 
 /* Scrollbar styling for WebKit browsers */
@@ -246,21 +313,21 @@ h3 {
 }
 
 .tab-button:hover {
-  background: rgba(var(--color-primary-rgb), 0.12);
+  background: var(--bg-control-hover-strong);
   color: var(--current-primary);
 }
 
 .tab-button.active {
-  background: linear-gradient(140deg, rgba(var(--color-primary-rgb), 0.2) 0%, rgba(var(--color-primary-rgb), 0.3) 100%);
+  background: linear-gradient(140deg, var(--bg-tab-active-start) 0%, var(--bg-tab-active-end) 100%);
   color: var(--current-primary);
-  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.45);
+  box-shadow: inset 0 0 0 1px var(--border-tab-active);
 }
 
 /* Step Cards */
 .step-card {
   background: var(--current-surface-alt);
   border: 1px solid var(--current-border);
-  box-shadow: 0 10px 30px rgba(var(--color-slate-900-rgb), 0.06);
+  box-shadow: 0 10px 30px var(--shadow-step-card);
   @apply rounded-xl p-5 md:p-6 flex flex-col gap-4 max-[480px]:p-4 max-[480px]:pb-5;
 }
 
@@ -269,7 +336,7 @@ h3 {
 }
 
 .step-number {
-  background: rgba(var(--color-primary-rgb), 0.12);
+  background: var(--bg-control-hover-strong);
   color: var(--current-primary);
   @apply w-10 h-10 rounded-xl font-semibold text-base flex items-center justify-center shrink-0 max-[640px]:shrink-0 max-[480px]:w-8 max-[480px]:h-8 max-[480px]:text-sm;
 }
@@ -288,7 +355,7 @@ h3 {
 
 .btn:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 10px 25px rgba(var(--color-primary-rgb), 0.25);
+  box-shadow: 0 10px 25px var(--shadow-btn-primary);
 }
 
 .btn:disabled {
@@ -328,15 +395,15 @@ h3 {
 
 @keyframes button-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.45);
+    box-shadow: 0 0 0 0 var(--pulse-color-start);
   }
 
   70% {
-    box-shadow: 0 0 0 12px rgba(var(--color-primary-rgb), 0);
+    box-shadow: 0 0 0 12px var(--pulse-color-end);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0);
+    box-shadow: 0 0 0 0 var(--pulse-color-end);
   }
 }
 
@@ -366,7 +433,7 @@ input[type="file"] {
   background: var(--current-input-bg);
   border: 1px solid var(--current-input-border);
   color: var(--current-text);
-  box-shadow: inset 0 1px 3px rgba(var(--color-slate-900-rgb), 0.05);
+  box-shadow: inset 0 1px 3px var(--shadow-input-inner);
   @apply w-full rounded-lg py-3 px-4 text-base transition-all duration-200;
 }
 
@@ -375,8 +442,8 @@ select:focus,
 input[type="text"]:focus,
 input[type="file"]:focus {
   @apply outline-none;
-  border-color: rgba(var(--color-primary-rgb), 0.6);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.18);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--ring-focus);
 }
 
 input[type="file"] {
@@ -554,7 +621,7 @@ input[type="file"]::file-selector-button:hover {
 
 .multi-progress-download:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 10px 25px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 10px 25px var(--shadow-success-soft);
   /* success shadow */
 }
 
@@ -569,12 +636,12 @@ input[type="file"]::file-selector-button:hover {
 
 .abort-button {
   @apply absolute top-3.5 right-3.5 w-7 h-7 rounded-lg flex items-center justify-center border-none text-base cursor-pointer transition-all duration-200;
-  background: rgba(239, 68, 68, 0.14);
+  background: var(--bg-danger-subtle);
   color: var(--color-danger-darker);
 }
 
 .abort-button:hover {
-  background: rgba(239, 68, 68, 0.22);
+  background: var(--bg-danger-subtle-hover);
   @apply scale-105;
 }
 
@@ -721,7 +788,7 @@ input[type="file"]::file-selector-button:hover {
 /* Footer */
 .footer {
   @apply py-10 mt-auto;
-  background: rgba(var(--color-slate-900-rgb), 0.1);
+  background: var(--bg-footer);
 }
 
 .footer-inner {
@@ -729,8 +796,7 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .footer p {
-  color: rgba(var(--color-slate-900-rgb), 0.7);
-  @apply dark:text-white/60;
+  color: var(--text-footer-muted);
 }
 
 .footer-note {
