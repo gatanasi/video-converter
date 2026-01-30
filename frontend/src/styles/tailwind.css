@@ -436,6 +436,10 @@ h3 {
 }
 
 /* Form Elements */
+.conversion-form {
+  @apply flex flex-col gap-2;
+}
+
 .form-group {
   @apply flex flex-col gap-2;
 }
