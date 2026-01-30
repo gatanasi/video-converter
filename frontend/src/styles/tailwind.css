@@ -141,6 +141,17 @@ body {
   --pulse-color-end: color-mix(in srgb, var(--current-primary), transparent 100%);
   --shadow-success-soft: color-mix(in srgb, var(--color-success), transparent 75%);
 
+  /* Message Colors */
+  --message-info-bg: color-mix(in srgb, var(--color-info-dark), transparent 80%);
+  --message-info-text: var(--color-info-dark);
+  --message-success-bg: color-mix(in srgb, var(--color-success-dark), transparent 80%);
+  --message-success-text: var(--color-success-dark);
+  --message-warning-bg: color-mix(in srgb, var(--color-warning-dark), transparent 80%);
+  --message-warning-text: var(--color-warning-dark);
+  --message-error-bg: color-mix(in srgb, var(--color-danger-dark), transparent 80%);
+  --message-error-text: var(--color-danger-dark);
+
+
   background: var(--app-background);
   color: var(--current-text);
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
@@ -204,6 +215,16 @@ body[data-theme="light"] {
   --text-footer-muted: color-mix(in srgb, var(--color-slate-900), transparent 30%);
 
   --shadow-step-card: color-mix(in srgb, var(--color-slate-900), transparent 94%);
+
+  /* Message Colors (Light Mode) */
+  --message-info-bg: color-mix(in srgb, var(--color-info), transparent 85%);
+  --message-info-text: var(--color-info-dark);
+  --message-success-bg: color-mix(in srgb, var(--color-success), transparent 80%);
+  --message-success-text: var(--color-success-dark);
+  --message-warning-bg: color-mix(in srgb, var(--color-warning), transparent 80%);
+  --message-warning-text: var(--color-warning-dark);
+  --message-error-bg: color-mix(in srgb, var(--color-danger), transparent 80%);
+  --message-error-text: var(--color-danger-dark);
 }
 
 /* Scrollbar styling for WebKit browsers */
@@ -382,7 +403,9 @@ h3 {
 }
 
 .btn.ghost {
-  @apply bg-white/20 text-white border border-white/35 dark:bg-[var(--table-header-bg)] dark:text-[var(--current-text)] dark:border-[var(--current-border-strong)];
+  background-color: var(--table-header-bg);
+  color: var(--current-text);
+  border: 1px solid var(--current-border-strong);
 }
 
 .btn.small {
@@ -541,19 +564,23 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .message.info {
-  @apply bg-cyan-500/15 text-teal-700 dark:bg-cyan-500/20 dark:text-cyan-300;
+  background-color: var(--message-info-bg);
+  color: var(--message-info-text);
 }
 
 .message.success {
-  @apply bg-green-500/20 text-green-800 dark:bg-green-500/25 dark:text-green-300;
+  background-color: var(--message-success-bg);
+  color: var(--message-success-text);
 }
 
 .message.warning {
-  @apply bg-amber-500/20 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300;
+  background-color: var(--message-warning-bg);
+  color: var(--message-warning-text);
 }
 
 .message.error {
-  @apply bg-red-400/20 text-red-700 dark:bg-red-400/25 dark:text-red-300;
+  background-color: var(--message-error-bg);
+  color: var(--message-error-text);
 }
 
 /* Active Conversions Section */
