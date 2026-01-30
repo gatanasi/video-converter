@@ -314,10 +314,6 @@ body[data-theme="dark"] .btn.ghost {
   @apply py-2 px-3 text-sm;
 }
 
-.btn.primary {
-  background: linear-gradient(145deg, var(--current-primary) 0%, var(--current-primary-strong) 100%);
-}
-
 .button-pulse {
   animation: button-pulse 1.4s infinite;
 }
@@ -368,7 +364,8 @@ input[type="file"] {
 
 .form-control:focus,
 select:focus,
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="file"]:focus {
   @apply outline-none;
   border-color: rgba(79, 70, 229, 0.6);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
