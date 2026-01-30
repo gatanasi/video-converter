@@ -280,11 +280,8 @@ h3 {
 }
 
 .btn.secondary {
-  @apply bg-gray-900/10 text-[var(--current-text)];
-}
-
-body[data-theme="dark"] .btn.secondary {
-  background: rgba(129, 140, 248, 0.12);
+  background: var(--table-header-bg);
+  @apply text-[var(--current-text)];
 }
 
 .btn.success {
@@ -305,9 +302,9 @@ body[data-theme="dark"] .btn.secondary {
 }
 
 body[data-theme="dark"] .btn.ghost {
-  background: rgba(129, 140, 248, 0.12);
+  background: var(--table-header-bg);
   color: var(--current-text);
-  border-color: rgba(129, 140, 248, 0.3);
+  border-color: var(--current-border-strong);
 }
 
 .btn.small {
