@@ -40,6 +40,7 @@
   --color-indigo-100: #c7d2fe;
   --color-indigo-50: #eef2ff;
   --color-slate-50: #f9fafb;
+  --color-text-on-accent: #1f2937;
 
   /* Font Family */
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -395,7 +396,7 @@ h3 {
 
 .btn.warning {
   background: linear-gradient(145deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
-  @apply text-gray-800;
+  color: var(--color-text-on-accent);
 }
 
 .btn.danger {
