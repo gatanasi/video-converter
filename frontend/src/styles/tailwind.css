@@ -315,13 +315,7 @@ h3 {
 }
 
 .btn.ghost {
-  @apply bg-white/20 text-white border border-white/35;
-}
-
-body[data-theme="dark"] .btn.ghost {
-  background: var(--table-header-bg);
-  color: var(--current-text);
-  border-color: var(--current-border-strong);
+  @apply bg-white/20 text-white border border-white/35 dark:bg-[var(--table-header-bg)] dark:text-[var(--current-text)] dark:border-[var(--current-border-strong)];
 }
 
 .btn.small {
@@ -480,35 +474,19 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .message.info {
-  @apply bg-cyan-500/15 text-teal-700;
-}
-
-body[data-theme="dark"] .message.info {
-  @apply bg-cyan-500/20 text-cyan-300;
+  @apply bg-cyan-500/15 text-teal-700 dark:bg-cyan-500/20 dark:text-cyan-300;
 }
 
 .message.success {
-  @apply bg-green-500/20 text-green-800;
-}
-
-body[data-theme="dark"] .message.success {
-  @apply bg-green-500/25 text-green-300;
+  @apply bg-green-500/20 text-green-800 dark:bg-green-500/25 dark:text-green-300;
 }
 
 .message.warning {
-  @apply bg-amber-500/20 text-amber-700;
-}
-
-body[data-theme="dark"] .message.warning {
-  @apply bg-amber-500/25 text-amber-300;
+  @apply bg-amber-500/20 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300;
 }
 
 .message.error {
-  @apply bg-red-400/20 text-red-700;
-}
-
-body[data-theme="dark"] .message.error {
-  @apply bg-red-400/25 text-red-300;
+  @apply bg-red-400/20 text-red-700 dark:bg-red-400/25 dark:text-red-300;
 }
 
 /* Active Conversions Section */
@@ -752,10 +730,7 @@ body[data-theme="dark"] .message.error {
 
 .footer p {
   color: rgba(var(--color-slate-900-rgb), 0.7);
-}
-
-body[data-theme="dark"] .footer p {
-  color: rgba(255, 255, 255, 0.6);
+  @apply dark:text-white/60;
 }
 
 .footer-note {
