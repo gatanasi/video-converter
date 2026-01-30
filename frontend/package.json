@@ -8,7 +8,9 @@
     "build:css": "npx @tailwindcss/cli -i src/styles/tailwind.css -o dist/bundle.css --minify",
     "build:js": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --sourcemap --external:*.css",
     "build": "rm -rf dist && mkdir dist && cp public/index.html dist/index.html && cp public/favicon.ico dist/favicon.ico && pnpm run build:css && pnpm run build:js",
-    "dev": "pnpm run build && echo 'Build complete. Serve from dist/ directory.'"
+    "watch:css": "npx @tailwindcss/cli -i src/styles/tailwind.css -o dist/bundle.css --watch",
+    "watch:js": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --sourcemap --external:*.css --watch",
+    "dev": "rm -rf dist && mkdir dist && cp public/index.html dist/index.html && cp public/favicon.ico dist/favicon.ico && pnpm watch:css & pnpm watch:js"
   },
   "keywords": [],
   "author": "",
