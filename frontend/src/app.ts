@@ -1,8 +1,7 @@
 /**
- * Google Drive Video Converter - Main Application Entry Point
+ * Video Converter - Main Application Entry Point
  */
-// CSS is now processed separately via Tailwind CLI - see package.json build:css
-// Removed configManager import as it's unused
+// CSS is processed separately via Tailwind CLI - see package.json build:css
 import apiService from './api/apiService.js';
 // Import components from their individual files
 import { ActiveConversionsComponent } from './components/activeConversionsComponent.js';
@@ -52,7 +51,7 @@ class App {
 
     // Theme toggle
     private themeToggleButton: HTMLButtonElement | null;
-    private currentTheme: 'light' | 'dark' = 'light';
+    private currentTheme: 'light' | 'dark' = 'dark';
 
     // Component Instances
     private activeConversionsComponent!: ActiveConversionsComponent;
