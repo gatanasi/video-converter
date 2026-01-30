@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\"",
+    "prebuild": "rm -rf dist && mkdir dist && cp public/index.html dist/index.html && cp public/favicon.ico dist/favicon.ico",
     "build:css": "npx @tailwindcss/cli -i src/styles/tailwind.css -o dist/bundle.css --minify",
     "build:js": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --sourcemap --external:*.css",
-    "build": "rm -rf dist && mkdir dist && cp public/index.html dist/index.html && cp public/favicon.ico dist/favicon.ico && pnpm run build:css && pnpm run build:js",
+    "build": "pnpm run prebuild && pnpm run build:css && pnpm run build:js",
     "watch:css": "npx @tailwindcss/cli -i src/styles/tailwind.css -o dist/bundle.css --watch",
     "watch:js": "esbuild src/app.ts --bundle --outfile=dist/bundle.js --sourcemap --external:*.css --watch",
-    "dev": "rm -rf dist && mkdir dist && cp public/index.html dist/index.html && cp public/favicon.ico dist/favicon.ico && concurrently \"pnpm:watch:css\" \"pnpm:watch:js\""
+    "dev": "pnpm run prebuild && concurrently \"pnpm:watch:css\" \"pnpm:watch:js\""
   },
   "keywords": [],
   "author": "",

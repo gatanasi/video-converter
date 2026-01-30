@@ -116,10 +116,6 @@ body[data-theme="dark"] {
   --scrollbar-thumb: rgba(99, 102, 241, 0.35);
   --shadow: 0 26px 60px rgba(15, 23, 42, 0.45);
   --shadow-soft: 0 18px 42px rgba(15, 23, 42, 0.35);
-
-  background: var(--app-background);
-  color: var(--current-text);
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 /* Scrollbar styling for WebKit browsers */
@@ -466,16 +462,32 @@ input[type="file"]::file-selector-button:hover {
   @apply bg-cyan-500/15 text-teal-700;
 }
 
+body[data-theme="dark"] .message.info {
+  @apply bg-cyan-500/20 text-cyan-300;
+}
+
 .message.success {
   @apply bg-green-500/20 text-green-800;
+}
+
+body[data-theme="dark"] .message.success {
+  @apply bg-green-500/25 text-green-300;
 }
 
 .message.warning {
   @apply bg-amber-500/20 text-amber-700;
 }
 
+body[data-theme="dark"] .message.warning {
+  @apply bg-amber-500/25 text-amber-300;
+}
+
 .message.error {
   @apply bg-red-400/20 text-red-700;
+}
+
+body[data-theme="dark"] .message.error {
+  @apply bg-red-400/25 text-red-300;
 }
 
 /* Active Conversions Section */
