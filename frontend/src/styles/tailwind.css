@@ -845,5 +845,5 @@ input[type="file"]::file-selector-button:hover {
 
 .note {
   color: var(--current-muted);
-  @apply text-sm;
+  @apply text-sm mt-3;
 }
