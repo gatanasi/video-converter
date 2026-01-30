@@ -85,8 +85,10 @@ export class FileListComponent {
             <td class="file-size">${sizeFormatted}</td>
             <td class="file-date">${formattedDate}</td>
             <td class="file-actions">
-                <a href="${file.url}" class="btn small success" title="Download file">↓</a>
-                <button class="btn small danger delete" title="Delete file">X</button>
+                <div class="file-actions-wrapper">
+                    <a href="${file.url}" class="btn small success" title="Download file">↓</a>
+                    <button class="btn small danger delete" title="Delete file">X</button>
+                </div>
             </td>
         `;
 

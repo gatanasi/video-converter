@@ -49,7 +49,7 @@
                     <div class="source-selection-section step-card">
                         <div class="step-header">
                             <span class="step-number">1</span>
-                            <div>
+                            <div class="flex flex-col gap-1">
                                 <h2>Choose Video Source</h2>
                                 <p>Select where your videos live so we can tailor the next steps.</p>
                             </div>
@@ -69,7 +69,7 @@
                     <div id="upload-source-section" class="upload-section step-card">
                         <div class="step-header">
                             <span class="step-number">2</span>
-                            <div>
+                            <div class="flex flex-col gap-1">
                                 <h2>Upload Video File</h2>
                                 <p>Pick a local video and start the conversion instantly.</p>
                             </div>
@@ -96,17 +96,19 @@
                     <div id="drive-source-section" class="folder-input-section step-card hidden">
                         <div class="step-header">
                             <span class="step-number">2</span>
-                            <div>
+                            <div class="flex flex-col gap-1">
                                 <h2>Google Drive Video Source</h2>
                                 <p>Paste a shared folder link or ID to fetch your Drive videos.</p>
                             </div>
                         </div>
                         <div class="folder-input">
                             <label for="folder-id">Google Drive Folder ID or URL</label>
-                            <div class="input-group">
+                            <div class="flex flex-col gap-3">
                                 <input type="text" id="folder-id" placeholder="Enter folder ID or complete Google Drive URL">
-                                <button id="load-videos-btn" class="btn">Load Videos</button>
-                                <button id="reset-folder-id-btn" class="btn secondary small" title="Clear stored folder ID and input">Reset</button>
+                                <div class="flex gap-3">
+                                    <button id="load-videos-btn" class="btn flex-1">Load Videos</button>
+                                    <button id="reset-folder-id-btn" class="btn secondary flex-1" title="Clear stored folder ID and input">Reset</button>
+                                </div>
                             </div>
                             <p class="note">Make sure the folder is shared with "Anyone with the link can view".</p>
                         </div>
@@ -115,7 +117,7 @@
                     <div id="conversion-options-section" class="conversion-form-section step-card">
                         <div class="step-header">
                             <span class="step-number">3</span>
-                            <div>
+                            <div class="flex flex-col gap-1">
                                 <h2>Conversion Options</h2>
                                 <p>Choose your target format and optional enhancements.</p>
                             </div>
@@ -126,7 +128,7 @@
                     <div id="drive-video-list-section" class="video-list-section step-card">
                         <div class="step-header">
                             <span class="step-number">4</span>
-                            <div>
+                            <div class="flex flex-col gap-1">
                                 <h2>Select Drive Videos</h2>
                                 <p>Highlight one or many videos to launch simultaneous conversions.</p>
                             </div>
