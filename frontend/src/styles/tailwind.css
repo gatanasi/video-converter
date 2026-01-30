@@ -13,18 +13,38 @@
   --radius-md: 12px;
   --radius-lg: 16px;
 
-  /* Custom Colors */
+  /* Primary Colors */
   --color-primary: #4f46e5;
   --color-primary-dark: #818cf8;
   --color-primary-strong: #4338ca;
   --color-primary-strong-dark: #6366f1;
   --color-secondary: #06b6d4;
   --color-secondary-dark: #22d3ee;
+
+  /* Text Colors */
   --color-text: #0f172a;
   --color-text-dark: #e2e8f0;
   --color-muted: #475569;
   --color-muted-dark: #cbd5f5;
   --color-muted-light: #94a3b8;
+
+  /* Semantic Colors */
+  --color-success: #16a34a;
+  --color-success-dark: #15803d;
+  --color-success-light: #22c55e;
+  --color-warning: #f59e0b;
+  --color-warning-dark: #d97706;
+  --color-danger: #ef4444;
+  --color-danger-dark: #dc2626;
+  --color-danger-darker: #b91c1c;
+  --color-info: #0ea5e9;
+  --color-info-dark: #0284c7;
+
+  /* Neutral Slate Scale */
+  --color-slate-900: #0f172a;
+  --color-slate-950: #111c33;
+  --color-slate-800: #1e293b;
+  --color-indigo-100: #c7d2fe;
 
   /* Font Family */
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -69,7 +89,7 @@ body {
   --current-chip-border: rgba(79, 70, 229, 0.16);
   --hero-gradient: linear-gradient(140deg, rgba(79, 70, 229, 0.92) 0%, rgba(6, 182, 212, 0.85) 100%);
   --hero-overlay: radial-gradient(circle at top right, rgba(255, 255, 255, 0.4), transparent 55%);
-  --app-background: radial-gradient(circle at top, #c7d2fe 0%, #eef2ff 45%, #f9fafb 100%);
+  --app-background: radial-gradient(circle at top, var(--color-indigo-100) 0%, #eef2ff 45%, #f9fafb 100%);
   --table-header-bg: rgba(79, 70, 229, 0.08);
   --table-row-hover: rgba(79, 70, 229, 0.08);
   --table-row-selected: rgba(79, 70, 229, 0.14);
@@ -77,8 +97,9 @@ body {
   --progress-fill: linear-gradient(90deg, var(--current-primary) 0%, var(--current-secondary) 100%);
   --scrollbar-track: rgba(79, 70, 229, 0.08);
   --scrollbar-thumb: rgba(79, 70, 229, 0.35);
-  --shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
-  --shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --shadow: 0 18px 50px rgba(var(--color-slate-900-rgb), 0.12);
+  --shadow-soft: 0 12px 30px rgba(var(--color-slate-900-rgb), 0.08);
+  --color-slate-900-rgb: 15, 23, 42;
 
   background: var(--app-background);
   color: var(--current-text);
@@ -88,8 +109,8 @@ body {
 /* Dark mode */
 body[data-theme="dark"] {
   --color-primary-rgb: 129, 140, 248;
-  --color-background: #0f172a;
-  --color-background-accent: #111c33;
+  --color-background: var(--color-slate-900);
+  --color-background-accent: var(--color-slate-950);
   --current-primary: var(--color-primary-dark);
   --current-primary-strong: var(--color-primary-strong-dark);
   --current-secondary: var(--color-secondary-dark);
@@ -106,7 +127,7 @@ body[data-theme="dark"] {
   --current-chip-border: rgba(99, 102, 241, 0.3);
   --hero-gradient: linear-gradient(140deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 60%, rgba(79, 70, 229, 0.85) 100%);
   --hero-overlay: radial-gradient(circle at top right, rgba(129, 140, 248, 0.25), transparent 60%);
-  --app-background: radial-gradient(circle at top, #1e293b 0%, #111c33 45%, #0f172a 100%);
+  --app-background: radial-gradient(circle at top, var(--color-slate-800) 0%, var(--color-slate-950) 45%, var(--color-slate-900) 100%);
   --table-header-bg: rgba(129, 140, 248, 0.12);
   --table-row-hover: rgba(129, 140, 248, 0.12);
   --table-row-selected: rgba(129, 140, 248, 0.18);
@@ -114,8 +135,8 @@ body[data-theme="dark"] {
   --progress-fill: linear-gradient(90deg, #818cf8 0%, #22d3ee 100%);
   --scrollbar-track: rgba(99, 102, 241, 0.08);
   --scrollbar-thumb: rgba(99, 102, 241, 0.35);
-  --shadow: 0 26px 60px rgba(15, 23, 42, 0.45);
-  --shadow-soft: 0 18px 42px rgba(15, 23, 42, 0.35);
+  --shadow: 0 26px 60px rgba(var(--color-slate-900-rgb), 0.45);
+  --shadow-soft: 0 18px 42px rgba(var(--color-slate-900-rgb), 0.35);
 }
 
 /* Scrollbar styling for WebKit browsers */
@@ -239,7 +260,7 @@ h3 {
 .step-card {
   background: var(--current-surface-alt);
   border: 1px solid var(--current-border);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 30px rgba(var(--color-slate-900-rgb), 0.06);
   @apply rounded-xl p-5 md:p-6 flex flex-col gap-4;
 }
 
@@ -267,7 +288,7 @@ h3 {
 
 .btn:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 10px 25px rgba(var(--color-primary-rgb), 0.25);
 }
 
 .btn:disabled {
@@ -281,16 +302,16 @@ h3 {
 }
 
 .btn.success {
-  background: linear-gradient(145deg, #16a34a 0%, #15803d 100%);
+  background: linear-gradient(145deg, var(--color-success) 0%, var(--color-success-dark) 100%);
 }
 
 .btn.warning {
-  background: linear-gradient(145deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(145deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
   @apply text-gray-800;
 }
 
 .btn.danger {
-  background: linear-gradient(145deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(145deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
 }
 
 .btn.ghost {
@@ -313,15 +334,15 @@ body[data-theme="dark"] .btn.ghost {
 
 @keyframes button-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.45);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.45);
   }
 
   70% {
-    box-shadow: 0 0 0 12px rgba(79, 70, 229, 0);
+    box-shadow: 0 0 0 12px rgba(var(--color-primary-rgb), 0);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0);
   }
 }
 
@@ -351,7 +372,7 @@ input[type="file"] {
   background: var(--current-input-bg);
   border: 1px solid var(--current-input-border);
   color: var(--current-text);
-  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.05);
+  box-shadow: inset 0 1px 3px rgba(var(--color-slate-900-rgb), 0.05);
   @apply w-full rounded-lg py-3 px-4 text-base transition-all duration-200;
 }
 
@@ -360,8 +381,8 @@ select:focus,
 input[type="text"]:focus,
 input[type="file"]:focus {
   @apply outline-none;
-  border-color: rgba(79, 70, 229, 0.6);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+  border-color: rgba(var(--color-primary-rgb), 0.6);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.18);
 }
 
 input[type="file"] {
@@ -549,32 +570,33 @@ body[data-theme="dark"] .message.error {
 }
 
 .multi-progress-download {
-  background: linear-gradient(140deg, #16a34a 0%, #15803d 100%);
+  background: linear-gradient(140deg, var(--color-success) 0%, var(--color-success-dark) 100%);
   @apply inline-flex items-center gap-1 py-2 px-4 mt-3 text-white rounded-lg font-semibold no-underline transition-all duration-150;
 }
 
 .multi-progress-download:hover {
   @apply -translate-y-0.5;
   box-shadow: 0 10px 25px rgba(22, 163, 74, 0.25);
+  /* success shadow */
 }
 
 .multi-progress-item.complete .multi-progress-bar {
-  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-light) 100%);
 }
 
 .multi-progress-item.error .multi-progress-bar,
 .multi-progress-item.aborted .multi-progress-bar {
-  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(90deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
 }
 
 .abort-button {
   @apply absolute top-3.5 right-3.5 w-7 h-7 rounded-lg flex items-center justify-center border-none text-base cursor-pointer transition-all duration-200;
   background: rgba(239, 68, 68, 0.14);
-  color: #b91c1c;
+  color: var(--color-danger-darker);
 }
 
 .abort-button:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.22);
   @apply scale-105;
 }
 
@@ -656,11 +678,11 @@ body[data-theme="dark"] .message.error {
 }
 
 .file-table a.btn {
-  background: linear-gradient(145deg, #0ea5e9 0%, #0284c7 100%);
+  background: linear-gradient(145deg, var(--color-info) 0%, var(--color-info-dark) 100%);
 }
 
 .file-table button.delete {
-  background: linear-gradient(145deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(145deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
 }
 
 /* Selection Controls */
@@ -700,7 +722,7 @@ body[data-theme="dark"] .message.error {
 /* Footer */
 .footer {
   @apply py-10 mt-auto;
-  background: rgba(15, 23, 42, 0.1);
+  background: rgba(var(--color-slate-900-rgb), 0.1);
 }
 
 .footer-inner {
@@ -708,7 +730,7 @@ body[data-theme="dark"] .message.error {
 }
 
 .footer p {
-  color: rgba(15, 23, 42, 0.7);
+  color: rgba(var(--color-slate-900-rgb), 0.7);
 }
 
 body[data-theme="dark"] .footer p {
