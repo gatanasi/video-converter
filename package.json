@@ -2,7 +2,7 @@
   "name": "video-converter-root",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.29.3",
+  "packageManager": "pnpm@10.30.0",
   "devDependencies": {
     "@commitlint/cli": "20.4.1",
     "@commitlint/config-conventional": "20.4.1",
