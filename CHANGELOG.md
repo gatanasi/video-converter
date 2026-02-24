@@ -1,3 +1,15 @@
+# [2.5.0](https://github.com/gatanasi/video-converter/compare/v2.4.2...v2.5.0) (2026-02-24)
+
+
+### Bug Fixes
+
+* enforce file download behavior for iOS Safari ([#168](https://github.com/gatanasi/video-converter/issues/168)) ([dc2383c](https://github.com/gatanasi/video-converter/commit/dc2383ca0aceb5eadfe9eb738ec949c4aaa98580))
+
+
+### Features
+
+* **frontend:** add URL hash routing for tabs ([#165](https://github.com/gatanasi/video-converter/issues/165)) ([9d0c8fc](https://github.com/gatanasi/video-converter/commit/9d0c8fc390578c1d8c7f3919b66d978a455b9199))
+
 # [2.4.0](https://github.com/gatanasi/video-converter/compare/v2.3.7...v2.4.0) (2026-01-30)
 
 
