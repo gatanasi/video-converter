@@ -57,9 +57,9 @@ export type MessageType = 'info' | 'success' | 'warning' | 'error';
  * @param {Number} [timeout=5000] - Auto-hide delay in ms for 'info' and 'success'. 0 to disable.
  */
 export function showMessage(
-    container: HTMLElement, 
-    text: string, 
-    type: MessageType = 'info', 
+    container: HTMLElement,
+    text: string,
+    type: MessageType = 'info',
     timeout: number = 5000
 ): void {
     clearMessages(container);
@@ -132,4 +132,18 @@ export function createProgressItem(label: string): HTMLDivElement {
     item.appendChild(barContainer);
 
     return item;
+}
+
+/**
+ * Safely escape HTML characters to prevent XSS.
+ * @param {String} unsafe - The unsafe string.
+ * @returns {String} The escaped string.
+ */
+export function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
