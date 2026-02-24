@@ -387,8 +387,7 @@ export class ActiveConversionsComponent {
             downloadLink.className = 'multi-progress-download';
             downloadLink.href = status.downloadUrl || '#';
             downloadLink.textContent = 'Download';
-            const lastDotIndex = conversion.fileName.lastIndexOf('.');
-            const baseName = lastDotIndex === -1 ? conversion.fileName : conversion.fileName.substring(0, lastDotIndex);
+            const baseName = conversion.fileName.substring(0, conversion.fileName.lastIndexOf('.')) || conversion.fileName;
             downloadLink.setAttribute('download', status.fileName || `${baseName}.${conversion.format}`);
             // Append download link only if not already present
             if (!conversion.element.querySelector('.multi-progress-download')) {
