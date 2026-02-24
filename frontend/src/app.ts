@@ -64,7 +64,7 @@ class App {
     private selectedUploadFile: File | null;
     private currentVideoSource: 'drive' | 'upload';
     private currentTab: string | null = null;
-    private themeAbortController: AbortController = new AbortController();
+    private appAbortController: AbortController = new AbortController();
 
     constructor() {
         // DOM Element References - Use type assertions for non-null elements
@@ -113,7 +113,11 @@ class App {
         this.initComponents();
         this.setupEventListeners();
         this.loadConfigAndInitialData();
-        this.activateTab('convert'); // Start on the convert tab
+
+        // Initialize tab based on URL hash, defaulting to 'convert'
+        const initialHash = window.location.hash.slice(1);
+        this.activateTab(this.getTabFromHash(initialHash));
+
         this.updateSourceVisibility(); // Set initial visibility based on default source
         this.initializeTheme();
     }
@@ -180,10 +184,17 @@ class App {
             button.addEventListener('click', () => {
                 const tabId = button.dataset.tab;
                 if (tabId) {
-                    this.activateTab(tabId);
+                    // Update the URL hash to trigger the tab change via hashchange event
+                    window.location.hash = tabId;
                 }
             });
         });
+
+        // Listen for back/forward navigation or manual hash changes
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.slice(1);
+            this.activateTab(this.getTabFromHash(hash));
+        }, { signal: this.appAbortController.signal });
 
         // Source selection listener
         this.sourceRadioButtons.forEach(radio => {
@@ -208,7 +219,11 @@ class App {
                 const updatedTheme: 'light' | 'dark' = event.matches ? 'dark' : 'light';
                 this.applyTheme(updatedTheme);
             }
-        }, { signal: this.themeAbortController.signal });
+        }, { signal: this.appAbortController.signal });
+    }
+
+    private getTabFromHash(hash: string): string {
+        return hash === 'files' ? 'files' : 'convert';
     }
 
     private initializeTheme(): void {
@@ -599,7 +614,7 @@ class App {
     }
 
     destroy(): void {
-        this.themeAbortController.abort();
+        this.appAbortController.abort();
     }
 }
 
