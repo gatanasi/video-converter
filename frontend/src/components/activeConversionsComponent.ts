@@ -387,8 +387,7 @@ export class ActiveConversionsComponent {
             downloadLink.className = 'multi-progress-download';
             downloadLink.href = status.downloadUrl || '#';
             downloadLink.textContent = 'Download';
-            downloadLink.target = '_blank';
-            downloadLink.setAttribute('download', '');
+            downloadLink.setAttribute('download', status.fileName || 'video_conversion.mp4');
             // Append download link only if not already present
             if (!conversion.element.querySelector('.multi-progress-download')) {
                 conversion.element.appendChild(downloadLink);
