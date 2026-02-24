@@ -113,7 +113,11 @@ class App {
         this.initComponents();
         this.setupEventListeners();
         this.loadConfigAndInitialData();
-        this.activateTab('convert'); // Start on the convert tab
+
+        // Initialize tab based on URL hash, defaulting to 'convert'
+        const initialHash = window.location.hash.slice(1);
+        this.activateTab(initialHash === 'files' ? 'files' : 'convert');
+
         this.updateSourceVisibility(); // Set initial visibility based on default source
         this.initializeTheme();
     }
@@ -180,9 +184,16 @@ class App {
             button.addEventListener('click', () => {
                 const tabId = button.dataset.tab;
                 if (tabId) {
-                    this.activateTab(tabId);
+                    // Update the URL hash to trigger the tab change via hashchange event
+                    window.location.hash = tabId;
                 }
             });
+        });
+
+        // Listen for back/forward navigation or manual hash changes
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.slice(1);
+            this.activateTab(hash === 'files' ? 'files' : 'convert');
         });
 
         // Source selection listener
