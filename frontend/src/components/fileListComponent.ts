@@ -81,13 +81,14 @@ export class FileListComponent {
         const sizeFormatted = file.size ? formatBytes(file.size) : 'N/A';
 
         const safeFileName = escapeHtml(file.name);
+        const safeUrl = escapeHtml(file.url);
         row.innerHTML = `
             <td class="file-name" title="${safeFileName}">${safeFileName}</td>
             <td class="file-size">${sizeFormatted}</td>
             <td class="file-date">${formattedDate}</td>
             <td class="file-actions">
                 <div class="file-actions-wrapper">
-                    <a href="${file.url}" class="btn small success" title="Download file" download="${safeFileName}">↓</a>
+                    <a href="${safeUrl}" class="btn small success" title="Download file" download="${safeFileName}">↓</a>
                     <button class="btn small danger delete" title="Delete file">X</button>
                 </div>
             </td>
