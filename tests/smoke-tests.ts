@@ -400,7 +400,7 @@ async function testUploadAndConvert(): Promise<void> {
   const blob = new Blob([videoBuffer], { type: 'video/mp4' });
 
   const formData = new FormData();
-  formData.set('video', blob, basename(TEST_VIDEO_PATH));
+  formData.set('videoFile', blob, basename(TEST_VIDEO_PATH));
   formData.set('targetFormat', 'mp4');
   formData.set('quality', 'fast');
 
