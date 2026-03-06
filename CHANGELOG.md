@@ -1,3 +1,10 @@
+## [2.5.2](https://github.com/gatanasi/video-converter/compare/v2.5.1...v2.5.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* exclude active conversions from file list ([#183](https://github.com/gatanasi/video-converter/issues/183)) ([821c304](https://github.com/gatanasi/video-converter/commit/821c304440fc06d5dac0b3f0d4b729924a486891))
+
 # [2.5.0](https://github.com/gatanasi/video-converter/compare/v2.4.2...v2.5.0) (2026-02-24)
 
 
