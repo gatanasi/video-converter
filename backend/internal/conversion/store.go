@@ -166,6 +166,24 @@ func (s *Store) GetActiveConversionsInfo() []models.ActiveConversionInfo {
 	return activeJobs
 }
 
+// GetActiveOutputFilenames returns a set of output filenames (basenames) belonging
+// to conversions that are still in progress. Callers can use this to exclude
+// incomplete files from directory listings.
+func (s *Store) GetActiveOutputFilenames() map[string]struct{} {
+	s.activeCmdsMutex.RLock()
+	s.statusesMutex.RLock()
+	defer s.statusesMutex.RUnlock()
+	defer s.activeCmdsMutex.RUnlock()
+
+	names := make(map[string]struct{}, len(s.activeCmds))
+	for id := range s.activeCmds {
+		if status, ok := s.statuses[id]; ok && !status.Complete {
+			names[filepath.Base(status.OutputPath)] = struct{}{}
+		}
+	}
+	return names
+}
+
 // SetStatus adds or updates the status for a conversion ID.
 func (s *Store) SetStatus(id string, status *models.ConversionStatus) {
 	s.statusesMutex.Lock()

@@ -711,9 +711,17 @@ func (h *Handler) ListFilesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Build a set of filenames currently being written by active conversions
+	// so we can exclude them from the list (they are incomplete).
+	activeFiles := h.Store.GetActiveOutputFilenames()
+
 	fileInfos := make([]models.FileInfo, 0, len(entries))
 	for _, entry := range entries {
 		if !entry.IsDir() {
+			// Skip files that belong to in-progress conversions
+			if _, active := activeFiles[entry.Name()]; active {
+				continue
+			}
 			info, err := entry.Info()
 			if err != nil {
 				log.Printf("WARN: Could not get info for file %s: %v", entry.Name(), err)
