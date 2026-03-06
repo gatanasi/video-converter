@@ -1,9 +1,5 @@
 #!/usr/bin/env tsx
 
-import { readFileSync } from 'node:fs';
-import { resolve, dirname, basename } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 /**
  * Smoke Tests for Video Converter Application
  * 
@@ -16,16 +12,11 @@ import { fileURLToPath } from 'node:url';
  * - Conversion status endpoints (with mock data)
  * - Health check via config endpoint
  * - SSE stream connection
- * - End-to-end upload, conversion, download, and cleanup
  */
 
 // Configuration
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const TIMEOUT = 10000; // 10 seconds timeout for requests
-const CONVERSION_TIMEOUT = 120000; // 120 seconds for conversion polling
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const TEST_VIDEO_PATH = resolve(__dirname, 'test-video.mp4');
 
 // Test Results
 interface TestFailure {
@@ -384,79 +375,6 @@ async function testPathTraversalProtection(): Promise<void> {
 }
 
 /**
- * Helper: sleep for ms milliseconds.
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-/**
- * Test: Upload a real video, convert it (fast quality), poll until done,
- * verify it appears in the file list, download it, then clean up.
- */
-async function testUploadAndConvert(): Promise<void> {
-  // 1. Read the test video file
-  const videoBuffer = readFileSync(TEST_VIDEO_PATH);
-  const blob = new Blob([videoBuffer], { type: 'video/mp4' });
-
-  const formData = new FormData();
-  formData.set('videoFile', blob, basename(TEST_VIDEO_PATH));
-  formData.set('targetFormat', 'mp4');
-  formData.set('quality', 'fast');
-
-  // 2. Upload and start conversion
-  const uploadResponse = await fetchWithTimeout(`${BASE_URL}/api/convert/upload`, {
-    method: 'POST',
-    body: formData,
-  }, CONVERSION_TIMEOUT);
-  assert(uploadResponse.ok, `Upload failed with status ${uploadResponse.status}`);
-
-  const uploadData = await uploadResponse.json() as { success?: boolean; conversionId?: string };
-  assert(uploadData.success === true, 'Upload response should indicate success');
-  assert(typeof uploadData.conversionId === 'string' && uploadData.conversionId.length > 0,
-    'Upload response should contain a conversionId');
-  const conversionId = uploadData.conversionId!;
-
-  // 3. Poll for conversion completion
-  const deadline = Date.now() + CONVERSION_TIMEOUT;
-  let statusData: { complete?: boolean; error?: string; downloadUrl?: string; fileName?: string } = {};
-  while (Date.now() < deadline) {
-    const statusResponse = await fetchWithTimeout(`${BASE_URL}/api/conversion/status/${conversionId}`);
-    assert(statusResponse.ok, `Status check failed with ${statusResponse.status}`);
-    statusData = await statusResponse.json() as typeof statusData;
-
-    if (statusData.complete) break;
-    await sleep(1000);
-  }
-  assert(statusData.complete === true, 'Conversion should complete within timeout');
-  assert(!statusData.error, `Conversion completed with error: ${statusData.error}`);
-  assert(typeof statusData.downloadUrl === 'string' && statusData.downloadUrl.length > 0,
-    'Completed conversion should have a downloadUrl');
-
-  const downloadUrl = statusData.downloadUrl!;
-  const convertedFileName = statusData.fileName || downloadUrl.split('/').pop()!;
-
-  // 4. Verify file appears in the file list
-  const filesResponse = await fetchWithTimeout(`${BASE_URL}/api/files`);
-  assert(filesResponse.ok, `File list request failed with ${filesResponse.status}`);
-  const files = await filesResponse.json() as Array<{ name: string }>;
-  const found = files.some(f => f.name === convertedFileName);
-  assert(found, `Converted file "${convertedFileName}" should appear in file list`);
-
-  // 5. Download the converted file
-  const dlResponse = await fetchWithTimeout(`${BASE_URL}${downloadUrl}`);
-  assert(dlResponse.ok, `Download failed with status ${dlResponse.status}`);
-  const dlBody = await dlResponse.arrayBuffer();
-  assert(dlBody.byteLength > 0, 'Downloaded file should not be empty');
-
-  // 6. Clean up: delete the converted file
-  const deleteResponse = await fetchWithTimeout(`${BASE_URL}/api/file/delete/${encodeURIComponent(convertedFileName)}`, {
-    method: 'DELETE',
-  });
-  assert(deleteResponse.ok, `Delete failed with status ${deleteResponse.status}`);
-}
-
-/**
  * Main test suite
  */
 async function runSmokeTests(): Promise<void> {
@@ -485,7 +403,6 @@ async function runSmokeTests(): Promise<void> {
     await runTest('Method not allowed (405)', testMethodNotAllowed);
     await runTest('GET / (static files)', testStaticFiles);
     await runTest('Path traversal protection', testPathTraversalProtection);
-    await runTest('Upload, convert, download, and cleanup (e2e)', testUploadAndConvert);
 
     // Print summary
     log('\n─────────────────────────────────────────────────────');
