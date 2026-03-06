@@ -147,8 +147,8 @@ func (s *Store) GetActiveCmd(id string) (*exec.Cmd, bool) {
 func (s *Store) GetActiveConversionsInfo() []models.ActiveConversionInfo {
 	s.activeCmdsMutex.RLock()
 	s.statusesMutex.RLock() // Lock both for consistency
-	defer s.statusesMutex.RUnlock()
 	defer s.activeCmdsMutex.RUnlock()
+	defer s.statusesMutex.RUnlock()
 
 	activeJobs := make([]models.ActiveConversionInfo, 0, len(s.activeCmds))
 	for id := range s.activeCmds {
@@ -164,6 +164,24 @@ func (s *Store) GetActiveConversionsInfo() []models.ActiveConversionInfo {
 		}
 	}
 	return activeJobs
+}
+
+// GetActiveOutputFilenames returns a set of output filenames (basenames) belonging
+// to conversions that are still in progress. Callers can use this to exclude
+// incomplete files from directory listings.
+func (s *Store) GetActiveOutputFilenames() map[string]struct{} {
+	s.activeCmdsMutex.RLock()
+	s.statusesMutex.RLock()
+	defer s.activeCmdsMutex.RUnlock()
+	defer s.statusesMutex.RUnlock()
+
+	names := make(map[string]struct{}, len(s.activeCmds))
+	for id := range s.activeCmds {
+		if status, ok := s.statuses[id]; ok && !status.Complete {
+			names[filepath.Base(status.OutputPath)] = struct{}{}
+		}
+	}
+	return names
 }
 
 // SetStatus adds or updates the status for a conversion ID.

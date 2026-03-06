@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -58,6 +59,37 @@ func TestListFilesHandler(t *testing.T) {
 		decodeErr := json.NewDecoder(res.Body).Decode(&files)
 		assert.NoError(t, decodeErr)
 		assert.Empty(t, files)
+	})
+
+	t.Run("excludes active conversions", func(t *testing.T) {
+		env := newHandlerTestEnv(t)
+
+		// Create two files in the converted directory
+		completed := filepath.Join(env.convertedDir, "completed.mp4")
+		inProgress := filepath.Join(env.convertedDir, "in-progress.mp4")
+		assert.NoError(t, os.WriteFile(completed, []byte("done"), 0o644))
+		assert.NoError(t, os.WriteFile(inProgress, []byte("partial"), 0o644))
+
+		// Simulate an active conversion whose output matches "in-progress.mp4"
+		fakeCmd := &exec.Cmd{}
+		env.store.SetStatus("conv-1", &models.ConversionStatus{
+			OutputPath: inProgress,
+			Format:     "mp4",
+			Complete:   false,
+		})
+		env.store.RegisterActiveCmd("conv-1", fakeCmd)
+
+		req := httptest.NewRequest(http.MethodGet, RouteListFiles, nil)
+		res := httptest.NewRecorder()
+
+		env.handler.ListFilesHandler(res, req)
+
+		assert.Equal(t, http.StatusOK, res.Code)
+
+		var files []models.FileInfo
+		assert.NoError(t, json.NewDecoder(res.Body).Decode(&files))
+		assert.Len(t, files, 1, "Only completed files should be returned")
+		assert.Equal(t, "completed.mp4", files[0].Name)
 	})
 }
 
