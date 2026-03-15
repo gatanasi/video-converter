@@ -14,7 +14,7 @@ on:
         default: false
         type: boolean
       manual_version:
-        description: 'Manually specify the version (e.g., 1.2.3, 1.2.3-beta1, 1.2.3-test). Required if force_release is true.'
+        description: 'Manually specify the version (e.g., 1.2.3, 1.2.3-beta1, 1.2.3-test). Defaults to patch bump from latest tag if omitted.'
         required: false
         type: string
 
@@ -60,10 +60,16 @@ jobs:
           if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
             echo "Forcing release."
             if [[ -z "${{ github.event.inputs.manual_version }}" ]]; then
-              echo "::error::Manual version must be provided when force_release is true."
-              exit 1
+              echo "No manual version provided. Auto-bumping patch version from latest tag."
+              LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "v0.0.0")
+              LATEST_VERSION="${LATEST_TAG#v}"
+              IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_VERSION%%-*}"
+              PATCH=$((PATCH + 1))
+              MANUAL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+              echo "Auto-determined version: $MANUAL_VERSION"
+            else
+              MANUAL_VERSION="${{ github.event.inputs.manual_version }}"
             fi
-            MANUAL_VERSION="${{ github.event.inputs.manual_version }}"
             # Validation regex to allow SemVer with optional pre-release identifiers
             SEMVER_REGEX="^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
             if ! [[ "$MANUAL_VERSION" =~ $SEMVER_REGEX ]]; then
