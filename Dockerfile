@@ -2,7 +2,7 @@
 # This builds both frontend and backend in a single container leveraging BuildKit caching
 
 # Stage 1: Build Frontend
-FROM node:lts-alpine@sha256:7fddd9ddeae8196abf4a3ef2de34e11f7b1a722119f91f28ddf1e99dcafdf114 AS frontend-builder
+FROM node:lts-alpine@sha256:01743339035a5c3c11a373cd7c83aeab6ed1457b55da6a69e014a95ac4e4700b AS frontend-builder
 
 # ARG is scoped to this build stage for clarity
 ARG PNPM_VERSION="10.30.1"
