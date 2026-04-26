@@ -118,7 +118,7 @@ jobs:
       contents: read
       packages: write
     with:
-      build_docker: true
+      build_docker: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' }}
       push_docker: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' }}
       app_version: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' && needs.detect_release_pr_merge.outputs.version || github.sha }}
       checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
