@@ -5,6 +5,13 @@
 
 * exclude active conversions from file list ([#183](https://github.com/gatanasi/video-converter/issues/183)) ([821c304](https://github.com/gatanasi/video-converter/commit/821c304440fc06d5dac0b3f0d4b729924a486891))
 
+## [2.5.7](https://github.com/gatanasi/video-converter/compare/v2.5.6...v2.5.7) (2026-04-26)
+
+
+### Miscellaneous Chores
+
+* force release ([d78e28e](https://github.com/gatanasi/video-converter/commit/d78e28e563e1292ffdc138a6b2ab2766f201f827))
+
 ## [2.5.0](https://github.com/gatanasi/video-converter/compare/v2.4.2...v2.5.0) (2026-02-24)
 
 
