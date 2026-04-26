@@ -321,29 +321,30 @@ BREAKING CHANGE: Video list API now returns data in { videos: [] } format
    - Builds Docker image (validation only, doesn't push)
 
 2. **Release Workflow** (`.github/workflows/release.yml`)
-   - Triggered manually via GitHub Actions UI
-   - Determines version using semantic-release
-   - Runs full test suite
+   - Opens or updates release-please PRs on pushes to `main`
+   - Publishes releases after release-please PRs are merged
+   - Supports manual `open-pr` and `publish-now` modes
    - Builds multi-platform Docker images
    - Pushes to GitHub Container Registry (GHCR)
-   - Creates GitHub Release with release notes
+   - Creates GitHub Releases with release-please notes
 
 ### Creating a Release
 
-Releases are created by maintainers through GitHub Actions:
+Normal releases are created by merging the release-please PR that is maintained
+for `main`. Maintainers can also trigger the release workflow manually:
 
 1. Go to **Actions** → **Video Converter - Release** → **Run workflow**
 2. Configure options:
+   - **Manual release mode**: `open-pr` opens or updates a release PR; `publish-now` merges it, builds Docker images, and publishes the release
+   - **Manual version**: Optional version override (for example `1.2.3`, `1.2.3-beta1`)
    - **Branch**: Branch to release from (usually `main`)
-   - **Force release**: Override semantic versioning (optional)
-   - **Manual version**: Specify version manually (e.g., `1.2.3`, `1.2.3-beta1`)
 
 The workflow will:
-- Analyze commits to determine the next version
+- Use release-please to determine or force the next version
 - Run all tests and linting
 - Build Docker images for `linux/amd64` and `linux/arm64`
 - Push images to `ghcr.io/gatanasi/video-converter` with multiple tags
-- Create a GitHub Release with auto-generated release notes
+- Create a GitHub Release with release-please notes
 
 ### Local Testing of CI
 

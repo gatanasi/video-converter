@@ -1,118 +1,118 @@
 name: Video Converter - Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
-      branch:
+      mode:
+        description: 'Manual release mode'
+        required: true
+        default: 'open-pr'
+        type: choice
+        options:
+          - open-pr
+          - publish-now
+      manual_version:
+        description: 'Optional SemVer version to release as, for example 2.5.6 or 2.5.6-rc.1'
+        required: false
+        type: string
+      target_branch:
         description: 'Branch to release from'
         required: true
         default: 'main'
         type: string
-      force_release:
-        description: 'Force a release even if no relevant commits are found'
-        required: false
-        default: false
-        type: boolean
-      manual_version:
-        description: 'Manually specify the version (e.g., 1.2.3, 1.2.3-beta1, 1.2.3-test). Defaults to patch bump from latest tag if omitted.'
-        required: false
-        type: string
 
 permissions:
   contents: write
-  actions: write
+  issues: write
+  packages: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.target_branch || github.ref_name }}
+  cancel-in-progress: false
 
 env:
-  NODE_VERSION: '22.x'
-  GO_VERSION: '1.25'
+  RELEASE_PLEASE_CONFIG: release-please-config.json
+  RELEASE_PLEASE_MANIFEST: .release-please-manifest.json
 
 jobs:
-  determine-version:
-    name: Determine Next Version
+  detect_release_pr_merge:
+    name: Detect Release PR Merge
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
-      next_version: ${{ steps.set_version.outputs.version }}
-      should_release: ${{ steps.set_version.outputs.release_published }}
+      is_release_pr_merge: ${{ steps.detect.outputs.is_release_pr_merge }}
+      version: ${{ steps.detect.outputs.version }}
+      checkout_ref: ${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.branch }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6.0.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install root dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Determine next version (Semantic Release or Manual)
-        id: set_version
+      - name: Detect release manifest update
+        id: detect
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
         run: |
-          if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
-            echo "Forcing release."
-            if [[ -z "${{ github.event.inputs.manual_version }}" ]]; then
-              echo "No manual version provided. Auto-bumping patch version from latest tag."
-              LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "v0.0.0")
-              LATEST_VERSION="${LATEST_TAG#v}"
-              IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_VERSION%%-*}"
-              PATCH=$((PATCH + 1))
-              MANUAL_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-              echo "Auto-determined version: $MANUAL_VERSION"
-            else
-              MANUAL_VERSION="${{ github.event.inputs.manual_version }}"
-            fi
-            # Validation regex to allow SemVer with optional pre-release identifiers
-            SEMVER_REGEX="^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$"
-            if ! [[ "$MANUAL_VERSION" =~ $SEMVER_REGEX ]]; then
-               echo "::error::Manual version '$MANUAL_VERSION' is not valid. Use format X.Y.Z or X.Y.Z-prerelease (e.g., 1.2.3, 1.2.3-beta1, 1.2.3-rc.2)."
-               exit 1
-            fi
-            echo "Using manual version: $MANUAL_VERSION"
-            echo "release_published=true" >> $GITHUB_OUTPUT
-            echo "version=$MANUAL_VERSION" >> $GITHUB_OUTPUT
-          else
-            echo "Determining version using semantic-release..."
-            # Run semantic-release in dry run mode and capture output
-            # Use --no-ci to prevent potential issues if semantic-release detects a CI environment incorrectly
-            output=$(pnpm exec semantic-release --dry-run --no-ci)
-            echo "$output" # Log output for debugging
+          set -euo pipefail
 
-            # Check if a release would be published (Handles standard X.Y.Z versions)
-            # NOTE: This regex might need adjustment if semantic-release outputs pre-release versions differently
-            if echo "$output" | grep -q "Published release"; then
-              echo "release_published=true" >> $GITHUB_OUTPUT
-              # This regex extracts standard X.Y.Z versions. Adjust if semantic-release outputs pre-releases here too.
-              version=$(echo "$output" | grep -oP 'Published release \K[0-9]+\.[0-9]+\.[0-9]+')
-              if [ -z "$version" ]; then
-                # Attempt to extract pre-release version as fallback - adjust regex as needed for semantic-release output format
-                version=$(echo "$output" | grep -oP 'Published release \K[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?')
-                 if [ -z "$version" ]; then
-                    echo "::error::Could not extract version from semantic-release output."
-                    exit 1
-                 fi
-              fi
-              echo "version=${version}" >> $GITHUB_OUTPUT
-              echo "Determined next version: ${version}"
-            else
-              echo "release_published=false" >> $GITHUB_OUTPUT
-              echo "version=skip" >> $GITHUB_OUTPUT
-              echo "No release will be published based on commits."
+          MANIFEST_CHANGED=false
+          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            CHANGED_FILES="$(git diff-tree --no-commit-id --name-only -r "$CURRENT_SHA")"
+          else
+            CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA")"
+          fi
+
+          if grep -qx "$RELEASE_PLEASE_MANIFEST" <<< "$CHANGED_FILES"; then
+            MANIFEST_CHANGED=true
+          fi
+
+          IS_RELEASE_PR_MERGE=false
+          if [[ "$MANIFEST_CHANGED" == "true" ]]; then
+            ASSOCIATED_PRS="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${CURRENT_SHA}/pulls" \
+              --header "Accept: application/vnd.github+json" 2>/dev/null || echo '[]')"
+            PR_MATCH_COUNT="$(jq '[.[] | select((.labels // [] | any(.name == "autorelease: pending")) or (.title | test("^chore(\\([^)]+\\))?: release")))] | length' <<< "$ASSOCIATED_PRS")"
+            COMMIT_SUBJECT="$(git log -1 --pretty=%s "$CURRENT_SHA")"
+            RELEASE_SUBJECT_REGEX='^chore(\([^)]+\))?:[[:space:]]release'
+
+            # shellcheck disable=SC2086
+            if [[ "$PR_MATCH_COUNT" != "0" || "$COMMIT_SUBJECT" =~ $RELEASE_SUBJECT_REGEX ]]; then
+              IS_RELEASE_PR_MERGE=true
             fi
           fi
 
-  build-and-push-docker:
+          VERSION="$(jq -r '."."' "$RELEASE_PLEASE_MANIFEST")"
+          {
+            echo "is_release_pr_merge=$IS_RELEASE_PR_MERGE"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+  open_release_pr:
+    name: Open Release PR
+    if: github.event_name == 'push' && needs.detect_release_pr_merge.outputs.is_release_pr_merge != 'true'
+    needs: detect_release_pr_merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          target-branch: main
+          config-file: ${{ env.RELEASE_PLEASE_CONFIG }}
+          manifest-file: ${{ env.RELEASE_PLEASE_MANIFEST }}
+          skip-github-release: true
+
+  build_release_from_push:
     name: Build and Push Docker Image
-    needs: determine-version
-    if: needs.determine-version.outputs.should_release == 'true'
+    if: github.event_name == 'push' && needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true'
+    needs: detect_release_pr_merge
     uses: ./.github/workflows/build-jobs.yml
     permissions:
       contents: read
@@ -120,107 +120,268 @@ jobs:
     with:
       build_docker: true
       push_docker: true
-      app_version: ${{ needs.determine-version.outputs.next_version }}
+      app_version: ${{ needs.detect_release_pr_merge.outputs.version }}
+      checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
       platforms: 'linux/amd64,linux/arm64'
 
-  release:
-    name: Create Release
+  publish_release_from_push:
+    name: Publish GitHub Release
+    if: github.event_name == 'push' && needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true'
+    needs: [detect_release_pr_merge, build_release_from_push]
     runs-on: ubuntu-latest
-    needs: [determine-version, build-and-push-docker]
-    if: needs.determine-version.outputs.should_release == 'true'
     steps:
-      - name: Checkout code from specified branch
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          target-branch: main
+          config-file: ${{ env.RELEASE_PLEASE_CONFIG }}
+          manifest-file: ${{ env.RELEASE_PLEASE_MANIFEST }}
+          skip-github-pull-request: true
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Release Summary"
+            echo ""
+            echo "**Version:** ${{ needs.detect_release_pr_merge.outputs.version }}"
+            echo "**Branch:** main"
+            echo ""
+            echo "### Docker Image"
+            echo '```'
+            echo "ghcr.io/${{ github.repository }}:${{ needs.detect_release_pr_merge.outputs.version }}"
+            echo "ghcr.io/${{ github.repository }}:latest"
+            echo '```'
+            echo ""
+            echo "### Pull and Run"
+            echo '```bash'
+            echo "docker pull ghcr.io/${{ github.repository }}:${{ needs.detect_release_pr_merge.outputs.version }}"
+            echo "VERSION=${{ needs.detect_release_pr_merge.outputs.version }} docker compose up -d"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  manual_release_pr:
+    name: Manual Release PR
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.collect_pr.outputs.pr_number }}
+      pr_url: ${{ steps.collect_pr.outputs.pr_url }}
+      target_branch: ${{ steps.validate.outputs.target_branch }}
+    steps:
+      - name: Checkout release branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
+          ref: ${{ inputs.target_branch }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@078e9d416474b29c0c387560859308974f7e9c53 # v6.0.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install root dependencies (including semantic-release)
-        run: pnpm install --frozen-lockfile
-
-      - name: Run semantic-release (perform release)
-        if: github.event.inputs.force_release == 'false'
+      - name: Validate manual inputs
+        id: validate
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PNPM_SCRIPT_SHELL: bash
-          DOCKER_IMAGE: ghcr.io/${{ github.repository }}:${{ needs.determine-version.outputs.next_version }}
+          MANUAL_VERSION: ${{ inputs.manual_version }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
         run: |
-          echo "Docker image available at: $DOCKER_IMAGE" >> $GITHUB_STEP_SUMMARY
-          pnpm exec semantic-release --no-ci
+          set -euo pipefail
 
-      - name: Configure Git user
-        if: github.event.inputs.force_release == 'true'
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-
-      - name: Create and Push Git Tag (Manual Force)
-        if: github.event.inputs.force_release == 'true'
-        env:
-          TAG_NAME: v${{ needs.determine-version.outputs.next_version }}
-        run: |
-          echo "Attempting to create and push tag: $TAG_NAME"
-          # Check if tag exists locally or remotely before creating
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "::warning::Tag $TAG_NAME already exists locally. Skipping tag creation."
-          elif git ls-remote --tags origin refs/tags/$TAG_NAME | grep -q "$TAG_NAME"; then
-            echo "::warning::Tag $TAG_NAME already exists remotely. Skipping tag creation."
-          else
-            git tag "$TAG_NAME" -m "Release $TAG_NAME"
-            git push origin "$TAG_NAME"
-            echo "Tag $TAG_NAME created and pushed."
+          if [[ -z "$TARGET_BRANCH" ]]; then
+            TARGET_BRANCH=main
           fi
 
-      - name: Create GitHub Release (Manual Force)
-        if: github.event.inputs.force_release == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: v${{ needs.determine-version.outputs.next_version }}
-          NEXT_VERSION: ${{ needs.determine-version.outputs.next_version }}
-        run: |
-          DOCKER_IMAGE="ghcr.io/${{ github.repository }}:$NEXT_VERSION"
-          echo "Creating GitHub release for tag $TAG_NAME"
-          echo "Docker image: $DOCKER_IMAGE" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Pull the Docker image:" >> release_notes.md
-          echo '```bash' >> release_notes.md
-          echo "docker pull $DOCKER_IMAGE" >> release_notes.md
-          echo '```' >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Run with docker compose:" >> release_notes.md
-          echo '```bash' >> release_notes.md
-          echo "VERSION=$NEXT_VERSION docker compose up -d" >> release_notes.md
-          echo '```' >> release_notes.md
-          
-          gh release create "$TAG_NAME" \
-            --title "Release $NEXT_VERSION" \
-            --notes-file release_notes.md \
-            --target "${{ github.event.inputs.branch }}"
+          if [[ -n "$MANUAL_VERSION" ]]; then
+            SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+            # shellcheck disable=SC2086
+            if [[ ! "$MANUAL_VERSION" =~ $SEMVER_REGEX ]]; then
+              echo "::error::Manual version '$MANUAL_VERSION' is not valid. Use X.Y.Z or X.Y.Z-prerelease."
+              exit 1
+            fi
+          fi
 
-      - name: Deployment Summary
+          echo "target_branch=$TARGET_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Run release-please
+        id: release_regular
+        if: inputs.manual_version == ''
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          target-branch: ${{ steps.validate.outputs.target_branch }}
+          config-file: ${{ env.RELEASE_PLEASE_CONFIG }}
+          manifest-file: ${{ env.RELEASE_PLEASE_MANIFEST }}
+          skip-github-release: true
+
+      - name: Determine forced version
+        id: forced_version
+        if: inputs.manual_version != '' || steps.release_regular.outputs.prs_created != 'true'
+        env:
+          MANUAL_VERSION: ${{ inputs.manual_version }}
         run: |
-          echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ needs.determine-version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🐳 Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "ghcr.io/${{ github.repository }}:${{ needs.determine-version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "ghcr.io/${{ github.repository }}:latest" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Pull and Run" >> $GITHUB_STEP_SUMMARY
-          echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository }}:${{ needs.determine-version.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "VERSION=${{ needs.determine-version.outputs.next_version }} docker compose up -d" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          set -euo pipefail
+
+          if [[ -n "$MANUAL_VERSION" ]]; then
+            VERSION="$MANUAL_VERSION"
+          else
+            CURRENT_VERSION="$(jq -r '."."' "$RELEASE_PLEASE_MANIFEST")"
+            CURRENT_VERSION_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+            # shellcheck disable=SC2086
+            if [[ ! "$CURRENT_VERSION" =~ $CURRENT_VERSION_REGEX ]]; then
+              echo "::error::Cannot auto-bump patch from current version '$CURRENT_VERSION'. Provide manual_version."
+              exit 1
+            fi
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Run release-please with forced version
+        id: release_forced
+        if: steps.forced_version.outputs.version != ''
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          target-branch: ${{ steps.validate.outputs.target_branch }}
+          config-file: ${{ env.RELEASE_PLEASE_CONFIG }}
+          manifest-file: ${{ env.RELEASE_PLEASE_MANIFEST }}
+          release-as: ${{ steps.forced_version.outputs.version }}
+          skip-github-release: true
+
+      - name: Collect release PR
+        id: collect_pr
+        env:
+          REGULAR_PR_JSON: ${{ steps.release_regular.outputs.pr }}
+          REGULAR_PRS_JSON: ${{ steps.release_regular.outputs.prs }}
+          FORCED_PR_JSON: ${{ steps.release_forced.outputs.pr }}
+          FORCED_PRS_JSON: ${{ steps.release_forced.outputs.prs }}
+        run: |
+          set -euo pipefail
+
+          PR_JSON="${FORCED_PR_JSON:-$REGULAR_PR_JSON}"
+          PRS_JSON="${FORCED_PRS_JSON:-$REGULAR_PRS_JSON}"
+
+          if [[ -z "$PR_JSON" || "$PR_JSON" == "null" ]]; then
+            if [[ -n "$PRS_JSON" && "$PRS_JSON" != "null" ]]; then
+              PR_JSON="$(jq -c '.[0] // empty' <<< "$PRS_JSON")"
+            fi
+          fi
+
+          if [[ -z "$PR_JSON" || "$PR_JSON" == "null" ]]; then
+            echo "::error::release-please did not create or update a release pull request."
+            exit 1
+          fi
+
+          PR_NUMBER="$(jq -r '.number // empty' <<< "$PR_JSON")"
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "::error::Could not determine release pull request number."
+            exit 1
+          fi
+
+          {
+            echo "pr_number=$PR_NUMBER"
+            echo "pr_url=https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release PR: https://github.com/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}" >> "$GITHUB_STEP_SUMMARY"
+
+  merge_manual_release_pr:
+    name: Merge Manual Release PR
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'publish-now'
+    needs: manual_release_pr
+    runs-on: ubuntu-latest
+    outputs:
+      checkout_ref: ${{ steps.merge.outputs.checkout_ref }}
+      version: ${{ steps.merge.outputs.version }}
+      target_branch: ${{ needs.manual_release_pr.outputs.target_branch }}
+    steps:
+      - name: Merge release pull request
+        id: merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ needs.manual_release_pr.outputs.pr_number }}
+          TARGET_BRANCH: ${{ needs.manual_release_pr.outputs.target_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "::error::No release pull request number was produced."
+            exit 1
+          fi
+
+          BEFORE_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${TARGET_BRANCH}" --jq '.commit.sha')"
+          gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+
+          AFTER_SHA="$BEFORE_SHA"
+          for _ in {1..24}; do
+            AFTER_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${TARGET_BRANCH}" --jq '.commit.sha')"
+            PR_STATE="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state --jq '.state')"
+            if [[ "$PR_STATE" == "MERGED" && "$AFTER_SHA" != "$BEFORE_SHA" ]]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [[ "$AFTER_SHA" == "$BEFORE_SHA" ]]; then
+            echo "::error::Release pull request merge did not advance ${TARGET_BRANCH}."
+            exit 1
+          fi
+
+          MANIFEST_CONTENT="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${RELEASE_PLEASE_MANIFEST}?ref=${AFTER_SHA}" --jq '.content' | base64 --decode)"
+          VERSION="$(jq -r '."."' <<< "$MANIFEST_CONTENT")"
+
+          {
+            echo "checkout_ref=$AFTER_SHA"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+          echo "Merged release PR #$PR_NUMBER at $AFTER_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  build_manual_release:
+    name: Build and Push Docker Image
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'publish-now'
+    needs: merge_manual_release_pr
+    uses: ./.github/workflows/build-jobs.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      build_docker: true
+      push_docker: true
+      app_version: ${{ needs.merge_manual_release_pr.outputs.version }}
+      checkout_ref: ${{ needs.merge_manual_release_pr.outputs.checkout_ref }}
+      platforms: 'linux/amd64,linux/arm64'
+
+  publish_manual_release:
+    name: Publish GitHub Release
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'publish-now'
+    needs: [merge_manual_release_pr, build_manual_release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          target-branch: ${{ needs.merge_manual_release_pr.outputs.target_branch }}
+          config-file: ${{ env.RELEASE_PLEASE_CONFIG }}
+          manifest-file: ${{ env.RELEASE_PLEASE_MANIFEST }}
+          skip-github-pull-request: true
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Release Summary"
+            echo ""
+            echo "**Version:** ${{ needs.merge_manual_release_pr.outputs.version }}"
+            echo "**Branch:** ${{ needs.merge_manual_release_pr.outputs.target_branch }}"
+            echo ""
+            echo "### Docker Image"
+            echo '```'
+            echo "ghcr.io/${{ github.repository }}:${{ needs.merge_manual_release_pr.outputs.version }}"
+            echo "ghcr.io/${{ github.repository }}:latest"
+            echo '```'
+            echo ""
+            echo "### Pull and Run"
+            echo '```bash'
+            echo "docker pull ghcr.io/${{ github.repository }}:${{ needs.merge_manual_release_pr.outputs.version }}"
+            echo "VERSION=${{ needs.merge_manual_release_pr.outputs.version }} docker compose up -d"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
