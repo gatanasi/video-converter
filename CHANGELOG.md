@@ -33,6 +33,13 @@
 * **frontend:** migrate CSS from vanilla to Tailwind CSS v4 ([8951397](https://github.com/gatanasi/video-converter/commit/89513978114e8d127a9a7bae8844ff3bd8f754e2))
 * **frontend:** migrate CSS from vanilla to Tailwind CSS v4 ([#143](https://github.com/gatanasi/video-converter/issues/143)) ([658e3e8](https://github.com/gatanasi/video-converter/commit/658e3e8850b94a173ca7f1fb5891ac01cfa34720))
 
+## [2.5.6](https://github.com/gatanasi/video-converter/compare/v2.5.5...v2.5.6) (2026-04-26)
+
+
+### Miscellaneous Chores
+
+* force release ([2a66e37](https://github.com/gatanasi/video-converter/commit/2a66e379a268db92a3f5dafbf0d243e25632937f))
+
 ## [2.3.4](https://github.com/gatanasi/video-converter/compare/v2.3.3...v2.3.4) (2025-12-17)
 
 
