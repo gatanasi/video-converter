@@ -235,6 +235,18 @@ jobs:
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Force release via empty commit
+        if: steps.forced_version.outputs.version != ''
+        env:
+          VERSION: ${{ steps.forced_version.outputs.version }}
+          TARGET_BRANCH: ${{ steps.validate.outputs.target_branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: force release" -m "Release-As: ${VERSION}"
+          git push origin "HEAD:${TARGET_BRANCH}"
+
       - name: Run release-please with forced version
         id: release_forced
         if: steps.forced_version.outputs.version != ''
