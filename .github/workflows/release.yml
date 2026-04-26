@@ -122,7 +122,7 @@ jobs:
       push_docker: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' }}
       app_version: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' && needs.detect_release_pr_merge.outputs.version || github.sha }}
       checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
-      platforms: 'linux/amd64,linux/arm64'
+      platforms: 'linux/amd64'
 
   smoke_tests:
     name: Smoke Tests
@@ -365,7 +365,7 @@ jobs:
       push_docker: true
       app_version: ${{ needs.merge_manual_release_pr.outputs.version }}
       checkout_ref: ${{ needs.merge_manual_release_pr.outputs.checkout_ref }}
-      platforms: 'linux/amd64,linux/arm64'
+      platforms: 'linux/amd64'
 
   publish_manual_release:
     name: Publish GitHub Release

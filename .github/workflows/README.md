@@ -31,7 +31,7 @@ Published to: `ghcr.io/gatanasi/video-converter`
 - `1.0` - Latest 1.0.x patch
 - `1` - Latest 1.x.x
 
-**Platforms:** `linux/amd64`, `linux/arm64`
+**Platforms:** `linux/amd64`
 
 ## Permissions
 
