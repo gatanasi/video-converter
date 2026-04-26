@@ -16,7 +16,7 @@ pnpm test:smoke
 The command above wraps `tests/run-smoke-tests.sh`, which performs the
 following steps:
 
-1. Builds and starts the application through `docker-compose.dev.yml` to ensure
+1. Builds and starts the application through `compose.dev.yaml` to ensure
    the local Dockerfile and source tree are exercised.
 2. Waits until the container passes its health check.
 3. Executes the TypeScript smoke tests via `pnpm --filter smoke-tests test`.

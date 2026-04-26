@@ -100,7 +100,7 @@
 
 ### Bug Fixes
 
-* **docker:** add SYS_NICE capability to video-converter service in docker-compose.yml ([0693f6b](https://github.com/gatanasi/video-converter/commit/0693f6b27ae6410a901e45a5030d5c7899587672))
+* **docker:** add SYS_NICE capability to video-converter service in compose.yaml ([0693f6b](https://github.com/gatanasi/video-converter/commit/0693f6b27ae6410a901e45a5030d5c7899587672))
 * **docs:** update allowed origins in .env.example and README for local development ([2b729f2](https://github.com/gatanasi/video-converter/commit/2b729f2475e9a087fc034a4bf3a7a2673d0993b5))
 * **docs:** update environment variable loading instructions and improve Docker setup documentation ([ae01c04](https://github.com/gatanasi/video-converter/commit/ae01c048d3636d809798be8232cd31ff754f6a3b))
 
@@ -116,10 +116,10 @@
 
 ### Bug Fixes
 
-* **docker:** enhance Dockerfile and docker-compose.yml ([#86](https://github.com/gatanasi/video-converter/issues/86)) ([1c31776](https://github.com/gatanasi/video-converter/commit/1c3177697037d9e6af1a7c6c05c1ab1c16909e64))
-* **docker:** enhance Dockerfile and docker-compose.yml for improved caching and security ([6b5356e](https://github.com/gatanasi/video-converter/commit/6b5356ea138ac1c9d8098f0955ebbc5b3abd5ed8))
+* **docker:** enhance Dockerfile and compose.yaml ([#86](https://github.com/gatanasi/video-converter/issues/86)) ([1c31776](https://github.com/gatanasi/video-converter/commit/1c3177697037d9e6af1a7c6c05c1ab1c16909e64))
+* **docker:** enhance Dockerfile and compose.yaml for improved caching and security ([6b5356e](https://github.com/gatanasi/video-converter/commit/6b5356ea138ac1c9d8098f0955ebbc5b3abd5ed8))
 * **docker:** enhance entrypoint script for directory validation and ownership management ([644dfa3](https://github.com/gatanasi/video-converter/commit/644dfa3f0f98014b63743d5d5c83d582fa1cfe46))
-* **docker:** update PNPM version and improve Dockerfile and docker-compose.yml structure ([bc1a73f](https://github.com/gatanasi/video-converter/commit/bc1a73f6a34f2b85efad4d2f2ebdde5c081751ce))
+* **docker:** update PNPM version and improve Dockerfile and compose.yaml structure ([bc1a73f](https://github.com/gatanasi/video-converter/commit/bc1a73f6a34f2b85efad4d2f2ebdde5c081751ce))
 
 
 ### Features

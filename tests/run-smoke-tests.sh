@@ -11,7 +11,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Configuration
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.dev.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-compose.dev.yaml}"
 CONTAINER_NAME="${CONTAINER_NAME:-video-converter-dev}"
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 CLEANUP="${CLEANUP:-true}"

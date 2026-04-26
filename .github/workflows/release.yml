@@ -109,9 +109,9 @@ jobs:
           manifest-file: ${{ env.RELEASE_PLEASE_MANIFEST }}
           skip-github-release: true
 
-  build_release_from_push:
-    name: Build and Push Docker Image
-    if: github.event_name == 'push' && needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true'
+  ci:
+    name: Lint, Test & Build Docker
+    if: github.event_name == 'push'
     needs: detect_release_pr_merge
     uses: ./.github/workflows/build-jobs.yml
     permissions:
@@ -119,15 +119,21 @@ jobs:
       packages: write
     with:
       build_docker: true
-      push_docker: true
-      app_version: ${{ needs.detect_release_pr_merge.outputs.version }}
+      push_docker: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' }}
+      app_version: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' && needs.detect_release_pr_merge.outputs.version || github.sha }}
       checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
       platforms: 'linux/amd64,linux/arm64'
+
+  smoke_tests:
+    name: Smoke Tests
+    if: github.event_name == 'push'
+    needs: ci
+    uses: ./.github/workflows/smoke-tests.yml
 
   publish_release_from_push:
     name: Publish GitHub Release
     if: github.event_name == 'push' && needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true'
-    needs: [detect_release_pr_merge, build_release_from_push]
+    needs: [detect_release_pr_merge, ci, smoke_tests]
     runs-on: ubuntu-latest
     steps:
       - name: Run release-please

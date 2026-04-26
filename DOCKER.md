@@ -33,7 +33,7 @@ For development or customization:
 
 ```bash
 # Use the development compose file (recommended for developers)
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose -f compose.dev.yaml up -d --build
 
 # Or build manually
 docker build -t video-converter:local .
@@ -42,7 +42,7 @@ docker build -t video-converter:local .
 docker build --build-arg VERSION=1.0.0 -t video-converter:1.0.0 .
 
 # Build with docker compose
-# First, edit docker-compose.yml to uncomment the 'build' section
+# First, edit compose.yaml to uncomment the 'build' section
 docker compose build
 
 # Or use the --build flag
@@ -51,9 +51,9 @@ docker compose up -d --build
 
 ## Switching Between Pre-built and Local Images
 
-The `docker-compose.yml` file is configured to use pre-built images by default. To build locally:
+The `compose.yaml` file is configured to use pre-built images by default. To build locally:
 
-1. **Edit `docker-compose.yml`**:
+1. **Edit `compose.yaml`**:
    ```yaml
    # Comment out the image line
    # image: ghcr.io/gatanasi/video-converter:${VERSION:-latest}
@@ -167,7 +167,7 @@ docker system prune -a --volumes
 ## Production Considerations
 
 ### Resource Limits
-Add to `docker-compose.yml`:
+Add to `compose.yaml`:
 ```yaml
 services:
   video-converter:
