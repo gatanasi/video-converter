@@ -29,3 +29,4 @@ coverage/
 
 # Local secret files
 secrets/
+tasks/
