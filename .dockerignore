@@ -7,6 +7,9 @@
 README.md
 CHANGELOG.md
 LICENSE
+DOCKER.md
+AGENTS.md
+CONTRIBUTING.md
 
 # Build artifacts
 backend/uploads/
@@ -15,10 +18,21 @@ frontend/dist/
 frontend/node_modules/
 uploads/
 converted/
+video-converter-app
+
+# Dependencies
+node_modules/
+tests/node_modules/
+
+# Testing and local development tasks
+tests/
+tasks/
+run/
 
 # Environment files (these should be configured at runtime)
 .env
 .env.mine
+.env.example
 
 # IDE and editor files
 .vscode/
@@ -31,6 +45,13 @@ converted/
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log
+nohup.out
+
+# Git hooks
+.husky/
+
 # Deployment scripts
 deploy-video-converter.sh
 
@@ -41,6 +62,8 @@ deploy-video-converter.sh
 # CI/CD files
 renovate.json
 commitlint.config.js
+docker-compose*.yml
+.release-please*.json
 
 # Secrets (mounted at runtime via Docker secrets)
 secrets/
