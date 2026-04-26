@@ -7,7 +7,7 @@ on:
       node_version:
         required: false
         type: string
-        default: '22.x'
+        default: '24.x'
       checkout_ref:
         required: false
         type: string

@@ -6,7 +6,7 @@ on:
       node_version:
         required: false
         type: string
-        default: '22.x'
+        default: '24.x'
       go_version:
         required: false
         type: string
