@@ -113,21 +113,21 @@ pnpm --filter ./frontend run build -- --watch
 
 ```
 video-converter/
-├── backend/                 # Go backend
+├── backend/               # Go backend
 │   ├── cmd/
-│   │   └── server/         # Main application entry point
+│   │   └── server/        # Main application entry point
 │   ├── internal/
-│   │   ├── api/            # HTTP handlers and routes
-│   │   ├── config/         # Configuration management
-│   │   ├── constants/      # Application constants
-│   │   ├── conversion/     # Video conversion logic
-│   │   ├── drive/          # Google Drive integration
-│   │   ├── filestore/      # File storage management
-│   │   ├── middleware/     # HTTP middleware (CORS, etc.)
-│   │   ├── models/         # Data models
-│   │   └── utils/          # Utility functions
+│   │   ├── api/           # HTTP handlers and routes
+│   │   ├── config/        # Configuration management
+│   │   ├── constants/     # Application constants
+│   │   ├── conversion/    # Video conversion logic
+│   │   ├── drive/         # Google Drive integration
+│   │   ├── filestore/     # File storage management
+│   │   ├── middleware/    # HTTP middleware (CORS, etc.)
+│   │   ├── models/        # Data models
+│   │   └── utils/         # Utility functions
 │   └── go.mod             # Go dependencies
-├── frontend/               # TypeScript frontend
+├── frontend/              # TypeScript frontend
 │   ├── src/
 │   │   ├── api/           # API client
 │   │   ├── components/    # UI components
@@ -140,9 +140,9 @@ video-converter/
 │   └── package.json       # Node dependencies
 ├── docker/                # Docker-related files
 ├── .github/workflows/     # CI/CD workflows
-├── Dockerfile            # Multi-stage Docker build
-├── docker-compose.yml    # Docker Compose configuration
-└── .env.example         # Environment variable template
+├── Dockerfile             # Multi-stage Docker build
+├── compose.yaml           # Docker Compose configuration
+└── .env.example           # Environment variable template
 ```
 
 ## Development Workflow
@@ -202,7 +202,7 @@ pnpm run lint:fix
 
 ```bash
 # Option 1: Use the development compose file
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose -f compose.dev.yaml up -d --build
 
 # Option 2: Build with default compose file (edit it first)
 docker build -t video-converter:dev .
@@ -219,12 +219,12 @@ docker run -d -p 3000:3000 \
   video-converter:dev
 
 # Check logs
-docker compose -f docker-compose.dev.yml logs -f
+docker compose -f compose.dev.yaml logs -f
 
 # Stop
-docker compose -f docker-compose.dev.yml down
+docker compose -f compose.dev.yaml down
 
-# Or with docker compose (if you edited docker-compose.yml)
+# Or with docker compose (if you edited compose.yaml)
 docker compose build
 docker compose up -d
 ```

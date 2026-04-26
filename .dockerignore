@@ -62,7 +62,7 @@ deploy-video-converter.sh
 # CI/CD files
 renovate.json
 commitlint.config.js
-docker-compose*.yml
+compose*.yaml
 .release-please*.json
 
 # Secrets (mounted at runtime via Docker secrets)

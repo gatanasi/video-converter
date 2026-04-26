@@ -33,8 +33,8 @@ Convert videos from Google Drive to different formats with a simple web interfac
 # 1. Create a directory for the app
 mkdir video-converter && cd video-converter
 
-# 2. Download docker-compose.yml
-curl -LO https://github.com/gatanasi/video-converter/releases/latest/download/docker-compose.yml
+# 2. Download compose.yaml
+curl -LO https://github.com/gatanasi/video-converter/releases/latest/download/compose.yaml
 
 # 3. Create .env file with your settings
 cat > .env << 'EOF'

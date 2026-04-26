@@ -1,5 +1,5 @@
 # Docker Compose configuration for local development
-# Usage: docker compose -f docker-compose.dev.yml up -d --build
+# Usage: docker compose -f compose.dev.yaml up -d --build
 
 services:
   video-converter:
