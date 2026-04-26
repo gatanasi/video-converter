@@ -2,6 +2,22 @@ name: Video Converter - CI
 
 on:
   push:
+    branches-ignore:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'docker-compose.dev.yml'
+      - '.dockerignore'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/build-jobs.yml'
+      - '.github/workflows/smoke-tests.yml'
+  pull_request:
+    branches:
+      - main
     paths:
       - 'frontend/**'
       - 'backend/**'
