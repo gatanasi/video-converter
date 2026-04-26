@@ -1,11 +1,11 @@
-## [2.5.2](https://github.com/gatanasi/video-converter/compare/v2.5.1...v2.5.2) (2026-03-06)
+## [2.5.6](https://github.com/gatanasi/video-converter/compare/v2.5.5...v2.5.6) (2026-04-26)## [2.5.2](https://github.com/gatanasi/video-converter/compare/v2.5.1...v2.5.2) (2026-03-06)
 
 
 ### Bug Fixes
 
 * exclude active conversions from file list ([#183](https://github.com/gatanasi/video-converter/issues/183)) ([821c304](https://github.com/gatanasi/video-converter/commit/821c304440fc06d5dac0b3f0d4b729924a486891))
 
-# [2.5.0](https://github.com/gatanasi/video-converter/compare/v2.4.2...v2.5.0) (2026-02-24)
+## [2.5.0](https://github.com/gatanasi/video-converter/compare/v2.4.2...v2.5.0) (2026-02-24)
 
 
 ### Bug Fixes
@@ -17,7 +17,7 @@
 
 * **frontend:** add URL hash routing for tabs ([#165](https://github.com/gatanasi/video-converter/issues/165)) ([9d0c8fc](https://github.com/gatanasi/video-converter/commit/9d0c8fc390578c1d8c7f3919b66d978a455b9199))
 
-# [2.4.0](https://github.com/gatanasi/video-converter/compare/v2.3.7...v2.4.0) (2026-01-30)
+## [2.4.0](https://github.com/gatanasi/video-converter/compare/v2.3.7...v2.4.0) (2026-01-30)
 
 
 ### Bug Fixes
@@ -33,7 +33,7 @@
 * **frontend:** migrate CSS from vanilla to Tailwind CSS v4 ([8951397](https://github.com/gatanasi/video-converter/commit/89513978114e8d127a9a7bae8844ff3bd8f754e2))
 * **frontend:** migrate CSS from vanilla to Tailwind CSS v4 ([#143](https://github.com/gatanasi/video-converter/issues/143)) ([658e3e8](https://github.com/gatanasi/video-converter/commit/658e3e8850b94a173ca7f1fb5891ac01cfa34720))
 
-## [2.5.6](https://github.com/gatanasi/video-converter/compare/v2.5.5...v2.5.6) (2026-04-26)
+
 
 
 ### Miscellaneous Chores
@@ -55,7 +55,7 @@
 
 * **Dockerfile:** correct pnpm filter syntax for frontend dependencies ([3a7c033](https://github.com/gatanasi/video-converter/commit/3a7c03375a724f66d4dbeebcd5cbfe1629f6bf4c))
 
-# [2.3.0](https://github.com/gatanasi/video-converter/compare/v2.2.0...v2.3.0) (2025-10-12)
+## [2.3.0](https://github.com/gatanasi/video-converter/compare/v2.2.0...v2.3.0) (2025-10-12)
 
 
 ### Bug Fixes
@@ -80,7 +80,7 @@
 * **ui:** New look & feel ([2111d02](https://github.com/gatanasi/video-converter/commit/2111d02ab5a356a6d2ad92681c0bb11a8ea634a1))
 * **ui:** New look & feel ([#91](https://github.com/gatanasi/video-converter/issues/91)) ([77c8c76](https://github.com/gatanasi/video-converter/commit/77c8c7672925fda2cee59ca91ad0571344e7cf36))
 
-# [2.2.0](https://github.com/gatanasi/video-converter/compare/v2.1.2...v2.2.0) (2025-10-12)
+## [2.2.0](https://github.com/gatanasi/video-converter/compare/v2.1.2...v2.2.0) (2025-10-12)
 
 
 ### Bug Fixes
@@ -111,7 +111,7 @@
 
 * **docker:** replace wget with curl in healthcheck and Dockerfile ([7a2fcf5](https://github.com/gatanasi/video-converter/commit/7a2fcf58f85de3bbfaca673fe2f458711f6ab877))
 
-# [2.1.0](https://github.com/gatanasi/video-converter/compare/v2.0.1...v2.1.0) (2025-10-11)
+## [2.1.0](https://github.com/gatanasi/video-converter/compare/v2.0.1...v2.1.0) (2025-10-11)
 
 
 ### Bug Fixes
@@ -126,7 +126,7 @@
 
 * **docker:** add entrypoint script and update Dockerfile for improved user permissions ([1ca807a](https://github.com/gatanasi/video-converter/commit/1ca807ab1fd382b58d9d0529f8c4a1559f836379))
 
-# [2.0.0](https://github.com/gatanasi/video-converter/compare/v1.4.0...v2.0.0) (2025-10-10)
+## [2.0.0](https://github.com/gatanasi/video-converter/compare/v1.4.0...v2.0.0) (2025-10-10)
 
 
 ### Bug Fixes
@@ -153,7 +153,7 @@
 
 * Deployment method changed from binary artifacts to Docker images. Previous releases with backend binary and frontend zip are no longer produced. Use Docker images from ghcr.io/gatanasi/video-converter instead.
 
-# [1.4.0](https://github.com/gatanasi/video-converter/compare/v1.3.1...v1.4.0) (2025-09-28)
+## [1.4.0](https://github.com/gatanasi/video-converter/compare/v1.3.1...v1.4.0) (2025-09-28)
 
 
 ### Features
@@ -161,7 +161,7 @@
 * add configuration manager for API base URL retrieval ([99f8e8c](https://github.com/gatanasi/video-converter/commit/99f8e8c455283b4cfa00aea2cb17e10190b05ea8))
 * implement Server-Sent Events ([d0d339d](https://github.com/gatanasi/video-converter/commit/d0d339d0cdc587565a9df351c6745e412090e169))
 
-# [1.3.0](https://github.com/gatanasi/video-converter/compare/v1.2.4...v1.3.0) (2025-09-28)
+## [1.3.0](https://github.com/gatanasi/video-converter/compare/v1.2.4...v1.3.0) (2025-09-28)
 
 
 ### Features
@@ -175,7 +175,7 @@
 
 * remove redundant argument from exiftool command in video conversion ([30ac0e3](https://github.com/gatanasi/video-converter/commit/30ac0e39369965a94e652195f4b284c3a04b4c2f))
 
-# [1.2.0](https://github.com/gatanasi/video-converter/compare/v1.1.4...v1.2.0) (2025-05-03)
+## [1.2.0](https://github.com/gatanasi/video-converter/compare/v1.1.4...v1.2.0) (2025-05-03)
 
 
 ### Bug Fixes
@@ -213,7 +213,7 @@
 * Correct path for backend build artifact upload ([d10542c](https://github.com/gatanasi/video-converter/commit/d10542c655df61a0c3743173399d48cb1d94a7a8))
 * Correct path for backend build artifact upload ([03dfad2](https://github.com/gatanasi/video-converter/commit/03dfad2cd91c7d5df0065e97ff403a99d101e8ea))
 
-# [1.1.0](https://github.com/gatanasi/video-converter/compare/v1.0.0...v1.1.0) (2025-04-21)
+## [1.1.0](https://github.com/gatanasi/video-converter/compare/v1.0.0...v1.1.0) (2025-04-21)
 
 
 ### Bug Fixes
