@@ -11,6 +11,7 @@
   "scripts": {
     "prepare": "husky",
     "check:changelog": "node scripts/validate-changelog.js",
+    "test:changelog": "node --test scripts/validate-changelog.test.js",
     "test:smoke": "bash tests/run-smoke-tests.sh"
   }
 }
