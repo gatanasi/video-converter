@@ -1,3 +1,19 @@
+# Changelog
+
+## [2.5.8](https://github.com/gatanasi/video-converter/compare/v2.5.7...v2.5.8) (2026-04-27)
+
+### Continuous Integration
+
+* optimize release steps for amd64 VM ([#229](https://github.com/gatanasi/video-converter/issues/229)) ([86f915a](https://github.com/gatanasi/video-converter/commit/86f915afdd7450173bee21bba664ca506c2fe08f))
+
+### Documentation
+
+* update workflow documentation for amd64-only releases ([#229](https://github.com/gatanasi/video-converter/issues/229)) ([86f915a](https://github.com/gatanasi/video-converter/commit/86f915afdd7450173bee21bba664ca506c2fe08f))
+
+### Miscellaneous Chores
+
+* force release ([e20d6eb](https://github.com/gatanasi/video-converter/commit/e20d6eb4d41357de8f045d7de1b51243ea3c169d))
+
 ## [2.5.7](https://github.com/gatanasi/video-converter/compare/v2.5.6...v2.5.7) (2026-04-26)
 
 ### Miscellaneous Chores

@@ -1,6 +1,6 @@
 {
   "name": "video-converter-root",
-  "version": "2.5.7",
+  "version": "2.5.8",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "devDependencies": {
@@ -10,6 +10,8 @@
   },
   "scripts": {
     "prepare": "husky",
+    "check:changelog": "node scripts/validate-changelog.js",
+    "test:changelog": "node --test scripts/validate-changelog.test.js",
     "test:smoke": "bash tests/run-smoke-tests.sh"
   }
 }
