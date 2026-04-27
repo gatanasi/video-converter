@@ -118,17 +118,19 @@ jobs:
       contents: read
       packages: write
     with:
-      build_docker: true
+      build_docker: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' }}
       push_docker: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' }}
       app_version: ${{ needs.detect_release_pr_merge.outputs.is_release_pr_merge == 'true' && needs.detect_release_pr_merge.outputs.version || github.sha }}
       checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
-      platforms: 'linux/amd64,linux/arm64'
+      platforms: 'linux/amd64'
 
   smoke_tests:
     name: Smoke Tests
     if: github.event_name == 'push'
-    needs: ci
+    needs: [detect_release_pr_merge, ci]
     uses: ./.github/workflows/smoke-tests.yml
+    with:
+      checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
 
   publish_release_from_push:
     name: Publish GitHub Release
@@ -365,12 +367,12 @@ jobs:
       push_docker: true
       app_version: ${{ needs.merge_manual_release_pr.outputs.version }}
       checkout_ref: ${{ needs.merge_manual_release_pr.outputs.checkout_ref }}
-      platforms: 'linux/amd64,linux/arm64'
+      platforms: 'linux/amd64'
 
   publish_manual_release:
     name: Publish GitHub Release
     if: github.event_name == 'workflow_dispatch' && inputs.mode == 'publish-now'
-    needs: [merge_manual_release_pr, build_manual_release]
+    needs: [merge_manual_release_pr, build_manual_release, smoke_tests_manual]
     runs-on: ubuntu-latest
     steps:
       - name: Run release-please
@@ -403,3 +405,11 @@ jobs:
             echo "VERSION=${{ needs.merge_manual_release_pr.outputs.version }} docker compose up -d"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  smoke_tests_manual:
+    name: Smoke Tests (Manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'publish-now'
+    needs: [merge_manual_release_pr, build_manual_release]
+    uses: ./.github/workflows/smoke-tests.yml
+    with:
+      checkout_ref: ${{ needs.merge_manual_release_pr.outputs.checkout_ref }}

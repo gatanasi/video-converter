@@ -14,7 +14,7 @@ If you're contributing to the project, see [CONTRIBUTING.md](CONTRIBUTING.md) fo
 
 ## Using Pre-built Images
 
-The application is distributed via GitHub Container Registry (GHCR). Images are available for `linux/amd64` and `linux/arm64` platforms.
+The application is distributed via GitHub Container Registry (GHCR). Published images target the `linux/amd64` platform.
 
 ```bash
 # Pull latest version
@@ -193,13 +193,12 @@ server {
 }
 ```
 
-## Multi-Platform Images
+## Published Image Platform
 
-Images are built for:
+Published images are built for:
 - `linux/amd64` (Intel/AMD x86_64)
-- `linux/arm64` (ARM64/Apple Silicon)
 
-Docker automatically pulls the correct architecture for your system.
+ARM64 systems need to run the amd64 image through platform emulation or build a local image for their architecture.
 
 ## Image Details
 

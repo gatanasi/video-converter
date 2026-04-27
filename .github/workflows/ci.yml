@@ -46,3 +46,5 @@ jobs:
     name: Smoke Tests
     needs: build
     uses: ./.github/workflows/smoke-tests.yml
+    with:
+      checkout_ref: ${{ github.sha }}

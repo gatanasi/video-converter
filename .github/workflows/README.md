@@ -10,7 +10,7 @@ Automated CI/CD workflows that build and publish Docker images to GitHub Contain
 
 ### Release Workflow (`release.yml`)
 - **Trigger**: Manual dispatch from GitHub Actions UI
-- **Actions**: Builds multi-platform Docker images and pushes to GHCR, creates GitHub Release
+- **Actions**: Builds `linux/amd64` Docker images and pushes to GHCR, creates GitHub Release
 
 **To create a release:**
 1. Go to **Actions** → **Video Converter - Release** → **Run workflow**
@@ -31,7 +31,7 @@ Published to: `ghcr.io/gatanasi/video-converter`
 - `1.0` - Latest 1.0.x patch
 - `1` - Latest 1.x.x
 
-**Platforms:** `linux/amd64`, `linux/arm64`
+**Platforms:** `linux/amd64`
 
 ## Permissions
 

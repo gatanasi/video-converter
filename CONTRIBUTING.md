@@ -229,16 +229,16 @@ docker compose build
 docker compose up -d
 ```
 
-### Test Multi-Platform Build
+### Test Release Platform Build
 
 ```bash
 # Setup buildx (one-time)
-docker buildx create --name multiplatform --use
+docker buildx create --name release-platform --use
 
-# Build for multiple platforms
+# Build for the published release platform
 docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -t video-converter:multiplatform \
+  --platform linux/amd64 \
+  -t video-converter:amd64 \
   --load \
   .
 ```
@@ -324,7 +324,7 @@ BREAKING CHANGE: Video list API now returns data in { videos: [] } format
    - Opens or updates release-please PRs on pushes to `main`
    - Publishes releases after release-please PRs are merged
    - Supports manual `open-pr` and `publish-now` modes
-   - Builds multi-platform Docker images
+   - Builds `linux/amd64` Docker images
    - Pushes to GitHub Container Registry (GHCR)
    - Creates GitHub Releases with release-please notes
 
@@ -342,7 +342,7 @@ for `main`. Maintainers can also trigger the release workflow manually:
 The workflow will:
 - Use release-please to determine or force the next version
 - Run all tests and linting
-- Build Docker images for `linux/amd64` and `linux/arm64`
+- Build Docker images for `linux/amd64`
 - Push images to `ghcr.io/gatanasi/video-converter` with multiple tags
 - Create a GitHub Release with release-please notes
 

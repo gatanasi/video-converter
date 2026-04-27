@@ -2,7 +2,26 @@ name: Smoke Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      node_version:
+        description: 'Node.js version for smoke-test dependencies'
+        required: false
+        type: string
+        default: '24.x'
+      checkout_ref:
+        description: 'Git ref to test'
+        required: false
+        type: string
   workflow_call:
+    inputs:
+      node_version:
+        required: false
+        type: string
+        default: '24.x'
+      checkout_ref:
+        required: false
+        type: string
+        default: ${{ github.sha }}
 
 permissions:
   contents: read
@@ -16,6 +35,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
@@ -23,7 +44,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24.x'
+          node-version: ${{ inputs.node_version || '24.x' }}
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
