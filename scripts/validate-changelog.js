@@ -5,7 +5,8 @@ const path = require("path");
 
 const defaultChangelogPath = path.resolve(__dirname, "..", "CHANGELOG.md");
 
-const releaseVersionPattern = String.raw`\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`;
+const prereleaseIdentifierPattern = String.raw`[0-9A-Za-z-]+`;
+const releaseVersionPattern = String.raw`\d+\.\d+\.\d+(?:-${prereleaseIdentifierPattern}(?:\.${prereleaseIdentifierPattern})*)?`;
 const versionHeadingRegex = new RegExp(
   String.raw`^## \[(${releaseVersionPattern})\]\(https?:\/\/[^)\s]+\/compare\/v[^)\s]+\) \(\d{4}-\d{2}-\d{2}\)$`,
 );

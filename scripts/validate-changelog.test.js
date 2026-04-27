@@ -51,6 +51,12 @@ test("rejects prerelease numeric identifiers with leading zeros", () => {
   assert.match(result.errors.join("\n"), /numeric prerelease identifier '01' must not include leading zeros/);
 });
 
+test("rejects prerelease empty identifiers", () => {
+  const result = validateChangelog(changelogFor(["1.0.0-alpha..1"]));
+
+  assert.match(result.errors.join("\n"), /release heading must use/);
+});
+
 test("preserves prerelease identifiers that contain hyphens", () => {
   assert.equal(parseVersion("1.2.3-alpha-beta.10").prerelease, "alpha-beta.10");
 });
