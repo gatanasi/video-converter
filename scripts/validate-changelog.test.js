@@ -1,10 +1,14 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const test = require("node:test");
 
 const {
   compareVersionsDesc,
   parseVersion,
   validateChangelog,
+  validateChangelogFile,
 } = require("./validate-changelog");
 
 function changelogFor(versions) {
@@ -16,11 +20,46 @@ function changelogFor(versions) {
   return `# Changelog\n\n${releaseBlocks.join("\n\n")}\n`;
 }
 
+function releaseBodyFor(version) {
+  return changelogFor([version]).split("\n\n").slice(1).join("\n\n");
+}
+
 test("accepts portable release-please compare URLs", () => {
   const result = validateChangelog(changelogFor(["2.5.8", "2.5.7"]));
 
   assert.deepEqual(result.errors, []);
   assert.equal(result.headings.length, 2);
+});
+
+test("accepts harmless trailing whitespace on release heading lines", () => {
+  const result = validateChangelog(
+    "# Changelog\n\n## [2.5.8](https://github.com/example/project/compare/v2.5.7...v2.5.8) (2026-04-27)  \n",
+  );
+
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.headings[0].version, "2.5.8");
+});
+
+test("accepts BOM and trailing whitespace on the changelog title", () => {
+  const result = validateChangelog(`\uFEFF# Changelog \t\n\n${releaseBodyFor("2.5.8")}`);
+
+  assert.deepEqual(result.errors, []);
+});
+
+test("rejects an indented changelog title", () => {
+  const result = validateChangelog(` # Changelog\n\n${releaseBodyFor("2.5.8")}`);
+
+  assert.match(result.errors.join("\n"), /must start with '# Changelog'/);
+});
+
+test("reports missing changelog files without throwing", () => {
+  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "validate-changelog-"));
+  const missingChangelogPath = path.join(tempDirectory, "missing.md");
+
+  const result = validateChangelogFile(missingChangelogPath);
+
+  assert.deepEqual(result.headings, []);
+  assert.match(result.errors.join("\n"), /Changelog file not found/);
 });
 
 test("rejects release headings that do not point to a compare URL", () => {

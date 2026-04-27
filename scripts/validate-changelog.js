@@ -8,12 +8,14 @@ const defaultChangelogPath = path.resolve(__dirname, "..", "CHANGELOG.md");
 const prereleaseIdentifierPattern = String.raw`[0-9A-Za-z-]+`;
 const releaseVersionPattern = String.raw`\d+\.\d+\.\d+(?:-${prereleaseIdentifierPattern}(?:\.${prereleaseIdentifierPattern})*)?`;
 const versionHeadingRegex = new RegExp(
-  String.raw`^## \[(${releaseVersionPattern})\]\(https?:\/\/[^)\s]+\/compare\/v[^)\s]+\) \(\d{4}-\d{2}-\d{2}\)$`,
+  String.raw`^## \[(${releaseVersionPattern})\]\(https?:\/\/[^)\s]+\/compare\/v[^)\s]+\) \(\d{4}-\d{2}-\d{2}\)\s*$`,
 );
 const releaseHeadingMarkerRegex = new RegExp(String.raw`## \[${releaseVersionPattern}\]`, "g");
 const malformedVersionHeadingRegex = /^#{1,6} \[?\d+\.\d+\.\d+/;
 const numericIdentifierRegex = /^(0|[1-9]\d*)$/;
 const leadingZeroNumericIdentifierRegex = /^0\d+$/;
+const byteOrderMarkRegex = /^\uFEFF/;
+const trailingWhitespaceRegex = /[ \t]+$/;
 
 function parseVersion(version) {
   const prereleaseSeparatorIndex = version.indexOf("-");
@@ -97,12 +99,16 @@ function invalidPrereleaseIdentifiers(version) {
   );
 }
 
+function normalizeTitleLine(line) {
+  return line.replace(byteOrderMarkRegex, "").replace(trailingWhitespaceRegex, "");
+}
+
 function validateChangelog(changelog) {
   const lines = changelog.split(/\r?\n/);
   const errors = [];
   const headings = [];
 
-  if (lines[0] !== "# Changelog") {
+  if (normalizeTitleLine(lines[0] || "") !== "# Changelog") {
     errors.push("CHANGELOG.md must start with '# Changelog'.");
   }
 
@@ -154,9 +160,25 @@ function validateChangelog(changelog) {
   return { errors, headings };
 }
 
+function validateChangelogFile(changelogPath = defaultChangelogPath) {
+  let changelog;
+  try {
+    changelog = fs.readFileSync(changelogPath, "utf8");
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return {
+        errors: [`Changelog file not found at ${changelogPath}.`],
+        headings: [],
+      };
+    }
+    throw error;
+  }
+
+  return validateChangelog(changelog);
+}
+
 function main() {
-  const changelog = fs.readFileSync(defaultChangelogPath, "utf8");
-  const { errors, headings } = validateChangelog(changelog);
+  const { errors, headings } = validateChangelogFile();
 
   if (errors.length > 0) {
     console.error("Invalid changelog:");
@@ -177,4 +199,5 @@ module.exports = {
   compareVersionsDesc,
   parseVersion,
   validateChangelog,
+  validateChangelogFile,
 };
