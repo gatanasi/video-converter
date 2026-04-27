@@ -4,6 +4,13 @@
 
 * force release ([d78e28e](https://github.com/gatanasi/video-converter/commit/d78e28e563e1292ffdc138a6b2ab2766f201f827))
 
+## [2.5.8](https://github.com/gatanasi/video-converter/compare/v2.5.7...v2.5.8) (2026-04-27)
+
+
+### Miscellaneous Chores
+
+* force release ([e20d6eb](https://github.com/gatanasi/video-converter/commit/e20d6eb4d41357de8f045d7de1b51243ea3c169d))
+
 ## [2.5.6](https://github.com/gatanasi/video-converter/compare/v2.5.5...v2.5.6) (2026-04-26)
 
 ## [2.5.2](https://github.com/gatanasi/video-converter/compare/v2.5.1...v2.5.2) (2026-03-06)
