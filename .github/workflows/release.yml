@@ -127,7 +127,7 @@ jobs:
   smoke_tests:
     name: Smoke Tests
     if: github.event_name == 'push'
-    needs: ci
+    needs: [detect_release_pr_merge, ci]
     uses: ./.github/workflows/smoke-tests.yml
     with:
       checkout_ref: ${{ needs.detect_release_pr_merge.outputs.checkout_ref }}
