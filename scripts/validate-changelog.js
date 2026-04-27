@@ -5,8 +5,11 @@ const path = require("path");
 
 const defaultChangelogPath = path.resolve(__dirname, "..", "CHANGELOG.md");
 
-const versionHeadingRegex =
-  /^## \[(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\]\(https?:\/\/[^)\s]+\/compare\/v[^)\s]+\) \(\d{4}-\d{2}-\d{2}\)$/;
+const releaseVersionPattern = String.raw`\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`;
+const versionHeadingRegex = new RegExp(
+  String.raw`^## \[(${releaseVersionPattern})\]\(https?:\/\/[^)\s]+\/compare\/v[^)\s]+\) \(\d{4}-\d{2}-\d{2}\)$`,
+);
+const releaseHeadingMarkerRegex = new RegExp(String.raw`## \[${releaseVersionPattern}\]`, "g");
 const malformedVersionHeadingRegex = /^#{1,6} \[?\d+\.\d+\.\d+/;
 const numericIdentifierRegex = /^(0|[1-9]\d*)$/;
 const leadingZeroNumericIdentifierRegex = /^0\d+$/;
@@ -122,7 +125,7 @@ function validateChangelog(changelog) {
       );
     }
 
-    const multipleReleaseHeadings = line.match(/## \[\d+\.\d+\.\d+/g);
+    const multipleReleaseHeadings = line.match(releaseHeadingMarkerRegex);
     if (multipleReleaseHeadings && multipleReleaseHeadings.length > 1) {
       errors.push(`Line ${index + 1}: multiple release headings found on one line.`);
     }

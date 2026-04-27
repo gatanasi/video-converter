@@ -31,6 +31,14 @@ test("rejects release headings that do not point to a compare URL", () => {
   assert.match(result.errors.join("\n"), /release heading must use/);
 });
 
+test("rejects multiple prerelease headings on one line", () => {
+  const result = validateChangelog(
+    "# Changelog\n\n## [1.0.0-alpha.2](https://github.com/example/project/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2026-04-27) ## [1.0.0-alpha.1](https://github.com/example/project/compare/v1.0.0-alpha.0...v1.0.0-alpha.1) (2026-04-26)\n",
+  );
+
+  assert.match(result.errors.join("\n"), /multiple release headings found on one line/);
+});
+
 test("rejects duplicate release versions", () => {
   const result = validateChangelog(changelogFor(["2.5.8", "2.5.8"]));
 
