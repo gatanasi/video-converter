@@ -79,6 +79,18 @@ jobs:
               - '.dockerignore'
               - '.github/workflows/**'
 
+  changelog-check:
+    name: Validate Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.checkout_ref }}
+
+      - name: Validate changelog
+        run: node scripts/validate-changelog.js
+
   # Frontend linting/testing (runs in parallel with backend)
   frontend-test:
     name: Frontend Lint and Test
@@ -147,11 +159,12 @@ jobs:
   docker-build:
     name: Docker Build and Push
     runs-on: ubuntu-latest
-    needs: [detect-changes, frontend-test, backend-test]
+    needs: [detect-changes, changelog-check, frontend-test, backend-test]
     # Run if docker build requested AND (tests passed OR were skipped due to no changes)
     if: |
       always() &&
       inputs.build_docker == true &&
+      needs.changelog-check.result == 'success' &&
       (needs.frontend-test.result == 'success' || needs.frontend-test.result == 'skipped') &&
       (needs.backend-test.result == 'success' || needs.backend-test.result == 'skipped')
     outputs:

@@ -10,6 +10,7 @@
   },
   "scripts": {
     "prepare": "husky",
+    "check:changelog": "node scripts/validate-changelog.js",
     "test:smoke": "bash tests/run-smoke-tests.sh"
   }
 }

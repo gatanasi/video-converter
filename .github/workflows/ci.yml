@@ -12,9 +12,15 @@ on:
       - 'compose.dev.yaml'
       - '.dockerignore'
       - 'tests/**'
+      - 'CHANGELOG.md'
+      - 'release-please-config.json'
+      - '.release-please-manifest.json'
+      - 'package.json'
+      - 'scripts/validate-changelog.js'
       - '.github/workflows/ci.yml'
       - '.github/workflows/build-jobs.yml'
       - '.github/workflows/smoke-tests.yml'
+      - '.github/workflows/release.yml'
   pull_request:
     branches:
       - main
@@ -26,9 +32,15 @@ on:
       - 'compose.dev.yaml'
       - '.dockerignore'
       - 'tests/**'
+      - 'CHANGELOG.md'
+      - 'release-please-config.json'
+      - '.release-please-manifest.json'
+      - 'package.json'
+      - 'scripts/validate-changelog.js'
       - '.github/workflows/ci.yml'
       - '.github/workflows/build-jobs.yml'
       - '.github/workflows/smoke-tests.yml'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: read
