@@ -8,7 +8,8 @@ const defaultChangelogPath = path.resolve(__dirname, "..", "CHANGELOG.md");
 const versionHeadingRegex =
   /^## \[(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\]\(https?:\/\/[^)\s]+\/compare\/v[^)\s]+\) \(\d{4}-\d{2}-\d{2}\)$/;
 const malformedVersionHeadingRegex = /^#{1,6} \[?\d+\.\d+\.\d+/;
-const numericIdentifierRegex = /^\d+$/;
+const numericIdentifierRegex = /^(0|[1-9]\d*)$/;
+const leadingZeroNumericIdentifierRegex = /^0\d+$/;
 
 function parseVersion(version) {
   const prereleaseSeparatorIndex = version.indexOf("-");
@@ -86,6 +87,12 @@ function compareVersionsDesc(leftVersion, rightVersion) {
   return -comparePrereleaseAsc(left.prereleaseIdentifiers, right.prereleaseIdentifiers);
 }
 
+function invalidPrereleaseIdentifiers(version) {
+  return parseVersion(version).prereleaseIdentifiers.filter((identifier) =>
+    leadingZeroNumericIdentifierRegex.test(identifier),
+  );
+}
+
 function validateChangelog(changelog) {
   const lines = changelog.split(/\r?\n/);
   const errors = [];
@@ -98,7 +105,14 @@ function validateChangelog(changelog) {
   lines.forEach((line, index) => {
     const match = line.match(versionHeadingRegex);
     if (match) {
-      headings.push({ version: match[1], lineNumber: index + 1 });
+      const version = match[1];
+      headings.push({ version, lineNumber: index + 1 });
+
+      for (const identifier of invalidPrereleaseIdentifiers(version)) {
+        errors.push(
+          `Line ${index + 1}: numeric prerelease identifier '${identifier}' must not include leading zeros in version ${version}.`,
+        );
+      }
       return;
     }
 
@@ -121,9 +135,14 @@ function validateChangelog(changelog) {
   for (let index = 1; index < headings.length; index += 1) {
     const previous = headings[index - 1];
     const current = headings[index];
-    if (compareVersionsDesc(previous.version, current.version) > 0) {
+    const comparison = compareVersionsDesc(previous.version, current.version);
+    if (comparison > 0) {
       errors.push(
         `Line ${current.lineNumber}: version ${current.version} must appear before ${previous.version}.`,
+      );
+    } else if (comparison === 0) {
+      errors.push(
+        `Line ${current.lineNumber}: duplicate version ${current.version} found (also on line ${previous.lineNumber}).`,
       );
     }
   }

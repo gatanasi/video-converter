@@ -31,6 +31,18 @@ test("rejects release headings that do not point to a compare URL", () => {
   assert.match(result.errors.join("\n"), /release heading must use/);
 });
 
+test("rejects duplicate release versions", () => {
+  const result = validateChangelog(changelogFor(["2.5.8", "2.5.8"]));
+
+  assert.match(result.errors.join("\n"), /duplicate version 2\.5\.8/);
+});
+
+test("rejects prerelease numeric identifiers with leading zeros", () => {
+  const result = validateChangelog(changelogFor(["1.0.0-alpha.01"]));
+
+  assert.match(result.errors.join("\n"), /numeric prerelease identifier '01' must not include leading zeros/);
+});
+
 test("preserves prerelease identifiers that contain hyphens", () => {
   assert.equal(parseVersion("1.2.3-alpha-beta.10").prerelease, "alpha-beta.10");
 });
