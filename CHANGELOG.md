@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.5.9](https://github.com/gatanasi/video-converter/compare/v2.5.8...v2.5.9) (2026-05-03)
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#233](https://github.com/gatanasi/video-converter/issues/233)) ([23ef9aa](https://github.com/gatanasi/video-converter/commit/23ef9aa2958ba5ee25bb57875dc2ca71e0fbd42a))
+* **deps:** update dependency postcss to v8.5.13 ([#235](https://github.com/gatanasi/video-converter/issues/235)) ([510f060](https://github.com/gatanasi/video-converter/commit/510f0606805f5e8121604d66ef0c4a0e3d94eee5))
+* **deps:** update npm non-major devdependencies ([#231](https://github.com/gatanasi/video-converter/issues/231)) ([b216fa3](https://github.com/gatanasi/video-converter/commit/b216fa3d7eb25e1ad86ee4faee0f47daf26ecd63))
+* **deps:** update pnpm/action-setup action to v6.0.5 ([#232](https://github.com/gatanasi/video-converter/issues/232)) ([1cc0e97](https://github.com/gatanasi/video-converter/commit/1cc0e97a61bf2491b2a0559bbbf57d2d6ef1fd98))
+
 ## [2.5.8](https://github.com/gatanasi/video-converter/compare/v2.5.7...v2.5.8) (2026-04-27)
 
 ### Continuous Integration
