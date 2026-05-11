@@ -1,6 +1,6 @@
 packages:
   - frontend
   - tests
-
-onlyBuiltDependencies:
-  - esbuild
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
