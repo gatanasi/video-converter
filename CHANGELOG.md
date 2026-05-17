@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.10](https://github.com/gatanasi/video-converter/compare/v2.5.9...v2.5.10) (2026-05-17)
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#247](https://github.com/gatanasi/video-converter/issues/247)) ([8720f99](https://github.com/gatanasi/video-converter/commit/8720f990e4ca2ca78486802836439a802bb0a48d))
+* **deps:** update commitlint monorepo to v21 ([#246](https://github.com/gatanasi/video-converter/issues/246)) ([10714f0](https://github.com/gatanasi/video-converter/commit/10714f0f9d5fd6ce826e4aebb1d88909ad3a377b))
+* **deps:** update npm non-major devdependencies ([#244](https://github.com/gatanasi/video-converter/issues/244)) ([b8fe6a8](https://github.com/gatanasi/video-converter/commit/b8fe6a8070a971ff3b2823609a123608b0cba38f))
+* **deps:** update pnpm to v11 ([#241](https://github.com/gatanasi/video-converter/issues/241)) ([e6c39ae](https://github.com/gatanasi/video-converter/commit/e6c39ae6451367dfe7c97370b9d3d2a269a86556))
+* **deps:** update pnpm to v11.1.2 ([#245](https://github.com/gatanasi/video-converter/issues/245)) ([d9a189f](https://github.com/gatanasi/video-converter/commit/d9a189f26cd567d29037dce85c0b4e14c8d8106f))
+* **deps:** update pnpm/action-setup action to v6.0.8 ([#243](https://github.com/gatanasi/video-converter/issues/243)) ([3549afb](https://github.com/gatanasi/video-converter/commit/3549afb28a61af853dbe670d249a3dbf5017fb26))
+
 ## [2.5.9](https://github.com/gatanasi/video-converter/compare/v2.5.8...v2.5.9) (2026-05-10)
 
 
