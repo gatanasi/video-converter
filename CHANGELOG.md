@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.5.11](https://github.com/gatanasi/video-converter/compare/v2.5.10...v2.5.11) (2026-05-31)
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#256](https://github.com/gatanasi/video-converter/issues/256)) ([92cb70a](https://github.com/gatanasi/video-converter/commit/92cb70a8f89b070d2803cbb9c516abf82db85a23))
+* **deps:** lock file maintenance ([#259](https://github.com/gatanasi/video-converter/issues/259)) ([f658198](https://github.com/gatanasi/video-converter/commit/f658198bdce0031baeede8a84262468fe6ed1b13))
+* **deps:** update dependency concurrently to v10 ([#261](https://github.com/gatanasi/video-converter/issues/261)) ([b1a9588](https://github.com/gatanasi/video-converter/commit/b1a95887be3da2da72be1d707d9fefc57ccaa16d))
+* **deps:** update dependency postcss to v8.5.15 ([#249](https://github.com/gatanasi/video-converter/issues/249)) ([2364b9b](https://github.com/gatanasi/video-converter/commit/2364b9b1c612b1a068e3e29a987901b77e9c74dd))
+* **deps:** update docker/build-push-action action to v7.2.0 ([#251](https://github.com/gatanasi/video-converter/issues/251)) ([a3d6360](https://github.com/gatanasi/video-converter/commit/a3d636090574f382db67f18dd36b3b89ddeb9efd))
+* **deps:** update docker/login-action action to v4.2.0 ([#252](https://github.com/gatanasi/video-converter/issues/252)) ([2e0be90](https://github.com/gatanasi/video-converter/commit/2e0be900546e30c7a55bc278c928cba561f870ad))
+* **deps:** update docker/metadata-action action to v6.1.0 ([#253](https://github.com/gatanasi/video-converter/issues/253)) ([481bbb9](https://github.com/gatanasi/video-converter/commit/481bbb90eb2039b635b09d16ada1d21f65fe23df))
+* **deps:** update docker/setup-buildx-action action to v4.1.0 ([#254](https://github.com/gatanasi/video-converter/issues/254)) ([bed8168](https://github.com/gatanasi/video-converter/commit/bed8168cc24cfb37c9035d949481881c7d0e17eb))
+* **deps:** update golangci/golangci-lint-action action to v9.2.1 ([#250](https://github.com/gatanasi/video-converter/issues/250)) ([5672c93](https://github.com/gatanasi/video-converter/commit/5672c937f8c567c5dc636410b7a4e4d5c0cc1731))
+* **deps:** update node.js to 2bdb65e ([#248](https://github.com/gatanasi/video-converter/issues/248)) ([89ee507](https://github.com/gatanasi/video-converter/commit/89ee50718dde18c3e4da4031fad98de0bbb39068))
+* **deps:** update pnpm to v11.2.1 ([#255](https://github.com/gatanasi/video-converter/issues/255)) ([6a510e2](https://github.com/gatanasi/video-converter/commit/6a510e2010ab9ebdaa9c86db7dbc2f202b1966a9))
+* **deps:** update pnpm to v11.2.2 ([#258](https://github.com/gatanasi/video-converter/issues/258)) ([f027639](https://github.com/gatanasi/video-converter/commit/f027639e17395e55bb6944850711585bd8e8bd94))
+* **deps:** update pnpm to v11.4.0 ([#260](https://github.com/gatanasi/video-converter/issues/260)) ([f613e17](https://github.com/gatanasi/video-converter/commit/f613e172c95c2012d930875f01a10bb9922db8b0))
+
 ## [2.5.10](https://github.com/gatanasi/video-converter/compare/v2.5.9...v2.5.10) (2026-05-17)
 
 
