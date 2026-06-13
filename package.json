@@ -1,6 +1,6 @@
 {
   "name": "video-converter-root",
-  "version": "2.5.11",
+  "version": "2.5.12",
   "private": true,
   "packageManager": "pnpm@11.5.2",
   "devDependencies": {
