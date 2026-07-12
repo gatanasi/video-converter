@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.5.14](https://github.com/gatanasi/video-converter/compare/v2.5.13...v2.5.14) (2026-07-12)
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#306](https://github.com/gatanasi/video-converter/issues/306)) ([90a9aca](https://github.com/gatanasi/video-converter/commit/90a9acad896a16cdd01b76817a4d3ea790374263))
+* **deps:** lock file maintenance ([#308](https://github.com/gatanasi/video-converter/issues/308)) ([9418bf7](https://github.com/gatanasi/video-converter/commit/9418bf785cab1c3be46651a813cf301ab26cd440))
+* **deps:** lock file maintenance ([#313](https://github.com/gatanasi/video-converter/issues/313)) ([ea30921](https://github.com/gatanasi/video-converter/commit/ea30921abedeb6ce2924694bf33f31bc105e7a73))
+* **deps:** update docker/login-action action to v4.4.0 ([#304](https://github.com/gatanasi/video-converter/issues/304)) ([a4413ff](https://github.com/gatanasi/video-converter/commit/a4413ff2be6c2ec4c45955c025a691874930dd41))
+* **deps:** update dorny/paths-filter action to v4.0.2 ([#303](https://github.com/gatanasi/video-converter/issues/303)) ([25016bf](https://github.com/gatanasi/video-converter/commit/25016bf7f0d1f170daf69771c80e1b187eddeaeb))
+* **deps:** update golang docker tag to v1.26.5 ([#309](https://github.com/gatanasi/video-converter/issues/309)) ([1a641f1](https://github.com/gatanasi/video-converter/commit/1a641f1dcdd2ed65966a34257333ddb0485a2925))
+* **deps:** update npm non-major devdependencies ([#310](https://github.com/gatanasi/video-converter/issues/310)) ([4606bd7](https://github.com/gatanasi/video-converter/commit/4606bd7903865e9b62ff9767634d0071d9f3d794))
+* **deps:** update npm non-major devdependencies to v21.2.0 ([#305](https://github.com/gatanasi/video-converter/issues/305)) ([5d2103f](https://github.com/gatanasi/video-converter/commit/5d2103fd100068d3b9ee353d125819e8292bd3ee))
+* **deps:** update pnpm to v11.11.0 ([#311](https://github.com/gatanasi/video-converter/issues/311)) ([39eea7a](https://github.com/gatanasi/video-converter/commit/39eea7ae8168579f3389520257e5f4a088c76646))
+
 ## [2.5.13](https://github.com/gatanasi/video-converter/compare/v2.5.12...v2.5.13) (2026-07-02)
 
 
