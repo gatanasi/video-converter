@@ -195,4 +195,64 @@ describe('ActiveConversionsComponent (polling fallback)', () => {
 
         component.destroy();
     });
+
+    it('polls individual conversion status and updates progress over time', async () => {
+        const container = document.createElement('div');
+        container.classList.add('hidden');
+        document.body.appendChild(container);
+
+        vi.mocked(apiService.isActiveConversionStreamSupported).mockReturnValue(false);
+        vi.mocked(apiService.listActiveConversions).mockResolvedValue([runningStatus({ progress: 10 })]);
+        vi.mocked(apiService.getConversionStatus).mockResolvedValue(runningStatus({ progress: 55 }));
+
+        const component = new ActiveConversionsComponent({
+            container,
+            messageContainer: document.createElement('div'),
+        });
+
+        // Initial list poll (primed on construction) renders the item at its starting progress.
+        await vi.waitFor(() => {
+            expect(container.querySelector('.multi-progress-percent')?.textContent).toBe('10%');
+        });
+
+        // The 2s per-item progress interval should fetch and apply the latest status.
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(apiService.getConversionStatus).toHaveBeenCalledWith('conv-1');
+        expect(container.querySelector('.multi-progress-percent')?.textContent).toBe('55%');
+
+        component.destroy();
+    });
+
+    it('completes and removes the item once polling reports completion', async () => {
+        const container = document.createElement('div');
+        container.classList.add('hidden');
+        document.body.appendChild(container);
+
+        vi.mocked(apiService.isActiveConversionStreamSupported).mockReturnValue(false);
+        vi.mocked(apiService.listActiveConversions).mockResolvedValue([runningStatus({ progress: 90 })]);
+        vi.mocked(apiService.getConversionStatus).mockResolvedValue(
+            runningStatus({ progress: 100, complete: true, downloadUrl: '/download/movie.mp4' })
+        );
+
+        const component = new ActiveConversionsComponent({
+            container,
+            messageContainer: document.createElement('div'),
+        });
+
+        await vi.waitFor(() => {
+            expect(container.querySelector('.multi-progress-item')).not.toBeNull();
+        });
+
+        // The 2s per-item progress interval should observe completion and render the download link.
+        await vi.advanceTimersByTimeAsync(2000);
+        const item = container.querySelector<HTMLElement>('.multi-progress-item');
+        expect(item?.classList.contains('complete')).toBe(true);
+        expect(container.querySelector('.multi-progress-download')).not.toBeNull();
+
+        // Completed items are removed from the DOM after the standard removal delay.
+        await vi.advanceTimersByTimeAsync(10000);
+        expect(container.querySelector('.multi-progress-item')).toBeNull();
+
+        component.destroy();
+    });
 });

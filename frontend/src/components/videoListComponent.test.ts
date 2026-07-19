@@ -39,6 +39,21 @@ describe('VideoListComponent', () => {
         expect(rows[2].textContent).toContain('N/A'); // no size
     });
 
+    it('escapes video names to prevent HTML/script injection from Drive file names', () => {
+        const malicious: Video[] = [
+            { id: 'x', name: '<img src=x onerror=alert(1)>.mp4', mimeType: 'video/mp4' },
+        ];
+        component.displayVideos(malicious);
+
+        const nameCell = container.querySelector('tbody .video-name')!;
+        expect(nameCell.textContent).toBe('<img src=x onerror=alert(1)>.mp4');
+        expect(nameCell.querySelector('img')).toBeNull();
+        expect(nameCell.innerHTML).toContain('&lt;img');
+
+        const checkbox = container.querySelector('tbody .video-checkbox')!;
+        expect(checkbox.getAttribute('aria-label')).toBe('Select <img src=x onerror=alert(1)>.mp4');
+    });
+
     it('shows an empty message when a loaded folder has no videos', () => {
         component.displayVideos([]);
         expect(container.querySelector('.empty-message')?.textContent).toContain('No videos found');

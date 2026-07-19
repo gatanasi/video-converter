@@ -1,5 +1,5 @@
 import { VideoListContainer, Video } from '../types';
-import { formatBytes } from '../utils/utils';
+import { escapeHtml, formatBytes } from '../utils/utils';
 
 /**
  * Video List Component - Displays videos from Google Drive and handles selection.
@@ -123,13 +123,14 @@ export class VideoListComponent {
 
         const mimeTypeShort = video.mimeType ? video.mimeType.split('/')[1] || 'unknown' : 'unknown';
         const sizeFormatted = video.size ? formatBytes(video.size) : 'N/A';
+        const safeName = escapeHtml(video.name);
 
         row.innerHTML = `
             <td class="video-select">
                 <input type="checkbox" class="video-checkbox" data-id="${video.id}"
-                    aria-label="Select ${video.name}">
+                    aria-label="Select ${safeName}">
             </td>
-            <td class="video-name" title="${video.name}">${video.name}</td>
+            <td class="video-name" title="${safeName}">${safeName}</td>
             <td class="video-size cell-muted">${sizeFormatted}</td>
             <td class="video-type cell-muted">${mimeTypeShort}</td>
             <td class="video-date cell-muted">${formattedDate}</td>

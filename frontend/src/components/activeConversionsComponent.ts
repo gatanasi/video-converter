@@ -338,6 +338,13 @@ export class ActiveConversionsComponent {
         const conversion = this.activeConversions.get(conversionId);
         if (!conversion || !conversion.element) return;
 
+        // Already resolved: removal is already scheduled. Re-running this would call
+        // removeConversionItem again, which resets the pending timeout - in polling mode
+        // that means an item that stays "complete" across repeated 2s polls (e.g. the
+        // 5s list refresh hasn't dropped it from the active set yet) would have its
+        // removal deferred indefinitely instead of firing after REMOVAL_DELAY.
+        if (conversion.timeoutId !== undefined) return;
+
         // Remove abort button on completion
         const abortButton = conversion.element.querySelector<HTMLButtonElement>('.abort-button');
         if (abortButton) abortButton.remove();
