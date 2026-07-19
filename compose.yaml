@@ -1,6 +1,7 @@
 services:
   video-converter:
     container_name: video-converter
+    image: ghcr.io/gatanasi/video-converter:${VERSION:-latest}
     build:
       context: .
       args:
@@ -14,7 +15,7 @@ services:
       WORKER_COUNT: ${WORKER_COUNT:-2}
       DEFAULT_DRIVE_FOLDER_ID: "${DEFAULT_DRIVE_FOLDER_ID:-}"
       PORT: ${PORT:-3000}
-      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-500}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-2000}
     init: true
     volumes:
       - ./uploads:/app/uploads

@@ -12,7 +12,7 @@ cd "$REPO_ROOT"
 
 # Configuration
 COMPOSE_FILE="${COMPOSE_FILE:-compose.yaml}"
-CONTAINER_NAME="${CONTAINER_NAME:-video-converter-dev}"
+CONTAINER_NAME="${CONTAINER_NAME:-video-converter}"
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 CLEANUP="${CLEANUP:-true}"
 

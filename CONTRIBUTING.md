@@ -208,10 +208,11 @@ pnpm --filter ./frontend run typecheck
 ### Local Build and Test
 
 ```bash
-# Option 1: Use the development compose file
+# Option 1: docker compose (builds from source and tags it as the image
+# configured in compose.yaml - see DOCKER.md for details)
 docker compose up -d --build
 
-# Option 2: Build with default compose file (edit it first)
+# Option 2: Build manually
 docker build -t video-converter:dev .
 
 # Build with specific version
@@ -230,10 +231,6 @@ docker compose logs -f
 
 # Stop
 docker compose down
-
-# Or with docker compose (if you edited compose.yaml)
-docker compose build
-docker compose up -d
 ```
 
 ### Test Release Platform Build
