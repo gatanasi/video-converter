@@ -3,22 +3,24 @@
 [![CI](https://github.com/gatanasi/video-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/gatanasi/video-converter/actions/workflows/ci.yml)
 [![Smoke Tests](https://github.com/gatanasi/video-converter/actions/workflows/smoke-tests.yml/badge.svg)](https://github.com/gatanasi/video-converter/actions/workflows/smoke-tests.yml)
 
-Convert videos from Google Drive to different formats with a simple web interface.
+Convert videos from your device or Google Drive to different formats with a simple web interface.
 
 > 📖 **[User Guide](#)** (you're here) · **[Development Setup](CONTRIBUTING.md)** · **[Docker Reference](DOCKER.md)**
 
 ## ✨ Features
 
-- 📁 Browse and select videos from Google Drive folders
-- 🎬 Convert to MP4 or MOV formats with quality presets
+- ⬆️ Upload local videos with drag & drop
+- 📁 Browse and select videos from Google Drive folders (batch conversion supported)
+- 🎬 Convert to MP4 or MOV (H.265) with quality presets
 - 🔄 Reverse videos and remove audio
-- 📊 Real-time conversion progress tracking
-- 💾 Download and manage converted files
+- 📊 Real-time conversion progress tracking, with the option to abort
+- 💾 Download, share, and manage converted files from the Library tab
+- 🌙 Dark theme by default, light theme a click away
 - 🐳 Ready-to-deploy Docker images
 
 ## Screenshots
 
-<img width="922" height="972" alt="image" src="https://github.com/user-attachments/assets/42adf945-bf4d-4fdd-9f10-ee46ff4870b2" />
+<img width="1280" alt="Convert tab in the default dark theme" src="docs/screenshots/convert-dark.png" />
 
 ## 🚀 Quick Start
 

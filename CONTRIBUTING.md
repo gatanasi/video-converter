@@ -19,8 +19,8 @@ Thank you for your interest in contributing to the Video Converter project! This
 
 To develop this project locally, you'll need:
 
-- **[Go](https://golang.org/dl/)** v1.18 or newer (tested with v1.25)
-- **[Node.js](https://nodejs.org/)** and **[pnpm](https://pnpm.io/installation)** for frontend development
+- **[Go](https://golang.org/dl/)** v1.25 or newer (see `backend/go.mod`)
+- **[Node.js](https://nodejs.org/)** (CI uses v24) and **[pnpm](https://pnpm.io/installation)** for frontend development
 - **[FFmpeg](https://ffmpeg.org/download.html)** - Must be installed and accessible in your system's `PATH`
   - `ffprobe` (usually included with FFmpeg) is also required
 - **[ExifTool](https://exiftool.org/install.html)** - Required for metadata preservation
@@ -102,11 +102,11 @@ Open your browser to `http://localhost:8080`.
 
 ### 6. Frontend Development Mode
 
-For active development with hot reload:
+For active development with automatic rebuilds:
 
 ```bash
-# Rebuild on changes from the workspace root
-pnpm --filter ./frontend run build -- --watch
+# Watch CSS and TypeScript from the workspace root
+pnpm --filter ./frontend run dev
 ```
 
 ## Project Structure
@@ -127,16 +127,18 @@ video-converter/
 │   │   ├── models/        # Data models
 │   │   └── utils/         # Utility functions
 │   └── go.mod             # Go dependencies
-├── frontend/              # TypeScript frontend
+├── frontend/              # TypeScript frontend (vanilla TS + Tailwind CSS v4)
 │   ├── src/
 │   │   ├── api/           # API client
-│   │   ├── components/    # UI components
+│   │   ├── components/    # UI components (with colocated *.test.ts)
 │   │   ├── config/        # Frontend configuration
-│   │   ├── styles/        # CSS styles
+│   │   ├── styles/        # Tailwind stylesheet & design tokens
 │   │   ├── utils/         # Utility functions
 │   │   ├── app.ts         # Main application
+│   │   ├── theme.ts       # Dark/light theme controller (dark is default)
 │   │   └── types.ts       # TypeScript types
 │   ├── public/            # Static assets
+│   ├── vitest.config.ts   # Vitest (jsdom) configuration
 │   └── package.json       # Node dependencies
 ├── docker/                # Docker-related files
 ├── .github/workflows/     # CI/CD workflows
@@ -162,9 +164,18 @@ go test -v ./internal/conversion
 
 ### Running Frontend Tests
 
+The frontend uses [Vitest](https://vitest.dev/) (jsdom environment). The `test`
+script also typechecks first.
+
 ```bash
-cd frontend
-pnpm test
+# From the workspace root
+pnpm --filter ./frontend run test
+
+# Watch mode while developing
+pnpm --filter ./frontend run test:watch
+
+# Typecheck only
+pnpm --filter ./frontend run typecheck
 ```
 
 ### Linting
@@ -186,14 +197,10 @@ golangci-lint run
 
 #### Frontend (TypeScript)
 
+There is no separate linter; `tsc` in strict mode is the source of truth:
+
 ```bash
-cd frontend
-
-# Run linter
-pnpm run lint
-
-# Fix auto-fixable issues
-pnpm run lint:fix
+pnpm --filter ./frontend run typecheck
 ```
 
 ## Building Docker Images
@@ -356,9 +363,8 @@ cd backend
 golangci-lint run
 go test -v ./...
 
-# Frontend tests
-cd frontend
-pnpm test
+# Frontend typecheck + tests (from the workspace root)
+pnpm --filter ./frontend run test
 
 # Build Docker image (as CI does)
 docker build -t video-converter:ci-test .
@@ -383,14 +389,14 @@ docker build -t video-converter:ci-test .
 3. **Test your changes**
    ```bash
    # Run backend tests
-   cd backend && go test -v ./...
-   
-   # Run frontend tests
-   cd frontend && pnpm test
-  
+   cd backend && go test -v ./... && cd ..
+
+   # Run frontend typecheck + tests (from the workspace root)
+   pnpm --filter ./frontend run test
+
    # Run smoke tests (requires Docker)
-   cd .. && pnpm test:smoke
-   
+   pnpm test:smoke
+
    # Build and test Docker image
    docker build -t video-converter:test .
    docker run --rm video-converter:test
