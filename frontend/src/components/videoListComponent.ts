@@ -1,5 +1,5 @@
 import { VideoListContainer, Video } from '../types';
-import { formatBytes } from '../utils/utils';
+import { escapeHtml, formatBytes } from '../utils/utils';
 
 /**
  * Video List Component - Displays videos from Google Drive and handles selection.
@@ -13,7 +13,6 @@ export class VideoListComponent {
     private selectionCounter: HTMLElement | null;
     private deselectAllBtn: HTMLButtonElement | null;
 
-    // Use Container interface for options, ensure onSelectVideos is provided
     constructor(options: VideoListContainer) {
         if (!options.onSelectVideos) {
             throw new Error('VideoListComponent requires an onSelectVideos callback.');
@@ -27,27 +26,30 @@ export class VideoListComponent {
         this.deselectAllBtn = null;
     }
 
-    displayVideos(videos: Video[] | null): void {
-        this.videoList = videos || [];
-        this.container.innerHTML = '';
+    /** Empty the list without showing a "no videos" message (e.g. when switching sources). */
+    clear(): void {
+        this.videoList = [];
         this.selectedVideos.clear();
+        this.container.innerHTML = '';
+        this.headerCheckbox = null;
+        this.selectionCounter = null;
+        this.deselectAllBtn = null;
+    }
 
-        // Create a single wrapper for all content to avoid breaking flexbox/grid layouts
-        const wrapper = document.createElement('div');
-        wrapper.className = 'video-list-inner';
-        this.container.appendChild(wrapper);
+    displayVideos(videos: Video[] | null): void {
+        this.clear();
+        this.videoList = videos || [];
 
         if (this.videoList.length === 0) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
             emptyMessage.textContent = 'No videos found in this folder.';
-            wrapper.appendChild(emptyMessage);
-            this.updateSelectionUI(); // Ensure controls are hidden/disabled
+            this.container.appendChild(emptyMessage);
             return;
         }
 
-        this.createControls(wrapper);
-        this.createTable(this.videoList, wrapper);
+        this.createControls(this.container);
+        this.createTable(this.videoList, this.container);
         this.updateSelectionUI();
     }
 
@@ -55,9 +57,9 @@ export class VideoListComponent {
         const controlsDiv = document.createElement('div');
         controlsDiv.className = 'selection-controls';
         controlsDiv.innerHTML = `
-            <button id="select-all-btn" class="btn small">Select All</button>
-            <button id="deselect-all-btn" class="btn small">Deselect All</button>
-            <div class="selection-counter">0 videos selected</div>
+            <button id="select-all-btn" class="btn small" type="button">Select all</button>
+            <button id="deselect-all-btn" class="btn small ghost" type="button">Deselect all</button>
+            <div class="selection-counter" aria-live="polite">0 videos selected</div>
         `;
         parent.appendChild(controlsDiv);
 
@@ -70,8 +72,11 @@ export class VideoListComponent {
     }
 
     createTable(videos: Video[], parent: HTMLElement): void {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrapper';
+
         const table = document.createElement('table');
-        table.className = 'video-table';
+        table.className = 'data-table video-table';
 
         const thead = document.createElement('thead');
         thead.innerHTML = `
@@ -80,7 +85,7 @@ export class VideoListComponent {
                 <th class="video-name">Name</th>
                 <th class="video-size">Size</th>
                 <th class="video-type">Type</th>
-                <th class="video-date">Modified Date</th>
+                <th class="video-date">Modified</th>
             </tr>
         `;
         this.headerCheckbox = thead.querySelector<HTMLInputElement>('#header-checkbox');
@@ -100,7 +105,8 @@ export class VideoListComponent {
             tbody.appendChild(row);
         });
         table.appendChild(tbody);
-        parent.appendChild(table);
+        wrapper.appendChild(table);
+        parent.appendChild(wrapper);
     }
 
     createTableRow(video: Video): HTMLTableRowElement {
@@ -117,15 +123,17 @@ export class VideoListComponent {
 
         const mimeTypeShort = video.mimeType ? video.mimeType.split('/')[1] || 'unknown' : 'unknown';
         const sizeFormatted = video.size ? formatBytes(video.size) : 'N/A';
+        const safeName = escapeHtml(video.name);
 
         row.innerHTML = `
             <td class="video-select">
-                <input type="checkbox" class="video-checkbox" data-id="${video.id}">
+                <input type="checkbox" class="video-checkbox" data-id="${video.id}"
+                    aria-label="Select ${safeName}">
             </td>
-            <td class="video-name" title="${video.name}">${video.name}</td>
-            <td class="video-size">${sizeFormatted}</td>
-            <td class="video-type">${mimeTypeShort}</td>
-            <td class="video-date">${formattedDate}</td>
+            <td class="video-name" title="${safeName}">${safeName}</td>
+            <td class="video-size cell-muted">${sizeFormatted}</td>
+            <td class="video-type cell-muted">${mimeTypeShort}</td>
+            <td class="video-date cell-muted">${formattedDate}</td>
         `;
 
         const checkbox = row.querySelector<HTMLInputElement>('.video-checkbox');
@@ -201,7 +209,7 @@ export class VideoListComponent {
             this.selectionCounter.style.display = count > 0 ? 'block' : 'none';
         }
         if (this.deselectAllBtn) {
-            this.deselectAllBtn.style.display = count > 0 ? 'inline-block' : 'none';
+            this.deselectAllBtn.style.display = count > 0 ? 'inline-flex' : 'none';
         }
 
         // Update row styles based on selection map
@@ -211,15 +219,5 @@ export class VideoListComponent {
                 row.classList.toggle('selected', this.selectedVideos.has(id));
             }
         });
-    }
-
-    notifySelectionChange(): void {
-        if (this.onSelectVideos) {
-            this.onSelectVideos([...this.selectedVideos.values()]);
-        }
-    }
-
-    getSelectedVideos(): Video[] {
-        return [...this.selectedVideos.values()];
     }
 }

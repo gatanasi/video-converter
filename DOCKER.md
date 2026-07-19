@@ -32,43 +32,31 @@ docker compose up -d
 For development or customization:
 
 ```bash
-# Use the development compose file (recommended for developers)
-docker compose -f compose.dev.yaml up -d --build
+# Recommended: docker compose builds from source and tags it as the
+# image configured in compose.yaml (see below)
+docker compose up -d --build
 
 # Or build manually
 docker build -t video-converter:local .
 
 # Build with specific version
 docker build --build-arg VERSION=1.0.0 -t video-converter:1.0.0 .
-
-# Build with docker compose
-# First, edit compose.yaml to uncomment the 'build' section
-docker compose build
-
-# Or use the --build flag
-docker compose up -d --build
 ```
 
 ## Switching Between Pre-built and Local Images
 
-The `compose.yaml` file is configured to use pre-built images by default. To build locally:
+`compose.yaml` defines both `image` and `build`, which Docker Compose supports
+simultaneously:
 
-1. **Edit `compose.yaml`**:
-   ```yaml
-   # Comment out the image line
-   # image: ghcr.io/gatanasi/video-converter:${VERSION:-latest}
-   
-   # Uncomment the build section
-   build:
-     context: .
-     args:
-       VERSION: ${VERSION:-docker}
-   ```
+- `docker compose up -d` (no flag) uses the pre-built image from GHCR,
+  pulling it if it isn't already present locally. This is what the Quick
+  Start in [README.md](README.md) relies on.
+- `docker compose up -d --build` (or `docker compose build`) always builds
+  from the local source tree instead, tagging the result with the same
+  `image:` name so the rest of the compose file (container name, health
+  check, etc.) behaves identically either way.
 
-2. **Build and run**:
-   ```bash
-   docker compose up -d --build
-   ```
+No editing of `compose.yaml` is required to switch between the two.
 
 ## Running Containers
 
