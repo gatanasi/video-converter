@@ -2,12 +2,33 @@ import { formatBytes, showMessage, escapeHtml } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
 import { FileInfo, Container } from '../types.js';
 
+const DOWNLOAD_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+        <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>`;
+
+const LINK_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>`;
+
+const DELETE_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>`;
+
 export class FileListComponent {
     private container: HTMLElement;
     private messageContainer: HTMLElement;
     private fileList: FileInfo[];
 
-    // Use Container interface for options
     constructor(options: Container) {
         this.container = options.container;
         this.messageContainer = options.messageContainer;
@@ -25,7 +46,7 @@ export class FileListComponent {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             // Show error in the file list container itself if it's empty
             if (this.fileList.length === 0) {
-                this.container.innerHTML = `<div class="empty-message error">Failed to load files: ${errorMessage}</div>`;
+                this.container.innerHTML = `<div class="empty-message">Failed to load files: ${escapeHtml(errorMessage)}</div>`;
             } else {
                 // Show error in the main message area if list already has content
                 showMessage(this.messageContainer, `Failed to load files: ${errorMessage}`, 'error');
@@ -39,21 +60,24 @@ export class FileListComponent {
         if (this.fileList.length === 0) {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
-            emptyMessage.textContent = 'No converted files found.';
+            emptyMessage.textContent = 'No converted files yet. Convert a video and it will show up here.';
             this.container.appendChild(emptyMessage);
             return;
         }
 
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrapper';
+
         const table = document.createElement('table');
-        table.className = 'file-table';
+        table.className = 'data-table file-table';
 
         table.innerHTML = `
             <thead>
                 <tr>
                     <th class="file-name">Name</th>
                     <th class="file-size">Size</th>
-                    <th class="file-date">Date Created</th>
-                    <th class="file-actions">Actions</th>
+                    <th class="file-date">Created</th>
+                    <th class="file-actions"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
         `;
@@ -65,7 +89,8 @@ export class FileListComponent {
         });
 
         table.appendChild(tbody);
-        this.container.appendChild(table);
+        wrapper.appendChild(table);
+        this.container.appendChild(wrapper);
     }
 
     createFileRow(file: FileInfo): HTMLTableRowElement {
@@ -84,35 +109,34 @@ export class FileListComponent {
         const safeUrl = escapeHtml(file.url);
         row.innerHTML = `
             <td class="file-name" title="${safeFileName}">${safeFileName}</td>
-            <td class="file-size">${sizeFormatted}</td>
-            <td class="file-date">${formattedDate}</td>
+            <td class="file-size cell-muted">${sizeFormatted}</td>
+            <td class="file-date cell-muted">${formattedDate}</td>
             <td class="file-actions">
                 <div class="file-actions-wrapper">
-                    <a href="${safeUrl}" class="btn small success" title="Download file" download="${safeFileName}">↓</a>
-                    <button class="btn small danger delete" title="Delete file">X</button>
+                    <a href="${safeUrl}" class="btn-icon" download="${safeFileName}"
+                        title="Download" aria-label="Download ${safeFileName}">${DOWNLOAD_ICON}</a>
+                    <button class="btn-icon copy-link" type="button"
+                        title="Copy download link" aria-label="Copy download link for ${safeFileName}">${LINK_ICON}</button>
+                    <button class="btn-icon danger delete" type="button"
+                        title="Delete" aria-label="Delete ${safeFileName}">${DELETE_ICON}</button>
                 </div>
             </td>
         `;
 
-        const fileNameCell = row.querySelector<HTMLTableCellElement>('.file-name');
-        // Make the filename cell clickable and add copy functionality
-        if (fileNameCell) {
-            fileNameCell.style.cursor = 'pointer';
-            fileNameCell.title = 'Click to copy download link';
-            fileNameCell.addEventListener('click', async () => {
-                try {
-                    const absoluteUrl = `${window.location.origin}${file.url}`;
-                    await navigator.clipboard.writeText(absoluteUrl);
-                    showMessage(this.messageContainer, `Copied download link for "${file.name}" to clipboard.`, 'info', 3000); // Show short confirmation
-                } catch (err: unknown) {
-                    console.error('Failed to copy link: ', err);
-                    showMessage(this.messageContainer, 'Failed to copy download link.', 'error');
-                }
-            });
-        }
+        const copyButton = row.querySelector<HTMLButtonElement>('button.copy-link');
+        copyButton?.addEventListener('click', async () => {
+            try {
+                const absoluteUrl = `${window.location.origin}${file.url}`;
+                await navigator.clipboard.writeText(absoluteUrl);
+                showMessage(this.messageContainer, `Copied download link for "${file.name}" to clipboard.`, 'info', 3000);
+            } catch (err: unknown) {
+                console.error('Failed to copy link: ', err);
+                showMessage(this.messageContainer, 'Failed to copy download link.', 'error');
+            }
+        });
 
         const deleteButton = row.querySelector<HTMLButtonElement>('button.delete');
-        deleteButton?.addEventListener('click', () => this.deleteFile(file.name, row)); // Pass row for potential UI feedback
+        deleteButton?.addEventListener('click', () => this.deleteFile(file.name, row));
 
         return row;
     }

@@ -1,17 +1,14 @@
-import { ConversionOptions, Container, Video } from '../types';
+import { ConversionOptions, Container } from '../types';
 
 /**
- * Conversion Form Component - Handles conversion options and submission.
- * Now primarily displays options; submission logic is handled by App for Drive/Upload separately.
+ * Conversion Form Component - Renders the conversion options.
+ * Submission is handled by App separately for the Drive and Upload sources.
  */
 export class ConversionFormComponent {
     private container: HTMLElement;
-    private messageContainer: HTMLElement;
-    public selectedVideos: Video[] = [];
 
     constructor(options: Container) {
         this.container = options.container;
-        this.messageContainer = options.messageContainer;
         this.createForm();
     }
 
@@ -19,17 +16,16 @@ export class ConversionFormComponent {
         const form = document.createElement('form');
         form.className = 'conversion-form';
         form.innerHTML = `
-            <h3>Conversion Options</h3>
-            <div class="input-group conversion-select-group">
-                <div class="form-group">
-                    <label for="target-format">Target Format:</label>
+            <div class="conversion-select-group">
+                <div class="field">
+                    <label for="target-format">Target format</label>
                     <select id="target-format" class="form-control">
                         <option value="mov">MOV (H.265)</option>
                         <option value="mp4">MP4 (H.265)</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="conversion-quality">Quality:</label>
+                <div class="field">
+                    <label for="conversion-quality">Quality</label>
                     <select id="conversion-quality" class="form-control">
                         <option value="default">Default (CRF 22 · slow)</option>
                         <option value="high">High (CRF 20 · slower)</option>
@@ -40,22 +36,16 @@ export class ConversionFormComponent {
             <div class="form-options">
                 <label class="checkbox-container">
                     <input type="checkbox" id="reverse-video">
-                    Reverse Video
+                    Reverse video
                 </label>
                 <label class="checkbox-container">
                     <input type="checkbox" id="remove-sound" checked>
-                    Remove Sound
+                    Remove sound
                 </label>
             </div>
-            <!-- Removed form-actions and submit button -->
         `;
 
         this.container.appendChild(form);
-    }
-
-    /** Update based on the list of selected videos from VideoListComponent */
-    updateSelectedVideos(videos: Video[]): void {
-        this.selectedVideos = videos || [];
     }
 
     /** Helper method for App.ts to get current options */

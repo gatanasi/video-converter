@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { clearMessages, createProgressItem, escapeHtml, formatBytes, formatDuration, showMessage } from './utils';
+import { clearMessages, createProgressItem, escapeHtml, formatBytes, showMessage } from './utils';
 
 describe('formatBytes', () => {
     it('formats zero and invalid input as 0 Bytes', () => {
@@ -17,22 +17,6 @@ describe('formatBytes', () => {
     it('respects the decimals argument', () => {
         expect(formatBytes(1536, 0)).toBe('2 KB');
         expect(formatBytes(1234567, 1)).toBe('1.2 MB');
-    });
-});
-
-describe('formatDuration', () => {
-    it('handles invalid input', () => {
-        expect(formatDuration(NaN)).toBe('00:00');
-        expect(formatDuration(-5)).toBe('00:00');
-    });
-
-    it('formats minutes and seconds', () => {
-        expect(formatDuration(0)).toBe('00:00');
-        expect(formatDuration(75)).toBe('01:15');
-    });
-
-    it('includes hours when needed', () => {
-        expect(formatDuration(3661)).toBe('01:01:01');
     });
 });
 

@@ -21,30 +21,6 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
 }
 
 /**
- * Format seconds into a HH:MM:SS string.
- * @param {Number} totalSeconds - Duration in seconds.
- * @returns {String} Formatted time string.
- */
-export function formatDuration(totalSeconds: number): string {
-    if (isNaN(totalSeconds) || totalSeconds < 0) {
-        return '00:00';
-    }
-    const hours: number = Math.floor(totalSeconds / 3600);
-    const minutes: number = Math.floor((totalSeconds % 3600) / 60);
-    const seconds: number = Math.floor(totalSeconds % 60);
-
-    const paddedMinutes: string = String(minutes).padStart(2, '0');
-    const paddedSeconds: string = String(seconds).padStart(2, '0');
-
-    if (hours > 0) {
-        const paddedHours: string = String(hours).padStart(2, '0');
-        return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
-    } else {
-        return `${paddedMinutes}:${paddedSeconds}`;
-    }
-}
-
-/**
  * Message type options for the showMessage function
  */
 export type MessageType = 'info' | 'success' | 'warning' | 'error';

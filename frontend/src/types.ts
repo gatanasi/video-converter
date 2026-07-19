@@ -1,10 +1,6 @@
 /**
  * Defines shared TypeScript types and interfaces for the frontend application.
  */
-export interface InputEvent extends Event {
-    target: HTMLInputElement & EventTarget;
-}
-
 export type ConversionQuality = 'default' | 'high' | 'fast';
 
 export interface ConversionOptions {
@@ -35,15 +31,6 @@ export interface ConversionStatus {
     quality?: ConversionQuality;
     downloadUrl?: string;
     fileName?: string;
-}
-
-export interface ConversionItem {
-    fileName: string;
-    format: string;
-    quality?: ConversionQuality;
-    element: HTMLElement;
-    aborted?: boolean;
-    timeoutId?: number;
 }
 
 export interface Container {
