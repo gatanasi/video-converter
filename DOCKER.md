@@ -33,7 +33,7 @@ For development or customization:
 
 ```bash
 # Use the development compose file (recommended for developers)
-docker compose -f compose.dev.yaml up -d --build
+docker compose up -d --build
 
 # Or build manually
 docker build -t video-converter:local .

@@ -209,7 +209,7 @@ pnpm --filter ./frontend run typecheck
 
 ```bash
 # Option 1: Use the development compose file
-docker compose -f compose.dev.yaml up -d --build
+docker compose up -d --build
 
 # Option 2: Build with default compose file (edit it first)
 docker build -t video-converter:dev .
@@ -226,10 +226,10 @@ docker run -d -p 3000:3000 \
   video-converter:dev
 
 # Check logs
-docker compose -f compose.dev.yaml logs -f
+docker compose logs -f
 
 # Stop
-docker compose -f compose.dev.yaml down
+docker compose down
 
 # Or with docker compose (if you edited compose.yaml)
 docker compose build
