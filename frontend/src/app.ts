@@ -102,7 +102,9 @@ class App {
 
         this.selectedDriveVideos = [];
         this.selectedUploadFile = null;
-        this.currentVideoSource = 'upload';
+        // Browsers may restore the checked radio across reloads - honour it
+        const checkedSource = document.querySelector<HTMLInputElement>('input[name="videoSource"]:checked');
+        this.currentVideoSource = checkedSource?.value === 'drive' ? 'drive' : 'upload';
 
         this.initComponents();
         this.setupEventListeners();

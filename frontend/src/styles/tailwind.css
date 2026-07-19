@@ -128,8 +128,7 @@ h3 {
     position: sticky;
     top: 0;
     z-index: 20;
-    background: color-mix(in srgb, var(--bg), transparent 12%);
-    backdrop-filter: blur(8px);
+    background: var(--bg);
     border-bottom: 1px solid var(--border);
   }
 
@@ -940,10 +939,11 @@ h3 {
     }
 
     .data-table tbody tr {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      column-gap: 0.75rem;
+      column-gap: 0.625rem;
+      row-gap: 0.125rem;
       padding: 0.625rem 0.875rem;
       border-bottom: 1px solid var(--border);
     }
@@ -958,53 +958,60 @@ h3 {
       border: none;
     }
 
-    /* Drive list: checkbox | name + meta */
-    .video-table tbody tr {
-      grid-template-columns: auto minmax(0, 1fr);
+    .data-table td.cell-muted {
+      font-size: 0.75rem;
+      color: var(--text-faint);
     }
 
+    /* Drive list: line 1 = checkbox + name, line 2 = meta */
     .video-table .video-name {
-      grid-column: 2;
+      flex: 1;
+      min-width: 0;
       max-width: none;
     }
 
     .video-table .video-size,
     .video-table .video-type,
     .video-table .video-date {
-      grid-column: 2;
-      font-size: 0.75rem;
-      color: var(--text-faint);
-      display: inline-block;
-      margin-right: 0.75rem;
+      order: 1;
     }
 
-    .video-table .video-select {
-      grid-column: 1;
-      grid-row: 1 / span 2;
+    .video-table .video-size {
+      margin-left: 1.625rem;
     }
 
-    /* Files list: name + meta | actions */
-    .file-table tbody tr {
-      grid-template-columns: minmax(0, 1fr) auto;
+    .video-table tbody tr::after {
+      /* Force meta onto its own line below checkbox + name */
+      content: "";
+      order: 0;
+      flex-basis: 100%;
     }
 
+    /* Files list: line 1 = name + actions, line 2 = meta */
     .file-table .file-name {
-      grid-column: 1;
+      flex: 1;
+      min-width: 0;
       max-width: none;
-    }
-
-    .file-table .file-size,
-    .file-table .file-date {
-      grid-column: 1;
-      font-size: 0.75rem;
-      color: var(--text-faint);
-      display: inline-block;
-      margin-right: 0.75rem;
+      order: 0;
     }
 
     .file-table .file-actions {
-      grid-column: 2;
-      grid-row: 1 / span 2;
+      order: 1;
+    }
+
+    .file-table .file-size {
+      order: 2;
+    }
+
+    .file-table .file-date {
+      order: 3;
+    }
+
+    .file-table tbody tr::after {
+      /* Force meta onto its own line below name + actions */
+      content: "";
+      order: 1;
+      flex-basis: 100%;
     }
   }
 

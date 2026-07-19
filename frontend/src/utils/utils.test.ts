@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { clearMessages, createProgressItem, escapeHtml, formatBytes, showMessage } from './utils';
+import { clearMessages, copyTextToClipboard, createProgressItem, escapeHtml, formatBytes, showMessage } from './utils';
 
 describe('formatBytes', () => {
     it('formats zero and invalid input as 0 Bytes', () => {
@@ -78,6 +78,49 @@ describe('showMessage / clearMessages', () => {
         clearMessages(container);
         expect(container.children).toHaveLength(0);
         expect(container.classList.contains('hidden')).toBe(true);
+    });
+});
+
+describe('copyTextToClipboard', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('uses the async Clipboard API when available', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+
+        await copyTextToClipboard('https://example.com/file.mp4');
+        expect(writeText).toHaveBeenCalledWith('https://example.com/file.mp4');
+    });
+
+    it('falls back to execCommand when the Clipboard API is missing', async () => {
+        vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
+        const execCommand = vi.fn().mockReturnValue(true);
+        document.execCommand = execCommand;
+
+        await copyTextToClipboard('plain-http link');
+        expect(execCommand).toHaveBeenCalledWith('copy');
+        // The temporary textarea must be cleaned up
+        expect(document.querySelector('textarea')).toBeNull();
+    });
+
+    it('falls back to execCommand when the Clipboard API rejects', async () => {
+        const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+        vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+        const execCommand = vi.fn().mockReturnValue(true);
+        document.execCommand = execCommand;
+
+        await expect(copyTextToClipboard('link')).resolves.toBeUndefined();
+        expect(execCommand).toHaveBeenCalledWith('copy');
+    });
+
+    it('throws when no copy mechanism works', async () => {
+        vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
+        document.execCommand = vi.fn().mockReturnValue(false);
+
+        await expect(copyTextToClipboard('link')).rejects.toThrow();
+        expect(document.querySelector('textarea')).toBeNull();
     });
 });
 

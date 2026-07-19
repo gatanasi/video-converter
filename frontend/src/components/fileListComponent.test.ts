@@ -74,7 +74,9 @@ describe('FileListComponent', () => {
         await vi.waitFor(() => {
             expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/download/holiday.mp4`);
         });
-        expect(messageContainer.textContent).toContain('Copied download link');
+        await vi.waitFor(() => {
+            expect(messageContainer.textContent).toContain('Copied download link');
+        });
     });
 
     it('does not delete when the confirmation is declined', async () => {

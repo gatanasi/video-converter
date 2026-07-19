@@ -1,4 +1,4 @@
-import { formatBytes, showMessage, escapeHtml } from '../utils/utils.js';
+import { formatBytes, showMessage, escapeHtml, copyTextToClipboard } from '../utils/utils.js';
 import apiService from '../api/apiService.js';
 import { FileInfo, Container } from '../types.js';
 
@@ -127,7 +127,7 @@ export class FileListComponent {
         copyButton?.addEventListener('click', async () => {
             try {
                 const absoluteUrl = `${window.location.origin}${file.url}`;
-                await navigator.clipboard.writeText(absoluteUrl);
+                await copyTextToClipboard(absoluteUrl);
                 showMessage(this.messageContainer, `Copied download link for "${file.name}" to clipboard.`, 'info', 3000);
             } catch (err: unknown) {
                 console.error('Failed to copy link: ', err);
