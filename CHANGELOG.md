@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.0.0](https://github.com/gatanasi/video-converter/compare/v2.5.14...v3.0.0) (2026-07-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* Redesign frontend UI and add test coverage ([#314](https://github.com/gatanasi/video-converter/issues/314))
+
+### Features
+
+* Redesign frontend UI and add test coverage ([#314](https://github.com/gatanasi/video-converter/issues/314)) ([5b15c47](https://github.com/gatanasi/video-converter/commit/5b15c479325e5e61aff526ca435ce9bc1f0d3be5))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#321](https://github.com/gatanasi/video-converter/issues/321)) ([b17c9d5](https://github.com/gatanasi/video-converter/commit/b17c9d5a00915d7caa2dfc120bc108e5b9ec55f4))
+* **deps:** update actions/setup-go action to v7 ([#319](https://github.com/gatanasi/video-converter/issues/319)) ([9c67a33](https://github.com/gatanasi/video-converter/commit/9c67a33ebe3aaa41d752d45f66335dcc9f32b03f))
+* **deps:** update actions/setup-node action to v6.5.0 ([#317](https://github.com/gatanasi/video-converter/issues/317)) ([1293779](https://github.com/gatanasi/video-converter/commit/12937790b08a3e0c68bbcd043d5e8902a80adefc))
+* **deps:** update actions/setup-node action to v7 ([#320](https://github.com/gatanasi/video-converter/issues/320)) ([41069aa](https://github.com/gatanasi/video-converter/commit/41069aab299d36bb4851fac59c85bb21b6d0b650))
+* **deps:** update npm non-major devdependencies ([#316](https://github.com/gatanasi/video-converter/issues/316)) ([bf1da1d](https://github.com/gatanasi/video-converter/commit/bf1da1d29ff479dac2175b10ee704743bc1ad03c))
+* **deps:** update pnpm to v11.13.1 ([#318](https://github.com/gatanasi/video-converter/issues/318)) ([126e5aa](https://github.com/gatanasi/video-converter/commit/126e5aa6870b0af54a6bd4744365f35da3c551d0))
+
 ## [2.5.14](https://github.com/gatanasi/video-converter/compare/v2.5.13...v2.5.14) (2026-07-12)
 
 
