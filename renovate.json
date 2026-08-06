@@ -26,8 +26,9 @@
   ],
   "packageRules": [
     {
-      "description": "Raise the npm cooldown above the 3 days set by security:minimumReleaseAgeNpm",
+      "description": "Raise the npm cooldown above the 3 days set by security:minimumReleaseAgeNpm, without re-imposing it on the update types that preset deliberately exempts",
       "matchDatasources": ["npm"],
+      "matchUpdateTypes": ["major", "minor", "patch", "digest"],
       "minimumReleaseAge": "7 days"
     },
     {
@@ -37,6 +38,15 @@
       "groupName": "github actions",
       "groupSlug": "github-actions",
       "automerge": true
+    },
+    {
+      "description": "Actions outside the GitHub, Docker and Google orgs run on write-scoped tokens, so they get their own PR and a human",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["!actions/*", "!docker/*", "!github/*", "!googleapis/*"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest"],
+      "groupName": "third-party github actions",
+      "groupSlug": "github-actions-third-party",
+      "automerge": false
     },
     {
       "description": "npm non-major runtime dependencies",
