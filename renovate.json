@@ -16,7 +16,7 @@
   ],
   "packageRules": [
     {
-      "description": "Raise the npm cooldown above the 3 days set by security:minimumReleaseAgeNpm, since npm updates now automerge",
+      "description": "Raise the npm cooldown above the 3 days set by security:minimumReleaseAgeNpm",
       "matchDatasources": ["npm"],
       "minimumReleaseAge": "7 days"
     },
@@ -29,7 +29,7 @@
       "automerge": true
     },
     {
-      "description": "npm non-major runtime dependencies (none exist today, kept for when they do)",
+      "description": "npm non-major runtime dependencies",
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
@@ -77,7 +77,7 @@
       "minimumReleaseAge": null
     },
     {
-      "description": "Never automerge 0.x minors - SemVer permits breaking changes there (esbuild is 0.28.x)",
+      "description": "Never automerge 0.x minors - SemVer permits breaking changes there",
       "matchCurrentVersion": "/^0\\./",
       "matchUpdateTypes": ["minor"],
       "automerge": false
