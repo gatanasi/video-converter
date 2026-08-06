@@ -2,45 +2,115 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:best-practices",
-    "helpers:pinGitHubActionDigestsToSemver",
-    "security:minimumReleaseAgeNpm"
+    "helpers:pinGitHubActionDigestsToSemver"
   ],
-  "schedule": ["after 8pm on sunday"],
+  "schedule": ["after 8pm on wednesday", "after 8pm on sunday"],
+  "minimumReleaseAge": "7 days",
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/__fixtures__/**"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track the pnpm version the Dockerfile bootstraps",
+      "managerFilePatterns": ["**/Dockerfile"],
+      "matchStrings": ["ARG PNPM_VERSION=\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "pnpm"
+    }
+  ],
   "packageRules": [
     {
-      "matchDatasources": ["github-actions"],
-      "groupName": "github actions",
-      "groupSlug": "github-actions"
+      "description": "Raise the npm cooldown above the 3 days set by security:minimumReleaseAgeNpm, without re-imposing it on the update types that preset deliberately exempts",
+      "matchDatasources": ["npm"],
+      "matchUpdateTypes": ["major", "minor", "patch", "digest"],
+      "minimumReleaseAge": "7 days"
     },
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "description": "Group non-major GitHub Actions updates and automerge them; a bare digest move means the tag was repointed, so review it by hand",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest"],
+      "groupName": "github actions",
+      "groupSlug": "github-actions",
+      "automerge": true
+    },
+    {
+      "description": "Actions outside the GitHub, Docker and Google orgs run on write-scoped tokens, so they get their own PR and a human",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["!actions/*", "!docker/*", "!github/*", "!googleapis/*"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest"],
+      "groupName": "third-party github actions",
+      "groupSlug": "github-actions-third-party",
+      "automerge": false
+    },
+    {
+      "description": "npm non-major runtime dependencies",
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
-      "groupName": "npm non-major dependencies",
-      "groupSlug": "npm-minor-patch"
-    },
-    {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "npm non-major dependencies",
+      "groupSlug": "npm-minor-patch",
+      "automerge": true
+    },
+    {
+      "description": "npm non-major dev and tooling deps, including the pnpm packageManager field",
       "matchManagers": ["npm"],
-      "matchDepTypes": ["devDependencies"],
+      "matchDepTypes": ["devDependencies", "packageManager", "engines"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "npm non-major devDependencies",
-      "groupSlug": "npm-non-major-dev-deps"
+      "groupSlug": "npm-non-major-dev-deps",
+      "automerge": true
     },
     {
-      "matchManagers": ["docker"],
-      "matchUpdateTypes": ["major"]
+      "description": "Move the Dockerfile pnpm ARG in the same PR as the packageManager field",
+      "matchPackageNames": ["pnpm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm non-major devDependencies",
+      "groupSlug": "npm-non-major-dev-deps",
+      "automerge": true
     },
     {
-      "matchManagers": ["docker"],
+      "description": "Go module non-major updates; excludes the go directive and anything needing a newer one",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["require", "indirect"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "enabled": true,
+      "constraintsFiltering": "strict",
+      "groupName": "go non-major modules",
+      "groupSlug": "gomod-minor-patch",
+      "automerge": true
+    },
+    {
+      "description": "Container image minor/patch updates",
+      "matchDatasources": ["docker"],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "docker minor updates",
-      "groupSlug": "docker-minor-patch"
+      "groupSlug": "docker-minor-patch",
+      "automerge": true
     },
     {
-      "matchManagers": ["docker"],
-      "matchUpdateTypes": ["digest"],
+      "description": "Container image digest updates",
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["digest", "pinDigest"],
       "groupName": "docker digest updates",
-      "groupSlug": "docker-digest"
+      "groupSlug": "docker-digest",
+      "automerge": true
+    },
+    {
+      "description": "Pinning to a digest is safer than staying unpinned, so never delay it",
+      "matchUpdateTypes": ["pinDigest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Never automerge pre-1.0 updates - SemVer permits breaking changes in any 0.x bump",
+      "matchCurrentVersion": "/^v?0\\./",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false
     }
   ]
 }
