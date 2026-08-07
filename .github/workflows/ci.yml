@@ -1,44 +1,16 @@
 name: Video Converter - CI
 
+# Deliberately no `paths:` filter. A required status check that never reports
+# blocks a PR forever, so CI has to start for every PR to main. Cost is kept
+# down inside build-jobs.yml, where the `Detect Changes` job (dorny/paths-filter)
+# skips the frontend and backend suites when nothing relevant changed.
 on:
   push:
     branches-ignore:
       - main
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - 'Dockerfile'
-      - 'compose.yaml'
-      - '.dockerignore'
-      - 'tests/**'
-      - 'CHANGELOG.md'
-      - 'release-please-config.json'
-      - '.release-please-manifest.json'
-      - 'package.json'
-      - 'scripts/validate-changelog.*'
-      - '.github/workflows/ci.yml'
-      - '.github/workflows/build-jobs.yml'
-      - '.github/workflows/smoke-tests.yml'
-      - '.github/workflows/release.yml'
   pull_request:
     branches:
       - main
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - 'Dockerfile'
-      - 'compose.yaml'
-      - '.dockerignore'
-      - 'tests/**'
-      - 'CHANGELOG.md'
-      - 'release-please-config.json'
-      - '.release-please-manifest.json'
-      - 'package.json'
-      - 'scripts/validate-changelog.*'
-      - '.github/workflows/ci.yml'
-      - '.github/workflows/build-jobs.yml'
-      - '.github/workflows/smoke-tests.yml'
-      - '.github/workflows/release.yml'
 
 permissions:
   contents: read

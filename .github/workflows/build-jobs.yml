@@ -69,6 +69,7 @@ jobs:
               - 'frontend/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
             backend:
               - 'backend/**'
               - 'go.mod'
