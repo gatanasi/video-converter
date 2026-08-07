@@ -5,11 +5,11 @@ Automated CI/CD workflows that build and publish Docker images to GitHub Contain
 ## Workflows Overview
 
 ### CI Workflow (`ci.yml`)
-- **Trigger**: Push to any branch (when frontend, backend, or Docker files change)
+- **Trigger**: Every push to a branch other than `main`, and every pull request targeting `main`. There is no `paths:` filter: `main` requires these checks, and a required check that never reports blocks a PR forever. `build-jobs.yml` does the filtering instead, skipping the frontend and backend suites when nothing relevant changed.
 - **Actions**: Lints, tests, and validates Docker build (doesn't push to registry)
 
 ### Release Workflow (`release.yml`)
-- **Trigger**: Manual dispatch from GitHub Actions UI
+- **Trigger**: Push to `main`, or manual dispatch from the GitHub Actions UI
 - **Actions**: Builds `linux/amd64` Docker images and pushes to GHCR, creates GitHub Release
 
 **To create a release:**
