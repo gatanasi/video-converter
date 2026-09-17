@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.0.2](https://github.com/gatanasi/video-converter/compare/v3.0.1...v3.0.2) (2026-09-17)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/stretchr/testify to v1.12.1 ([#352](https://github.com/gatanasi/video-converter/issues/352)) ([93c4021](https://github.com/gatanasi/video-converter/commit/93c402117fc8d98957cf9cb7e9e55968e9a40a12))
+
+
+### Miscellaneous Chores
+
+* **deps:** lock file maintenance ([#355](https://github.com/gatanasi/video-converter/issues/355)) ([9dd4ef3](https://github.com/gatanasi/video-converter/commit/9dd4ef3be310e62f3365b6e9ae6fa08a9da9fbf4))
+* **deps:** lock file maintenance ([#360](https://github.com/gatanasi/video-converter/issues/360)) ([751e352](https://github.com/gatanasi/video-converter/commit/751e3527ff294c61ccbcb393294bc9b79f20de87))
+* **deps:** update dependency @types/node to v24.13.4 ([#363](https://github.com/gatanasi/video-converter/issues/363)) ([b8b9af0](https://github.com/gatanasi/video-converter/commit/b8b9af0a6c7d2bfee52c901750dd6dba3816e5cb))
+* **deps:** update dependency pnpm to v12 ([#354](https://github.com/gatanasi/video-converter/issues/354)) ([47abb4a](https://github.com/gatanasi/video-converter/commit/47abb4a5fedf1aa1d77e5febc568c83145c142eb))
+* **deps:** update dependency pnpm to v12.4.0 ([#361](https://github.com/gatanasi/video-converter/issues/361)) ([7c0471f](https://github.com/gatanasi/video-converter/commit/7c0471f986274659b398e9d4a7f03b7144a92d76))
+* **deps:** update dependency vitest to v5 ([#362](https://github.com/gatanasi/video-converter/issues/362)) ([2854522](https://github.com/gatanasi/video-converter/commit/28545226f62b66b4ef37092672c68d8602b3bebd))
+* **deps:** update golang docker tag to v1.27.1 ([#356](https://github.com/gatanasi/video-converter/issues/356)) ([50a148b](https://github.com/gatanasi/video-converter/commit/50a148bb0ddbd09c26314198d9d66a655b0dfb95))
+* **deps:** update npm non-major devdependencies ([#351](https://github.com/gatanasi/video-converter/issues/351)) ([f514d54](https://github.com/gatanasi/video-converter/commit/f514d54211a7ddbe0789b05e09aac8cdc7ac8f52))
+* **deps:** update npm non-major devdependencies ([#357](https://github.com/gatanasi/video-converter/issues/357)) ([329e863](https://github.com/gatanasi/video-converter/commit/329e8631f4c9ae51663dca52ffd27a67599882df))
+* **deps:** update npm non-major devdependencies ([#358](https://github.com/gatanasi/video-converter/issues/358)) ([5f99a1f](https://github.com/gatanasi/video-converter/commit/5f99a1fb9b5f38f9b4abe11cd9759c583033c787))
+* **deps:** update pnpm/action-setup action to v6.1.0 ([#359](https://github.com/gatanasi/video-converter/issues/359)) ([9f0f365](https://github.com/gatanasi/video-converter/commit/9f0f3652ccc610e853abe1f0a15284cfaacdd27a))
+
 ## [3.0.1](https://github.com/gatanasi/video-converter/compare/v3.0.0...v3.0.1) (2026-09-04)
 
 
