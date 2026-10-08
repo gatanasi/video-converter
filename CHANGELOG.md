@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.3](https://github.com/gatanasi/video-converter/compare/v3.0.2...v3.0.3) (2026-10-08)
+
+
+### Miscellaneous Chores
+
+* **deps:** update npm non-major devdependencies ([#373](https://github.com/gatanasi/video-converter/issues/373)) ([956971f](https://github.com/gatanasi/video-converter/commit/956971fab4a40b59f9a45c550eecd720652157bc))
+
 ## [3.0.2](https://github.com/gatanasi/video-converter/compare/v3.0.1...v3.0.2) (2026-10-06)
 
 
