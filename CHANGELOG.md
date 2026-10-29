@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.0.3](https://github.com/gatanasi/video-converter/compare/v3.0.2...v3.0.3) (2026-10-29)
+
+
+### Miscellaneous Chores
+
+* **deps:** update actions/setup-node action to v7.1.0 ([#380](https://github.com/gatanasi/video-converter/issues/380)) ([be38000](https://github.com/gatanasi/video-converter/commit/be380002e70f9eb2b3b5319f1e8088c18137ae75))
+* **deps:** update dependency pnpm to v12.15.0 ([#383](https://github.com/gatanasi/video-converter/issues/383)) ([d762ea9](https://github.com/gatanasi/video-converter/commit/d762ea9d6793adaa99b7bf1370e9cb89d31fcfbc))
+* **deps:** update golang docker tag to v1.27.2 ([#378](https://github.com/gatanasi/video-converter/issues/378)) ([112caa9](https://github.com/gatanasi/video-converter/commit/112caa978f1009f8fcf67e8aca6a5d2f5854fa1d))
+* **deps:** update npm non-major devdependencies ([#373](https://github.com/gatanasi/video-converter/issues/373)) ([956971f](https://github.com/gatanasi/video-converter/commit/956971fab4a40b59f9a45c550eecd720652157bc))
+* **deps:** update npm non-major devdependencies ([#375](https://github.com/gatanasi/video-converter/issues/375)) ([efcb365](https://github.com/gatanasi/video-converter/commit/efcb36587945a95a66a5fb7f499b17df36a21bb2))
+* **deps:** update npm non-major devdependencies ([#377](https://github.com/gatanasi/video-converter/issues/377)) ([5bab856](https://github.com/gatanasi/video-converter/commit/5bab856d88ad99aef3f1bfa361f7544da743fb98))
+* **deps:** update npm non-major devdependencies ([#379](https://github.com/gatanasi/video-converter/issues/379)) ([3e314f4](https://github.com/gatanasi/video-converter/commit/3e314f46ba2d293741d0f490f120d76c904eae61))
+* **deps:** update npm non-major devdependencies ([#381](https://github.com/gatanasi/video-converter/issues/381)) ([c376daf](https://github.com/gatanasi/video-converter/commit/c376daf86ce7755209ecb82fca11e6fee9074a9a))
+* **deps:** update npm non-major devdependencies ([#382](https://github.com/gatanasi/video-converter/issues/382)) ([da20e67](https://github.com/gatanasi/video-converter/commit/da20e67cdd61632d56148d53d76cfeeb7b75572c))
+
 ## [3.0.2](https://github.com/gatanasi/video-converter/compare/v3.0.1...v3.0.2) (2026-10-06)
 
 
