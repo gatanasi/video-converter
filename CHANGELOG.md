@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.4](https://github.com/gatanasi/video-converter/compare/v3.0.3...v3.0.4) (2026-11-05)
+
+
+### Miscellaneous Chores
+
+* **deps:** update golang docker tag to v1.27.3 ([#387](https://github.com/gatanasi/video-converter/issues/387)) ([7fe3cd9](https://github.com/gatanasi/video-converter/commit/7fe3cd9a94decc36b77a86a6864f50b6407e4ac6))
+* **deps:** update npm non-major devdependencies ([#388](https://github.com/gatanasi/video-converter/issues/388)) ([0b47981](https://github.com/gatanasi/video-converter/commit/0b479811eb5754e829c346b8147a531a1d3de2b0))
+
 ## [3.0.3](https://github.com/gatanasi/video-converter/compare/v3.0.2...v3.0.3) (2026-11-03)
 
 
