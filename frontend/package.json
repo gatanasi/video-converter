@@ -22,7 +22,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "4.3.4",
     "@tailwindcss/postcss": "4.3.4",
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.6",
     "autoprefixer": "10.6.2",
     "concurrently": "10.0.6",
     "esbuild": "0.28.2",
