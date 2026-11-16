@@ -107,6 +107,12 @@
       "minimumReleaseAge": null
     },
     {
+      "description": "The lock file has no release timestamp, so under minimumReleaseAge its renovate/stability-days status would stay pending forever and block automerge",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null,
+      "automerge": true
+    },
+    {
       "description": "Never automerge pre-1.0 updates - SemVer permits breaking changes in any 0.x bump",
       "matchCurrentVersion": "/^v?0\\./",
       "matchUpdateTypes": ["minor", "patch"],
